@@ -1,0 +1,40 @@
+{
+  "files": {
+    "brain.npz": {
+      "bytes": 53396978,
+      "sha256": "cc9bd1ecd00bd703a6fa648bc6ad145c93c7c1ee53debdcc9ce0d1f4305e6aca"
+    },
+    "weights.npz": {
+      "bytes": 205331565,
+      "sha256": "c29919aa44069a271b1ee978abe05fa9bf6e45e4ba3e436e92b624ef1b5be40c"
+    }
+  },
+  "versions": {
+    "flybrain": "0.1.0",
+    "numpy": "2.4.6",
+    "scipy": "1.17.1",
+    "numba": "0.67.0",
+    "llvmlite": "0.49.0"
+  },
+  "neurons": 166700,
+  "connections": 25582938,
+  "load_seconds": 0.47613389999969513,
+  "populations": {
+    "LC4_L": 71,
+    "LC4_R": 55,
+    "LPLC2_L": 94,
+    "LPLC2_R": 91,
+    "LC10a_L": 135,
+    "LC10a_R": 140,
+    "descending_neuron_L": 656,
+    "descending_neuron_R": 648,
+    "DNp01_L": 1,
+    "DNp01_R": 1
+  },
+  "first_step_spikes": 6,
+  "first_step_seconds_including_jit": 1.5367279999991297,
+  "warm_step_ms": 2.9387819999828935,
+  "last_step_spikes": 13482,
+  "numba_threads": 4,
+  "reset_replay_exact": true
+}

@@ -1,0 +1,22 @@
+{
+  "protocol_version": "1.0",
+  "seeds": [101, 202, 303],
+  "encoder_seed": 20260917,
+  "train_trials": 60,
+  "validation_trials": 20,
+  "test_trials": 60,
+  "numba_threads": 4,
+  "dt_seconds": 0.02,
+  "sensory_input": true,
+  "refractory_seconds": 0.0,
+  "gain": 3.0,
+  "tonic": 0.14,
+  "noise_hz": 1.2,
+  "noise_amp": 0.22,
+  "stimulus_amplitude": [0.55, 0.95],
+  "ridge_alphas": [1000.0, 100.0, 10.0, 1.0, 0.1],
+  "tasks": {
+    "side": {"steps": 30, "pulse1": [10, 30], "readout": [20, 30]},
+    "order": {"steps": 50, "pulse1": [10, 20], "pulse2": [25, 35], "readout": [40, 50]}
+  }
+}

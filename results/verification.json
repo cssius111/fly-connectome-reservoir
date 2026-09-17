@@ -1,0 +1,19 @@
+{
+  "prediction_records_verified": 36,
+  "source_hashes_match": true,
+  "held_out_neuronal_replays": [
+    {
+      "task": "side",
+      "seed": 101,
+      "trial_index": 80,
+      "exact": true
+    },
+    {
+      "task": "order",
+      "seed": 101,
+      "trial_index": 80,
+      "exact": true
+    }
+  ],
+  "frozen_weights_verified": true
+}

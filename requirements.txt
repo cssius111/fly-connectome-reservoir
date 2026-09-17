@@ -1,0 +1,5 @@
+flybrain==0.1.0
+numpy==2.4.6
+scipy==1.17.1
+numba==0.67.0
+matplotlib==3.11.2
