@@ -20,7 +20,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from .action import NO_ACTION, Action
+from .action import NO_ACTION, Action, MotionState
+from .saccade import Saccades
 
 
 class StrikePhase(enum.Enum):
@@ -105,6 +106,8 @@ class World:
         self.max_speed = float(f["max_speed"])
         self.escape_impulse = float(f["escape_impulse"])
         self.turn_rate = float(f["turn_rate"])
+        self.max_yaw_rate = float(f["max_yaw_rate"])
+        self.saccades = Saccades(config["saccades"], seed)
         self.baseline_speed = float(f["baseline_speed"])
         self.wander_turn_rate = float(f["wander_turn_rate"])
         self.wander_turn_tau = float(f["wander_turn_tau_seconds"])
@@ -124,6 +127,8 @@ class World:
     # ---- lifecycle --------------------------------------------------------
     def reset(self, seed: int) -> None:
         self.rng = np.random.default_rng(seed)
+        self.saccades.reset(seed)
+        self.yaw_rate = 0.0
         self.swatter = Swatter(x=self.width * 0.5, y=self.height * 0.18,
                                target_x=self.width * 0.5, target_y=self.height * 0.18,
                                height=self.hover_height, face=0.0)
@@ -189,7 +194,7 @@ class World:
             if self.fly_motion_enabled:
                 self._move_fly(dt, action)
             else:
-                self.fly.vx = self.fly.vy = 0.0
+                self.fly.vx = self.fly.vy = self.yaw_rate = 0.0
             hit = self._resolve_collision()
         # Each strike is scored exactly once. The kill lands on an ACTIVE tick
         # while the window closes on a later tick, so without this guard a
@@ -340,8 +345,18 @@ class World:
             wall_turn = float(np.clip(delta, -1.0, 1.0)) * self.wall_turn_rate
         # Do not overwrite heading from velocity: that used to erase steering
         # at cruise speed and abruptly swivel the body after a lateral impulse.
-        fly.heading = (fly.heading + (action.turn * self.turn_rate + self._wander_turn
-                                     + wall_turn) * dt) % (2.0 * math.pi)
+        pulse = self.saccades.step(dt, action, near_wall=bool(away_x or away_y))
+        self.yaw_rate = float(np.clip(action.turn * self.turn_rate + self._wander_turn
+                                     + wall_turn + pulse / dt,
+                                     -self.max_yaw_rate, self.max_yaw_rate))
+        fly.heading = (fly.heading + self.yaw_rate * dt) % (2.0 * math.pi)
+
+    def motion_state(self) -> MotionState:
+        """Whitelisted body-frame feedback, with no absolute pose or threat."""
+        f = self.fly
+        hx, hy = math.cos(f.heading), math.sin(f.heading)
+        return MotionState(f.vx * hx + f.vy * hy, -f.vx * hy + f.vy * hx,
+                           self.yaw_rate, self.saccades.remaining)
 
     def _resolve_collision(self) -> bool:
         """Lethal only inside the active strike window."""

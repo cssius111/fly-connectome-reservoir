@@ -66,7 +66,7 @@ $env:FLY_DATA = "$PWD\data"
 & .\.venv\Scripts\python.exe -m unittest discover -v     # 全部游戏/实验测试
 ```
 
-操作：移动鼠标控制拍子，左键挥拍，`R` 重开，`空格`/`P` 暂停，`H` 切换神经 HUD，`F11` 全屏，`Esc` 退出全屏或退出游戏。
+操作：移动鼠标控制拍子，左键挥拍，`R`/`回车` 重开，`空格`/`P` 暂停，`H` 切换神经 HUD，`F11` 全屏，`Esc` 退出全屏或退出游戏。快捷键优先按物理键（SDL scancode）分发，其次才用翻译后的 keysym，因此中文输入法或非拉丁键盘布局不会吞掉按键；窗口启动和重新获得焦点时都会关闭文本合成。`R` 一定回到**运行中**的新局，不会停在暂停状态；同一帧内的点击不会带进新一局。
 
 **架构约束：原始鼠标坐标不会进入苍蝇的大脑。** 只有 `game/world.py` 知道鼠标位置；`game/perception.py` 把世界压缩成冻结的 `Retina`（只有角直径 `theta`、扩张率 `theta_dot`、自体坐标方位 `azimuth` 三个标量）；`game/fly.py` 的 `FlyLoop.step` 只接受 `Retina` 类型，连 `Retina` 的子类都会被拒绝。挥拍的抬手阶段没有任何隐藏标志位传给苍蝇——拍子在三维中下落并从侧向转为正面，苍蝇看到的就是真实的角扩张。LC4/LPLC2 两侧数量不等（LC4 左 71 右 55，LPLC2 左 94 右 91），按 PROTOCOL.md 同样的规则用固定种子下采样到每侧较小值，避免输入偏向一侧。
 
@@ -113,6 +113,14 @@ H 可切换诊断 HUD：CALM / ALERT / ESCAPE、theta、theta_dot、LC4/LPLC2 �
 `test_game_behavior.py` 增加持续飞行、平滑/确定性、左右转向、真实连接组点击前响应、无输入时无紧急逃逸、挥拍强于普通接近、连续轨迹、感知瓶颈、HUD，以及静默连接组对照（仍巡航，但无威胁转向/冲量）。原 M1.1 BarePolicy、强度语义和来源匹配回归保留。
 
 脚本追逐使用固定的 101–104 种子：先在远处跟随 1 秒，再逼近，1.90 秒点击。完整迹线存于 `artifacts/m1-2/chase.json`，摘要存于 `results/game/chase_m1_2.json`；它检查动作是否早于点击/致命帧，不用命中率调参。**是否好玩、是否能通过预测命中，仍必须由人工试玩验收**。没有学习、塑性或 Milestone 2 训练；原 reservoir 实验代码和历史结果保持不变。
+
+## M1.3：有界飞行急转（尚待人工试玩）
+
+在 M1.2 检查点 `85253f9abec36d01719fee548c4f7f7f869338e2` 上增加短时、连续的 heading pulse，不重写原有感知/连接组/逃逸流水线。自发急转属于巡航物理；ALERT/ESCAPE 急转只能由策略读取下降神经元后产生。三类脉冲分别标为 SPONTANEOUS / ALERT / ESCAPE；没有瞬移或直接使用鼠标侧别。具体参数、生物学来源与 **5–10 分钟试玩清单**见 [game/FLIGHT.md](game/FLIGHT.md)。
+
+M2 仍未实现。`FixedEscapePolicy` 是保留的 UNTRAINED BIO FLY 基线，`Policy.reset/decide` 不变。`MotorState.motion` 仅增加机体坐标的前向/侧向速度、角速度和剩余急转时间；无世界位置、全局朝向、鼠标或拍子坐标。它只给策略使用，不进入神经刺激；神经刺激仍完全由 Retina 决定。H 显示急转类别、DNa02/转向量与 seed。
+
+新配置已重新运行 28 次/条件校准，阈值仍为 1.45，固定苍蝇的测量分布与 M1.2 相同。`python tools/chase_sanity.py --label m1-3` 保存独立 M1.3 摘要，不覆盖 M1.2 追逐记录。原 M1.2 温和巡航测试仍保留，测试该分量时关闭新增急转；新的急转测试单独约束其幅度、时长、间隔与运动连续性。
 
 ## 数据来源与归属
 

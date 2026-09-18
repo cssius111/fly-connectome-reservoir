@@ -5,11 +5,16 @@
 Controls
     mouse move   move the swatter
     left click   strike (wind-up, brief lethal window, cooldown)
-    R            restart
+    R / Enter    restart into a running episode (never a paused one)
     Space / P    pause
     H            toggle the neural HUD
     F11          fullscreen / windowed
     Esc          leave fullscreen, or quit if already windowed
+
+Shortcuts are dispatched on the physical key first (SDL scancode) and only
+then on the translated keysym, so an active IME or a non-Latin layout cannot
+swallow them. Text composition is switched off at startup and whenever the
+window regains focus; this is a game surface, not a text field.
 
 The simulation runs on a fixed 20 ms tick (the connectome's own step) while
 rendering runs as fast as the display allows, interpolating between ticks. The
@@ -46,6 +51,26 @@ LOOM_COLOR = (74, 134, 196)
 THREAT_COLOR = (196, 112, 58)
 ESCAPE_COLOR = (108, 190, 120)
 
+# Two lookups for one control set. `scancode` is the physical key and survives
+# IME composition, remapped layouts and non-Latin keyboards; `key` is the
+# translated keysym and covers synthetic events that carry no scancode.
+SCANCODE_CONTROLS = {pygame.KSCAN_ESCAPE: "quit", pygame.KSCAN_F11: "fullscreen",
+                     pygame.KSCAN_R: "restart", pygame.KSCAN_RETURN: "restart",
+                     pygame.KSCAN_KP_ENTER: "restart", pygame.KSCAN_SPACE: "pause",
+                     pygame.KSCAN_P: "pause", pygame.KSCAN_H: "hud"}
+KEY_CONTROLS = {pygame.K_ESCAPE: "quit", pygame.K_F11: "fullscreen",
+                pygame.K_r: "restart", pygame.K_RETURN: "restart",
+                pygame.K_KP_ENTER: "restart", pygame.K_SPACE: "pause",
+                pygame.K_p: "pause", pygame.K_h: "hud"}
+
+
+def control_for(event) -> str | None:
+    """Physical key wins; the keysym is the fallback, never a veto."""
+    scancode = getattr(event, "scancode", None)
+    if scancode in SCANCODE_CONTROLS:
+        return SCANCODE_CONTROLS[scancode]
+    return KEY_CONTROLS.get(getattr(event, "key", None))
+
 
 class App:
     def __init__(self, config: dict, root: Path = ROOT, fullscreen: bool = False):
@@ -78,8 +103,25 @@ class App:
         self.escape_vector = (0.0, 0.0)
         self.pointer_world = (self.world_w * 0.5, self.world_h * 0.2)
         self._prev = self._snapshot()
+        self._disable_text_input()
         if fullscreen:
             self._toggle_fullscreen()
+
+    # ---- input hygiene -----------------------------------------------------
+    @staticmethod
+    def _disable_text_input() -> None:
+        """Keep the window out of text-composition mode.
+
+        With an IME active (Chinese input, for instance) SDL routes keystrokes
+        into composition and the game can see no usable KEYDOWN at all. There
+        is no text field here, so composition stays off -- at startup and again
+        whenever the window regains focus, because the IME may re-arm it.
+        """
+        try:
+            pygame.key.stop_text_input()
+            pygame.key.set_repeat()
+        except pygame.error:
+            pass
 
     # ---- presentation helpers ---------------------------------------------
     def _splash(self, message: str) -> None:
@@ -122,9 +164,12 @@ class App:
             frame = self.clock.tick(120) / 1000.0
             frame = min(frame, 0.25)
             strike_requested = False
+            restarted = False
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
+                elif event.type == pygame.WINDOWFOCUSGAINED:
+                    self._disable_text_input()
                 elif event.type == pygame.VIDEORESIZE and not self.fullscreen:
                     self.windowed_size = (max(640, event.w), max(360, event.h))
                     self.screen = pygame.display.set_mode(self.windowed_size, pygame.RESIZABLE)
@@ -132,20 +177,29 @@ class App:
                     self.pointer_world = self._screen_to_world(event.pos)
                 elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                     strike_requested = True
-                elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:
+                elif event.type == pygame.KEYDOWN and not getattr(event, "repeat", False):
+                    control = control_for(event)
+                    if control == "quit":
                         if self.fullscreen:
                             self._toggle_fullscreen()
                         else:
                             running = False
-                    elif event.key == pygame.K_F11:
+                    elif control == "fullscreen":
                         self._toggle_fullscreen()
-                    elif event.key == pygame.K_r:
-                        self._restart()
-                    elif event.key in (pygame.K_SPACE, pygame.K_p):
+                    elif control == "restart":
+                        # Once per frame: a held key or a double tap inside one
+                        # event batch is one restart, not a seed stampede.
+                        if not restarted:
+                            self._restart()
+                            restarted = True
+                    elif control == "pause":
                         self.paused = not self.paused
-                    elif event.key == pygame.K_h:
+                    elif control == "hud":
                         self.show_neural = not self.show_neural
+            if restarted:
+                # Clicks batched with the restart belong to the finished
+                # episode; they must not open a strike on the fresh one.
+                strike_requested = False
 
             if not self.paused:
                 self._advance(frame, strike_requested)
@@ -156,10 +210,14 @@ class App:
         return 0
 
     def _restart(self) -> None:
+        """Fresh episode, always running. Restarting out of PAUSED and landing
+        in PAUSED looks like a dead key, so pause is cleared here."""
         self.run_index += 1
         self.session.reset(self.base_seed + 1000 * self.run_index)
+        self.paused = False
         self.accumulator = 0.0
         self.escape_flash = 0.0
+        self.escape_vector = (0.0, 0.0)
         self._prev = self._snapshot()
 
     def _advance(self, frame_seconds: float, strike_requested: bool) -> None:
@@ -298,7 +356,7 @@ class App:
         x = 14
         for i, text in enumerate(rows):
             c.blit(self.font.render(text, True, INK), (x, 12 + i * 21))
-        hint = "H neural  R restart  space pause  F11 fullscreen  esc quit"
+        hint = "H neural  R/enter restart  space pause  F11 fullscreen  esc quit"
         c.blit(self.font_small.render(hint, True, DIM), (x, int(self.world_h) - 24))
         if not self.show_neural:
             return
@@ -320,6 +378,11 @@ class App:
             lines.append(f"state {diagnostics['behavior_state']}")
         if "escape_strength" in diagnostics:
             lines.append(f"escape strength {diagnostics['escape_strength']:.2f}")
+        lines.append(f"saccade {self.session.world.saccades.kind}  {self.session.world.saccades.remaining:.2f}s")
+        lines.append(f"seed {self.session.seed}")
+        steer_left = 0.0 if motor is None else motor.dna02_left
+        steer_right = 0.0 if motor is None else motor.dna02_right
+        lines.append(f"DNa02 L/R {steer_left:.2f}/{steer_right:.2f}  turn {self.session.fly_loop.last_action.turn:+.2f}")
         optional = []
         if threshold is not None:
             optional.append(f"threshold (sum) {threshold:4.2f}")
@@ -342,7 +405,7 @@ class App:
         panel.fill((10, 12, 16, 190))
         c.blit(panel, (px, py))
         pygame.draw.rect(c, (52, 58, 70), pygame.Rect(px, py, panel_w, panel_h), 1)
-        c.blit(self.font.render("MaleCNS-derived runtime", True, INK), (px + 12, py + 8))
+        c.blit(self.font.render("Untrained BIO FLY / MaleCNS", True, INK), (px + 12, py + 8))
 
         def bar(row, label, value, vmax, colour, marker=None):
             top = py + 34 + row * 26

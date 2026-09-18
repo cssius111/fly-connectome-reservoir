@@ -1,6 +1,8 @@
 """The digital fly: MaleCNS connectome + descending-neuron trace + policy.
 
-`FlyLoop.step` accepts a `Retina` and nothing else. It rejects any other type,
+`FlyLoop.step` accepts a `Retina` plus optional body-frame `MotionState`.
+Only Retina drives the brain; internal motion is appended to policy input.
+It rejects any other type,
 including subclasses of `Retina`, so a caller cannot smuggle mouse or world
 state past the perceptual bottleneck by wrapping it in a lookalike.
 
@@ -19,7 +21,7 @@ from pathlib import Path
 import numpy as np
 from flybrain import FlyBrain, Trace
 
-from .action import Action, MotorState, Policy
+from .action import Action, MotorState, MotionState, Policy
 from .perception import Retina, RetinalEncoder
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -70,13 +72,15 @@ class FlyLoop:
         self.last_motor = None
         self.last_action = Action()
 
-    def step(self, retina: Retina) -> Action:
+    def step(self, retina: Retina, motion: MotionState = MotionState()) -> Action:
         # Strict type check, not isinstance: a Retina subclass carrying extra
         # fields would defeat the whole point of the bottleneck.
         if type(retina) is not Retina:
             raise TypeError(
                 f"FlyLoop.step accepts only a perception.Retina, got {type(retina).__name__}. "
                 "Raw world or mouse state must never reach the brain.")
+        if type(motion) is not MotionState:
+            raise TypeError("FlyLoop motion feedback accepts only MotionState; no world or mouse state")
         inject = self.encoder.inject(retina)
         fired = self.brain.step(inject=inject)
         features = self.trace.observe(fired)
@@ -85,7 +89,7 @@ class FlyLoop:
             dnp01_right=float(features[self._escape_slots[1]].sum()),
             dna02_left=float(features[self._steer_slots[0]].sum()),
             dna02_right=float(features[self._steer_slots[1]].sum()),
-            trace=features)
+            trace=features, motion=motion)
         action = self.policy.decide(motor)
         self.last_motor = motor
         self.last_action = action

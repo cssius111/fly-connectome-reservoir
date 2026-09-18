@@ -1,5 +1,5 @@
 {
-  "config_version": 2,
+  "config_version": 3,
   "_comment": "Fly-swatter game parameters. Separate from config.json, which stays frozen for the reservoir experiment.",
   "sim": {
     "tick_seconds": 0.02,
@@ -38,7 +38,8 @@
     "wander_turn_rate": 0.24,
     "wander_turn_tau_seconds": 0.8,
     "wall_lookahead": 110.0,
-    "wall_turn_rate": 2.4
+    "wall_turn_rate": 2.4,
+    "max_yaw_rate": 6.0
   },
   "brain": {
     "data": "data",
@@ -74,6 +75,21 @@
     "refractory_seconds": 0.4,
     "turn_gain": 0.8,
     "alert_threshold_fraction": 0.55,
-    "steering_tau_seconds": 0.12
+    "steering_tau_seconds": 0.12,
+    "alert_saccade_strength": 0.6,
+    "saccade_interval_seconds": 0.8,
+    "alert_saccade_dwell_seconds": 0.06
+  },
+  "saccades": {
+    "enabled": true,
+    "interval_min_seconds": 2.5,
+    "interval_max_seconds": 4.5,
+    "spontaneous_min_degrees": 16.0,
+    "spontaneous_max_degrees": 24.0,
+    "spontaneous_seconds": 0.3,
+    "alert_max_degrees": 30.0,
+    "alert_seconds": 0.26,
+    "escape_max_degrees": 60.0,
+    "escape_seconds": 0.3
   }
 }

@@ -1,6 +1,6 @@
-"""Scripted M1.2 chase diagnostics; human playtest remains the acceptance test.
+"""Scripted untrained BIO FLY chase diagnostics; human playtest remains the acceptance test.
 
-    python tools/chase_sanity.py
+    python tools/chase_sanity.py --label m1-3
 
 Four fixed seeds: fresh episode, one second tracking from 300 units above,
 then approach without clicking, click at 1.90 s, and observe the lethal window.
@@ -9,6 +9,7 @@ because those coordinates enter FlyLoop. No fitting or hit-rate optimization.
 """
 from __future__ import annotations
 
+import argparse
 import json
 import math
 import os
@@ -49,6 +50,7 @@ def chase(session: Session, seed: int) -> list[dict]:
                      "azimuth": retina.azimuth, "drive": session.encoder.last_drive,
                      "dnp01_left": motor.dnp01_left, "dnp01_right": motor.dnp01_right,
                      "turn": action.turn, "escape": action.escape,
+                     "saccade_kind": w.saccades.kind, "saccade_request": action.saccade,
                      "strength": action.strength if action.escape else 0.0,
                      "state": session.policy_diagnostics.get("behavior_state")})
     return rows
@@ -71,6 +73,9 @@ def summarize(rows: list[dict], dt: float) -> dict:
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--label", choices=("m1-2", "m1-3"), default="m1-3")
+    args = parser.parse_args()
     started = time.perf_counter()
     config = load_config()
     session = Session(config)
@@ -84,11 +89,11 @@ def main() -> int:
               "scenario": "track far, approach at 1.00s, click at 1.90s; fixed seeds, no fitting",
               "limitation": "Scripted regression only; human playtest is the acceptance criterion. Outcomes are not a gameplay quality score.",
               "wall_seconds": time.perf_counter() - started, "trials": trials}
-    full = ROOT / "artifacts" / "m1-2" / "chase.json"
+    full = ROOT / "artifacts" / args.label / "chase.json"
     full.parent.mkdir(parents=True, exist_ok=True)
     full.write_text(json.dumps(record, indent=2), encoding="utf-8")
     summary = {**record, "trials": [{k: v for k, v in t.items() if k != "trace"} for t in trials]}
-    (ROOT / "results" / "game" / "chase_m1_2.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
+    (ROOT / "results" / "game" / ("chase_" + args.label.replace("-", "_") + ".json")).write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
     return 0 if all(t["pre_click_evasion"] for t in trials) else 1
 
 

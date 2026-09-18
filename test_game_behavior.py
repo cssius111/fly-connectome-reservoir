@@ -1,5 +1,6 @@
 """M1.2 behavior regressions. These do not replace a human playtest."""
 import os
+import copy
 import unittest
 from unittest.mock import patch, Mock
 
@@ -20,8 +21,10 @@ DT = CONFIG["sim"]["tick_seconds"]
 
 class TestTonicFlight(unittest.TestCase):
     @staticmethod
-    def trajectory(seed, ticks=300):
-        world = World(CONFIG, seed)
+    def trajectory(seed, ticks=300, saccades=True):
+        cfg = copy.deepcopy(CONFIG)
+        cfg["saccades"]["enabled"] = saccades
+        world = World(cfg, seed)
         rows = []
         for _ in range(ticks):
             world.tick(DT)
@@ -41,7 +44,9 @@ class TestTonicFlight(unittest.TestCase):
         self.assertFalse(np.array_equal(self.trajectory(17), self.trajectory(18)))
 
     def test_cruise_has_smooth_velocity_and_heading(self):
-        rows = self.trajectory(101, 200)
+        # Retain the M1.2 inter-saccade drift bound; M1.3 separately tests
+        # the bounded heading pulses that deliberately exceed that drift rate.
+        rows = self.trajectory(101, 200, saccades=False)
         acceleration = np.linalg.norm(np.diff(rows[:, 2:4], axis=0), axis=1) / DT
         heading_step = np.abs(np.diff(np.unwrap(rows[:, 4])))
         self.assertLess(acceleration.max(), 260.0)
@@ -213,11 +218,12 @@ class TestBehaviorHUD(unittest.TestCase):
         app._draw()
         strings = [c.args[0] for c in app.font_small.render.call_args_list]
         for label in ("state CALM", "retina theta", "d/dt", "cruise", "speed", "escape strength",
-                      "LPLC2 loom L", "LC4 threat L", "DNp01 left", "DNp01 right"):
+                      "LPLC2 loom L", "LC4 threat L", "DNp01 left", "DNp01 right",
+                      "saccade", "DNa02 L/R", "seed"):
             self.assertTrue(any(label in s for s in strings), label)
         # All full-width information rows fit within the 380px panel padding.
         for text in strings:
-            if text.startswith(("state", "retina", "cruise", "escape strength", "brain", "LC4 ", "threshold")):
+            if text.startswith(("state", "retina", "cruise", "escape strength", "brain", "LC4 ", "threshold", "saccade", "DNa02", "seed")):
                 self.assertLessEqual(app.font_small.size(text)[0], 356, text)
         app.show_neural = False
         app._draw()

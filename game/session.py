@@ -8,8 +8,11 @@ Tick order, once per fixed 20 ms step:
 
     pointer in  ->  world.set_pointer / request_strike   (mouse stops here)
                 ->  RetinaProjector.project(world)       (world -> Retina)
-                ->  FlyLoop.step(retina)                 (Retina -> Action)
+                ->  FlyLoop.step(retina, motion)         (Retina -> brain -> Action)
                 ->  world.tick(dt, action)               (physics, collision)
+
+Motion is a whitelisted body-frame snapshot, appended only to policy input;
+it does not drive the brain and contains no world position or threat vector.
 
 The fly therefore acts on what it saw at the start of the tick, a one-tick
 sensorimotor delay.
@@ -102,7 +105,10 @@ def build_policy(config: dict, root: Path = ROOT) -> tuple[FixedEscapePolicy, Th
                                forward_bias=float(config["fly"]["escape_forward_bias"]),
                                turn_gain=float(p["turn_gain"]),
                                alert_threshold_fraction=float(p["alert_threshold_fraction"]),
-                               steering_tau_seconds=float(p["steering_tau_seconds"]))
+                               steering_tau_seconds=float(p["steering_tau_seconds"]),
+                               alert_saccade_strength=float(p["alert_saccade_strength"]),
+                               saccade_interval_seconds=float(p["saccade_interval_seconds"]),
+                               alert_saccade_dwell_seconds=float(p["alert_saccade_dwell_seconds"]))
     return policy, source
 
 
@@ -151,7 +157,7 @@ class Session:
         started = self.world.request_strike() if strike else False
         retina = self.projector.project(self.world)
         self.last_retina = retina
-        action = self.fly_loop.step(retina) if self.world.fly.alive else Action()
+        action = self.fly_loop.step(retina, self.world.motion_state()) if self.world.fly.alive else Action()
         events = self.world.tick(self.tick_seconds, action)
         self.ticks += 1
         return TickEvents(started, events.strike_resolved, events.hit, events.escaped)
