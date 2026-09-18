@@ -61,18 +61,34 @@ $env:FLY_DATA = "$PWD\data"
 ```powershell
 Set-Location D:\Projects\flybrain-lab
 $env:FLY_DATA = "$PWD\data"
-& .\.venv\Scripts\python.exe .\tools\calibrate_escape.py   # 首次运行必须，记录逃逸阈值
+& .\.venv\Scripts\python.exe .\tools\calibrate_escape.py --trials 28   # 无匹配校准时运行
 & .\.venv\Scripts\python.exe -m game.app                   # 开始游戏
-& .\.venv\Scripts\python.exe .\test_game.py                # 测试
+& .\.venv\Scripts\python.exe -m unittest discover -v     # 全部游戏/实验测试
 ```
 
 操作：移动鼠标控制拍子，左键挥拍，`R` 重开，`空格`/`P` 暂停，`H` 切换神经 HUD，`F11` 全屏，`Esc` 退出全屏或退出游戏。
 
 **架构约束：原始鼠标坐标不会进入苍蝇的大脑。** 只有 `game/world.py` 知道鼠标位置；`game/perception.py` 把世界压缩成冻结的 `Retina`（只有角直径 `theta`、扩张率 `theta_dot`、自体坐标方位 `azimuth` 三个标量）；`game/fly.py` 的 `FlyLoop.step` 只接受 `Retina` 类型，连 `Retina` 的子类都会被拒绝。挥拍的抬手阶段没有任何隐藏标志位传给苍蝇——拍子在三维中下落并从侧向转为正面，苍蝇看到的就是真实的角扩张。LC4/LPLC2 两侧数量不等（LC4 左 71 右 55，LPLC2 左 94 右 91），按 PROTOCOL.md 同样的规则用固定种子下采样到每侧较小值，避免输入偏向一侧。
 
-逃逸阈值不是手调的：`tools/calibrate_escape.py` 在同一条游戏流水线上测量有 loom 与无 loom 时的 DNp01 轨迹，按"在全部无 loom 时刻都不误触发的最小阈值"这一事先定好的规则选取，并把完整扫描记录写入 `artifacts/game/calibration.json`（本机，Git 忽略）与 `results/game/calibration.json`（可提交摘要）。
+逃逸阈值不是手调的：`tools/calibrate_escape.py` 在同一条游戏流水线上固定苍蝇的位置与朝向、保持速度为零、禁用 wander 运动、策略逃逸及碰撞，测量有 loom 与无 loom 时的 DNp01 轨迹，按"在全部无 loom 时刻都不误触发的最小阈值"这一事先定好的规则选取，并把完整扫描记录写入 `artifacts/game/calibration.json`（本机，Git 忽略）与 `results/game/calibration.json`（可提交摘要）。
 
-**不能把这个游戏称为"果蝇学会了躲苍蝇拍"。** 没有光感受器/视小叶层的图像处理：编码器直接驱动视觉投射神经元，这一点上游 `flybrain/eyes.py` 自己的文档也明确说明。LIF 参数是手工标定而非实测，逃逸解码器是固定阈值而非训练所得，行为来自单一解剖标本。游戏演示的是"逼近图像经未改动的 MaleCNS 连接通路到达 DNp01，并由其速率与侧别决定定向逃逸"，不是真实果蝇逃逸行为的验证。
+**不能把这个游戏称为"果蝇学会了躲苍蝇拍"。** 没有光感受器/视小叶层的图像处理：编码器直接驱动视觉投射神经元，这一点上游 `flybrain/eyes.py` 自己的文档也明确说明。LIF 参数是手工标定而非实测，逃逸解码器是固定阈值而非训练所得，行为来自单一解剖标本。游戏演示的是"逼近几何经 MaleCNS 衍生运行图到达 DNp01，并由其速率与侧别决定定向逃逸"，不是真实果蝇逃逸行为的验证。
+
+## M1.1 接口与校准约束
+
+游戏设置 `sensory_input=false`：加载时移除指向感觉神经元的边，得到冻结的 **MaleCNS 衍生运行图**。原始数据为 **25,582,938** 条连接；当前游戏运行图约 **25,088,107** 条。数据文件没有被改写，游戏运行中没有训练或可塑性；不能把它称为未改动的完整 MaleCNS 图。
+
+`Policy` 行为协议仍只有 `reset()` 与 `decide(motor)`。策略可选提供 `diagnostics()`（例如 `escape_threshold`、`refractory_seconds`）；Session 统一暴露诊断字典，HUD 没有相应字段时隐藏阈值/冷却显示。仅实现行为协议的策略也能正常渲染。
+
+`Action.lateral/forward` 只定义机体坐标方向。`strength` 是独立、有限且位于 [0,1] 的标量；非法值抛 `ValueError`。物理层只归一化方向，施加 `escape_impulse * strength` 的速度冲量，然后执行阻尼和限速；零强度或零方向不产生冲量。`turn` 独立，由 `fly.turn_rate` 缩放。省略强度时默认为 1，保留既有定幅调用的行为。固定策略按 DNp01 活动生成 0.5–1 的逃逸强度，尚未学习。
+
+启动固定策略时，Session 检查**实际传入配置**的规范化 JSON SHA256、校准协议版本、FlyBrain 版本、编码器种子/细胞类型与平衡规则、`sensory_input` 和时间步。完整配置内容也包含在哈希内。旧记录、配置不匹配或无效阈值会被跳过；过期的 `artifacts/game/calibration.json` 不会遮盖匹配的已提交记录。若无匹配记录，启动失败并提示：
+
+```
+python tools/calibrate_escape.py --trials 28
+```
+
+自定义配置需加 `--config PATH`，游戏也使用同一个配置。配置的原始文件 SHA256 另保存在记录顶层，便于审计；运行时使用规范化内容哈希，避免 Windows 换行/JSON 排版造成误判。旧的“可 wander”校准不再匹配 fixed-fly-v2 协议。阈值在校准样本上选择；样本内零误触发不代表长期游戏永不误触发。
 
 ## 数据来源与归属
 

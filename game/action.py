@@ -12,7 +12,8 @@ whose value comes from a recorded calibration run, never from hand-picking.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Protocol, runtime_checkable
+import math
+from typing import Mapping, Protocol, runtime_checkable
 
 import numpy as np
 
@@ -35,12 +36,25 @@ class MotorState:
 
 @dataclass(frozen=True, slots=True)
 class Action:
-    """Body-frame motor command. `lateral` +1 is to the fly's own right,
-    `forward` +1 is along its heading, `turn` is in rad/s."""
+    """Body-frame command: lateral/forward specify direction, not magnitude.
+
+    +lateral is the fly's right; +forward follows its heading. The world
+    normalizes this direction and applies escape_impulse * strength, before
+    damping/speed limits. A zero direction or strength produces no impulse.
+    strength is finite and in [0, 1]; invalid commands raise ValueError.
+    turn is separate, scaled by the world's turn_rate (radians/second).
+    strength defaults to 1 for existing full-escape callers and is ignored
+    when escape=False.
+    """
     escape: bool = False
     lateral: float = 0.0
     forward: float = 0.0
     turn: float = 0.0
+    strength: float = 1.0
+
+    def __post_init__(self) -> None:
+        if not math.isfinite(self.strength) or not 0.0 <= self.strength <= 1.0:
+            raise ValueError("Action.strength must be finite and in [0, 1]")
 
 
 NO_ACTION = Action()
@@ -50,6 +64,15 @@ NO_ACTION = Action()
 class Policy(Protocol):
     def reset(self) -> None: ...
     def decide(self, motor: MotorState) -> Action: ...
+
+
+class DiagnosticPolicy(Protocol):
+    """Optional presentation interface, separate from behavioral Policy.
+
+    Known optional keys: escape_threshold (summed DNp01 trace units) and
+    refractory_seconds. A policy need not implement this interface.
+    """
+    def diagnostics(self) -> Mapping[str, float]: ...
 
 
 class FixedEscapePolicy:
@@ -72,6 +95,7 @@ class FixedEscapePolicy:
             raise ValueError(f"escape threshold must be positive, got {threshold!r}")
         self.threshold = float(threshold)
         self.refractory_ticks = int(round(refractory_seconds / tick_seconds))
+        self.tick_seconds = float(tick_seconds)
         self.forward_bias = float(forward_bias)
         self.turn_gain = float(turn_gain)
         self._cooldown = 0
@@ -82,6 +106,10 @@ class FixedEscapePolicy:
     @property
     def refractory_remaining(self) -> int:
         return self._cooldown
+
+    def diagnostics(self) -> dict[str, float]:
+        return {"escape_threshold": self.threshold,
+                "refractory_seconds": self._cooldown * self.tick_seconds}
 
     def decide(self, motor: MotorState) -> Action:
         # DNa02 asymmetry steers continuously, whether or not an escape fires.
@@ -96,6 +124,6 @@ class FixedEscapePolicy:
         strength = float(min(1.0, motor.dnp01_total / (2.0 * self.threshold)))
         self._cooldown = self.refractory_ticks
         return Action(escape=True,
-                      lateral=(strength if threat_left else -strength),
-                      forward=self.forward_bias * strength,
-                      turn=turn)
+                      lateral=(1.0 if threat_left else -1.0),
+                      forward=self.forward_bias,
+                      turn=turn, strength=strength)

@@ -4,8 +4,10 @@
 including subclasses of `Retina`, so a caller cannot smuggle mouse or world
 state past the perceptual bottleneck by wrapping it in a lookalike.
 
-The brain itself is never modified: weights come straight from the MaleCNS
-graph, no plasticity, no training. Milestone 1 reads DNp01 (looming escape)
+The runtime graph is frozen after loading: no plasticity or training. With
+sensory_input=False, incoming sensory-neuron edges are removed from the
+MaleCNS-derived graph (currently 25,088,107 rather than 25,582,938 edges).
+Milestone 1 reads DNp01 (looming escape)
 and DNa02 (steering) out of `brain.groups` and hands them to an untrained
 threshold policy. The full descending-neuron trace is carried along in
 `MotorState` so a Milestone-2 trained policy needs no change here.

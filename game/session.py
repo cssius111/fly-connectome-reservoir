@@ -17,6 +17,9 @@ sensorimotor delay.
 from __future__ import annotations
 
 import json
+import hashlib
+import importlib.metadata
+import math
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -24,7 +27,7 @@ import numpy as np
 
 from .action import Action, FixedEscapePolicy, Policy
 from .fly import ROOT, FlyLoop, build_brain
-from .perception import Retina, RetinaProjector, RetinalEncoder
+from .perception import LOOM_TYPES, THREAT_TYPES, Retina, RetinaProjector, RetinalEncoder
 from .world import TickEvents, World
 
 CONFIG_PATH = ROOT / "game_config.json"
@@ -34,6 +37,27 @@ def load_config(path: Path | str = CONFIG_PATH) -> dict:
     return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
+def calibration_provenance(config: dict) -> dict:
+    """Fingerprint actual in-memory configuration, including custom mutations.
+
+    Canonical JSON avoids OS newline/formatting differences. Calibration also
+    retains its raw config file hash for auditing. Schema 2 rejects older
+    measurements whose fly could wander.
+    """
+    serialized = json.dumps(config, sort_keys=True, separators=(",", ":"),
+                            ensure_ascii=True, allow_nan=False).encode("utf-8")
+    return {"schema_version": 2, "measurement_protocol": "fixed-fly-v2",
+            "config_hash_format": "canonical-json-sort-keys-ascii-compact",
+            "game_config_sha256": hashlib.sha256(serialized).hexdigest(),
+            "flybrain_version": importlib.metadata.version("flybrain"),
+            "encoder_population_rule": "min-per-type-per-side-v1",
+            "encoder_seed": config["encoder"]["encoder_seed"],
+            "encoder_types": {"loom": list(LOOM_TYPES), "threat": list(THREAT_TYPES)},
+            "sensory_input": config["brain"]["sensory_input"],
+            "tick_seconds": config["sim"]["tick_seconds"],
+            "brain_dt_seconds": config["brain"]["dt_seconds"]}
+
+
 @dataclass(frozen=True)
 class ThresholdSource:
     threshold: float
@@ -41,26 +65,32 @@ class ThresholdSource:
 
 
 def resolve_escape_threshold(config: dict, root: Path = ROOT) -> ThresholdSource:
-    """The escape threshold must be traceable to a recorded calibration run.
-
-    An explicit `policy.escape_threshold` in game_config.json wins (handy for
-    tests), otherwise the first existing file in `policy.calibration_paths` is
-    used. If none exists we refuse to guess.
-    """
+    """Use the first matching record, never merely the first existing file."""
     policy = config["policy"]
-    explicit = policy.get("escape_threshold")
-    if explicit is not None:
-        return ThresholdSource(float(explicit), "game_config.json:policy.escape_threshold")
+    command = "python tools/calibrate_escape.py --trials 28"
+    if policy.get("escape_threshold") is not None:
+        raise ValueError("Manual escape_threshold is unsupported; set it to null. Run: " + command)
+    expected = calibration_provenance(config)
     tried = []
     for rel in policy["calibration_paths"]:
         path = root / rel
-        tried.append(str(rel))
-        if path.exists():
+        try:
             data = json.loads(path.read_text(encoding="utf-8"))
-            return ThresholdSource(float(data["escape_threshold"]), str(rel))
-    raise FileNotFoundError(
-        "No escape-threshold calibration found (looked in: " + ", ".join(tried) + "). "
-        "Run:  python tools/calibrate_escape.py")
+            if not isinstance(data, dict):
+                raise ValueError("calibration record must be a JSON object")
+            if data.get("provenance") != expected:
+                tried.append(f"{rel}: provenance mismatch")
+                continue
+            threshold = float(data["escape_threshold"])
+            if not math.isfinite(threshold) or threshold <= 0.0:
+                tried.append(f"{rel}: invalid threshold")
+                continue
+            return ThresholdSource(threshold, str(rel))
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            tried.append(f"{rel}: {type(exc).__name__}")
+    raise ValueError("No matching escape-threshold calibration. " + "; ".join(tried)
+                     + ". Run: " + command
+                     + " (add --config PATH when using a custom game config).")
 
 
 def build_policy(config: dict, root: Path = ROOT) -> tuple[FixedEscapePolicy, ThresholdSource]:
@@ -83,14 +113,18 @@ class Session:
         self.root = root
         self.tick_seconds = float(config["sim"]["tick_seconds"])
         self.seed = int(config["sim"]["seed"] if seed is None else seed)
-        self.brain = brain if brain is not None else build_brain(config, root)
-        self.encoder = RetinalEncoder(self.brain, config)
+        if not math.isclose(self.tick_seconds, float(config["brain"]["dt_seconds"]),
+                            rel_tol=0.0, abs_tol=1e-12):
+            raise ValueError("sim.tick_seconds must equal brain.dt_seconds")
+        # Validate before loading the graph. A caller-supplied policy, including
+        # calibration's RecordingPolicy, consumes no escape calibration.
         if policy is None:
             policy, self.threshold_source = build_policy(config, root)
         else:
-            self.threshold_source = ThresholdSource(getattr(policy, "threshold", float("nan")),
-                                                    "caller-supplied policy")
+            self.threshold_source = None
         self.policy = policy
+        self.brain = brain if brain is not None else build_brain(config, root)
+        self.encoder = RetinalEncoder(self.brain, config)
         self.fly_loop = FlyLoop(self.brain, self.encoder, policy, config)
         self.projector = RetinaProjector(self.tick_seconds)
         self.world = World(config, self.seed)
@@ -123,6 +157,12 @@ class Session:
     @property
     def stats(self):
         return self.world.stats
+
+    @property
+    def policy_diagnostics(self) -> dict[str, float]:
+        """Optional display metadata; never part of policy decisions."""
+        provider = getattr(self.policy, "diagnostics", None)
+        return dict(provider()) if callable(provider) else {}
 
     def state_vector(self) -> np.ndarray:
         """World state plus the motor readout, for the determinism test."""

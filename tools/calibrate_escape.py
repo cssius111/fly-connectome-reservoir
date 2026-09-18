@@ -2,7 +2,7 @@
 
 Run before playing:
 
-    python tools/calibrate_escape.py
+    python tools/calibrate_escape.py --trials 28
 
 The threshold is never hand-picked. It is chosen by a rule fixed before looking
 at the numbers:
@@ -44,7 +44,7 @@ os.environ.setdefault("MPLCONFIGDIR", str(ROOT / "artifacts" / "matplotlib"))
 import numpy as np  # noqa: E402
 
 from game.action import Action, MotorState  # noqa: E402
-from game.session import Session, load_config  # noqa: E402
+from game.session import Session, calibration_provenance, load_config  # noqa: E402
 from game.world import StrikePhase  # noqa: E402
 
 # Sweep grid, fixed before measurement.
@@ -92,7 +92,7 @@ def _trial(session: Session, policy: RecordingPolicy, seed: int, offset: tuple[f
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--trials", type=int, default=16, help="trials per condition")
+    parser.add_argument("--trials", type=int, default=28, help="trials per condition")
     parser.add_argument("--config", type=Path, default=ROOT / "game_config.json")
     args = parser.parse_args()
 
@@ -104,6 +104,7 @@ def main() -> int:
     # Observe the whole strike: with the kill enabled the fly would die
     # mid-window and truncate the measurement. Recorded in the artifact.
     session.world.collisions_enabled = False
+    session.world.fly_motion_enabled = False
     print(f"brain: {session.brain.n} neurons, {len(session.brain.weights)} connections, "
           f"sensory_input={config['brain']['sensory_input']}", flush=True)
     print(f"balanced input populations: {session.encoder.population}", flush=True)
@@ -173,7 +174,8 @@ def main() -> int:
         "measurement_conditions": {
             "collisions_enabled": False,
             "escape_disabled": True,
-            "note": "the fly is held still and cannot be killed, so DNp01 reflects sensory drive only",
+            "fly_motion_enabled": False,
+            "note": "fly position and heading are fixed; velocity stays zero, wander is disabled, and collisions/escape actions are disabled",
         },
         "escape_threshold": threshold,
         "detection_rate": chosen["detection_rate"],
@@ -193,6 +195,7 @@ def main() -> int:
         "sweep": sweep,
         "config": config,
         "config_sha256": hashlib.sha256(args.config.read_bytes()).hexdigest(),
+        "provenance": calibration_provenance(config),
         "input_populations": session.encoder.population,
         "neurons": int(session.brain.n),
         "connections": int(len(session.brain.weights)),
@@ -210,7 +213,8 @@ def main() -> int:
                                       "median_latency_seconds", "false_trigger_ticks",
                                       "detection_target", "detection_target_met",
                                       "trials_per_condition", "tick_seconds", "no_loom", "loom",
-                                      "config_sha256", "input_populations", "versions")}
+                                      "config_sha256", "provenance", "measurement_conditions",
+                                      "neurons", "connections", "input_populations", "versions")}
     summary["no_loom"] = {k: v for k, v in record["no_loom"].items() if k != "trial_peaks"}
     summary["loom"] = {k: v for k, v in record["loom"].items() if k != "trial_peaks"}
     (ROOT / "results" / "game" / "calibration.json").write_text(

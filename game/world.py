@@ -114,6 +114,9 @@ class World:
         # a full strike can be observed without the fly dying part-way through.
         # Always True during play.
         self.collisions_enabled = True
+        # Calibration freezes position, heading and velocity, including wander.
+        # This flag persists across reset(), like collisions_enabled.
+        self.fly_motion_enabled = True
         self.reset(seed)
 
     # ---- lifecycle --------------------------------------------------------
@@ -172,14 +175,18 @@ class World:
         hit = False
         if self.fly.alive:
             self.stats.survival_seconds += dt
-            if action.escape:
+            if (self.fly_motion_enabled and action.escape and action.strength > 0.0
+                    and math.hypot(action.lateral, action.forward) > 0.0):
                 self._escape_seen_this_strike = True
         else:
             self.splat_elapsed += dt
         resolved = self._advance_phase(dt)
         self._move_swatter(dt)
         if self.fly.alive:
-            self._move_fly(dt, action)
+            if self.fly_motion_enabled:
+                self._move_fly(dt, action)
+            else:
+                self.fly.vx = self.fly.vy = 0.0
             hit = self._resolve_collision()
         # Each strike is scored exactly once. The kill lands on an ACTIVE tick
         # while the window closes on a later tick, so without this guard a
@@ -280,8 +287,8 @@ class World:
             iy = ry * action.lateral + hy * action.forward
             mag = math.hypot(ix, iy)
             if mag > 0.0:
-                fly.vx += self.escape_impulse * ix / mag
-                fly.vy += self.escape_impulse * iy / mag
+                fly.vx += self.escape_impulse * action.strength * ix / mag
+                fly.vy += self.escape_impulse * action.strength * iy / mag
 
         ax = self._wander[0] - self.damping * fly.vx
         ay = self._wander[1] - self.damping * fly.vy

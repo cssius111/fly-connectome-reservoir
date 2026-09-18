@@ -174,7 +174,7 @@ class App:
             self.tick_ms = 0.85 * self.tick_ms + 0.15 * (time.perf_counter() - t0) * 1000.0
             pending_strike = False
             action = self.session.fly_loop.last_action
-            if action.escape:
+            if action.escape and action.strength > 0.0:
                 self.escape_flash = 0.35
                 h = self.session.world.fly.heading
                 hx, hy = math.cos(h), math.sin(h)
@@ -305,51 +305,68 @@ class App:
         motor = self.session.fly_loop.last_motor
         drive = self.session.encoder.last_drive
         retina = self.session.last_retina
-        threshold = self.session.policy.threshold
-        panel_w, panel_h = 322, 250
+        diagnostics = self.session.policy_diagnostics
+        threshold = diagnostics.get("escape_threshold")
+        refractory = diagnostics.get("refractory_seconds")
+        theta = 0.0 if retina is None else retina.theta
+        theta_dot = 0.0 if retina is None else retina.theta_dot
+        azimuth = 0.0 if retina is None else retina.azimuth
+        lines = [f"retina theta {theta:5.2f} rad   d/dt {theta_dot:+6.2f}",
+                 f"azimuth {azimuth:+5.2f}"]
+        optional = []
+        if threshold is not None:
+            optional.append(f"threshold (sum) {threshold:4.2f}")
+        if refractory is not None:
+            optional.append(f"refractory {refractory:4.2f}s")
+        if optional:
+            lines.append("   ".join(optional))
+        lines.extend([f"brain {self.tick_ms:4.2f} ms/tick   fps {self.clock.get_fps():5.1f}",
+                      f"LC4 {self.session.encoder.population['threat']['used_per_side']}/side  "
+                      f"LPLC2 {self.session.encoder.population['loom']['used_per_side']}/side"])
+
+        # Reserve a right-aligned numeric column and derive height from all rows.
+        # The threshold refers to summed DNp01, not either individual side.
+        bar_count = 6 + int(threshold is not None)
+        panel_w = 380
+        panel_h = 34 + bar_count * 26 + 10 + len(lines) * 17 + 12
         px = int(self.world_w) - panel_w - 14
         py = 12
         panel = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
         panel.fill((10, 12, 16, 190))
         c.blit(panel, (px, py))
         pygame.draw.rect(c, (52, 58, 70), pygame.Rect(px, py, panel_w, panel_h), 1)
-        c.blit(self.font.render("MaleCNS connectome", True, INK), (px + 12, py + 8))
+        c.blit(self.font.render("MaleCNS-derived runtime", True, INK), (px + 12, py + 8))
 
         def bar(row, label, value, vmax, colour, marker=None):
             top = py + 34 + row * 26
             c.blit(self.font_small.render(label, True, DIM), (px + 12, top))
-            bx, bw = px + 132, 168
+            bx, bw = px + 132, panel_w - 132 - 70
             pygame.draw.rect(c, (34, 38, 46), pygame.Rect(bx, top + 2, bw, 12))
             frac = 0.0 if vmax <= 0 else max(0.0, min(1.0, value / vmax))
             pygame.draw.rect(c, colour, pygame.Rect(bx, top + 2, int(bw * frac), 12))
             if marker is not None and vmax > 0:
                 mx = bx + int(bw * max(0.0, min(1.0, marker / vmax)))
                 pygame.draw.line(c, (208, 64, 58), (mx, top), (mx, top + 15), 2)
-            c.blit(self.font_small.render(f"{value:5.2f}", True, INK), (bx + bw + 8, top))
+            number = self.font_small.render(f"{value:5.2f}", True, INK)
+            c.blit(number, number.get_rect(topright=(px + panel_w - 12, top)))
 
         cap = float(self.config["encoder"]["cap"])
-        dmax = max(2.0 * threshold, 1e-6)
+        left = 0.0 if motor is None else motor.dnp01_left
+        right = 0.0 if motor is None else motor.dnp01_right
+        dmax = max(2.0, left + right, 0.0 if threshold is None else 2.0 * threshold)
         bar(0, "LPLC2 loom L", drive.get("loomL", 0.0), cap, LOOM_COLOR)
         bar(1, "LPLC2 loom R", drive.get("loomR", 0.0), cap, LOOM_COLOR)
         bar(2, "LC4 threat L", drive.get("threatL", 0.0), cap, THREAT_COLOR)
         bar(3, "LC4 threat R", drive.get("threatR", 0.0), cap, THREAT_COLOR)
-        bar(4, "DNp01 left", 0.0 if motor is None else motor.dnp01_left, dmax,
-            ESCAPE_COLOR, marker=threshold)
-        bar(5, "DNp01 right", 0.0 if motor is None else motor.dnp01_right, dmax,
-            ESCAPE_COLOR, marker=threshold)
+        bar(4, "DNp01 left", left, dmax, ESCAPE_COLOR)
+        bar(5, "DNp01 right", right, dmax, ESCAPE_COLOR)
+        if threshold is not None:
+            bar(6, "DNp01 total", left + right, dmax, ESCAPE_COLOR, marker=threshold)
 
-        info_y = py + 34 + 6 * 26 + 6
-        theta = 0.0 if retina is None else retina.theta
-        theta_dot = 0.0 if retina is None else retina.theta_dot
-        azimuth = 0.0 if retina is None else retina.azimuth
-        refractory = self.session.policy.refractory_remaining * self.tick_seconds
-        lines = [f"retina  theta {theta:5.2f} rad   d/dt {theta_dot:+6.2f}",
-                 f"        azimuth {azimuth:+5.2f}   threshold {threshold:4.2f}",
-                 f"refractory {refractory:4.2f}s   brain {self.tick_ms:4.2f} ms/tick",
-                 f"fps {self.clock.get_fps():5.1f}   LC4 {self.session.encoder.population['threat']['used_per_side']}"
-                 f"/side  LPLC2 {self.session.encoder.population['loom']['used_per_side']}/side"]
+        info_y = py + 34 + bar_count * 26 + 10
         for i, line in enumerate(lines):
             c.blit(self.font_small.render(line, True, DIM), (px + 12, info_y + i * 17))
+
 
 
 def main(argv=None) -> int:

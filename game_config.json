@@ -63,7 +63,7 @@
     "virtual_distance": 100.0
   },
   "policy": {
-    "_comment": "escape_threshold MUST come from a recorded calibration run (tools/calibrate_escape.py); null means 'load from calibration_paths'.",
+    "_comment": "Keep escape_threshold null: load a provenance-matched record. Recalibrate with python tools/calibrate_escape.py --trials 28.",
     "escape_threshold": null,
     "calibration_paths": [
       "artifacts/game/calibration.json",

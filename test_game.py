@@ -12,7 +12,6 @@ it between runs.
 """
 from __future__ import annotations
 
-import hashlib
 import json
 import math
 import os
@@ -26,7 +25,7 @@ import numpy as np
 from game.action import Action, FixedEscapePolicy, MotorState
 from game.fly import ROOT, FlyLoop, build_brain
 from game.perception import Retina, RetinaProjector, RetinalEncoder
-from game.session import Session, load_config, resolve_escape_threshold
+from game.session import Session, calibration_provenance, load_config, resolve_escape_threshold
 from game.world import StrikePhase, World
 
 CONFIG = load_config(ROOT / "game_config.json")
@@ -221,10 +220,9 @@ class TestEscapeRequiresLoom(unittest.TestCase):
         """Retuning the config without recalibrating must not pass silently."""
         source = resolve_escape_threshold(CONFIG, ROOT)
         record = json.loads((ROOT / source.origin).read_text(encoding="utf-8"))
-        current = hashlib.sha256((ROOT / "game_config.json").read_bytes()).hexdigest()
-        self.assertEqual(record["config_sha256"], current,
-                         "game_config.json changed since calibration; "
-                         "re-run python tools/calibrate_escape.py")
+        self.assertEqual(record["provenance"], calibration_provenance(CONFIG),
+                         "game configuration or runtime changed since calibration; "
+                         "re-run python tools/calibrate_escape.py --trials 28")
 
 
 # --- 5. strike-window lethality -------------------------------------------
