@@ -3,3 +3,4 @@ numpy==2.4.6
 scipy==1.17.1
 numba==0.67.0
 matplotlib==3.11.2
+pygame==2.6.1

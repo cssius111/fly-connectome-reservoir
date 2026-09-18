@@ -1,0 +1,90 @@
+"""The digital fly: MaleCNS connectome + descending-neuron trace + policy.
+
+`FlyLoop.step` accepts a `Retina` and nothing else. It rejects any other type,
+including subclasses of `Retina`, so a caller cannot smuggle mouse or world
+state past the perceptual bottleneck by wrapping it in a lookalike.
+
+The brain itself is never modified: weights come straight from the MaleCNS
+graph, no plasticity, no training. Milestone 1 reads DNp01 (looming escape)
+and DNa02 (steering) out of `brain.groups` and hands them to an untrained
+threshold policy. The full descending-neuron trace is carried along in
+`MotorState` so a Milestone-2 trained policy needs no change here.
+"""
+from __future__ import annotations
+
+from pathlib import Path
+
+import numpy as np
+from flybrain import FlyBrain, Trace
+
+from .action import Action, MotorState, Policy
+from .perception import Retina, RetinalEncoder
+
+ROOT = Path(__file__).resolve().parent.parent
+
+# brain.groups entries this milestone reads.
+ESCAPE_GROUPS = ("escape_L", "escape_R")     # DNp01
+STEER_GROUPS = ("steer_L", "steer_R")        # DNa02
+
+
+def build_brain(config: dict, root: Path = ROOT, warmup: bool = True) -> FlyBrain:
+    """Construct the frozen connectome simulator from game_config.json."""
+    b = config["brain"]
+    brain = FlyBrain(data=root / b["data"], device=b["device"], seed=int(b["seed"]),
+                     dt=float(b["dt_seconds"]), sensory_input=bool(b["sensory_input"]),
+                     refractory=float(b["refractory_seconds"]))
+    for key in ("gain", "tonic", "noise_hz", "noise_amp"):
+        setattr(brain, key, float(b[key]))
+    if warmup:
+        brain.step()      # pay the numba JIT cost before anything is timed
+    return brain
+
+
+class FlyLoop:
+    """Retina in, motor Action out. Knows nothing about the mouse or the world."""
+
+    def __init__(self, brain: FlyBrain, encoder: RetinalEncoder, policy: Policy, config: dict):
+        self.brain = brain
+        self.encoder = encoder
+        self.policy = policy
+        tau = float(config["brain"]["trace_tau_seconds"])
+
+        for name in ESCAPE_GROUPS + STEER_GROUPS:
+            if name not in brain.groups:
+                raise RuntimeError(f"brain.groups is missing {name!r}; run `flybrain build`")
+        readout = np.union1d(brain.cells(["descending_neuron"]),
+                             np.concatenate([brain.groups[n] for n in ESCAPE_GROUPS + STEER_GROUPS]))
+        self.trace = Trace(brain, idx=readout, tau=tau)
+        self._escape_slots = [self.trace.slot[brain.groups[n]] for n in ESCAPE_GROUPS]
+        self._steer_slots = [self.trace.slot[brain.groups[n]] for n in STEER_GROUPS]
+        assert all((s >= 0).all() for s in self._escape_slots + self._steer_slots)
+        self.last_motor: MotorState | None = None
+        self.last_action: Action = Action()
+
+    def reset(self, seed: int) -> None:
+        self.brain.reset(seed)
+        self.trace.reset()
+        self.policy.reset()
+        self.last_motor = None
+        self.last_action = Action()
+
+    def step(self, retina: Retina) -> Action:
+        # Strict type check, not isinstance: a Retina subclass carrying extra
+        # fields would defeat the whole point of the bottleneck.
+        if type(retina) is not Retina:
+            raise TypeError(
+                f"FlyLoop.step accepts only a perception.Retina, got {type(retina).__name__}. "
+                "Raw world or mouse state must never reach the brain.")
+        inject = self.encoder.inject(retina)
+        fired = self.brain.step(inject=inject)
+        features = self.trace.observe(fired)
+        motor = MotorState(
+            dnp01_left=float(features[self._escape_slots[0]].sum()),
+            dnp01_right=float(features[self._escape_slots[1]].sum()),
+            dna02_left=float(features[self._steer_slots[0]].sum()),
+            dna02_right=float(features[self._steer_slots[1]].sum()),
+            trace=features)
+        action = self.policy.decide(motor)
+        self.last_motor = motor
+        self.last_action = action
+        return action

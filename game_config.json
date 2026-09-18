@@ -1,0 +1,75 @@
+{
+  "config_version": 1,
+  "_comment": "Fly-swatter game parameters. Separate from config.json, which stays frozen for the reservoir experiment.",
+  "sim": {
+    "tick_seconds": 0.02,
+    "seed": 20260917
+  },
+  "world": {
+    "width": 1280,
+    "height": 720,
+    "margin": 26,
+    "splat_seconds": 1.6
+  },
+  "swatter": {
+    "paddle_radius": 56.0,
+    "hover_height": 300.0,
+    "windup_height": 70.0,
+    "active_height": 12.0,
+    "edge_on_factor": 0.3,
+    "max_tracking_speed": 900.0,
+    "smoothing_tau": 0.07,
+    "windup_tracking_factor": 0.35,
+    "active_tracking_factor": 0.0,
+    "windup_seconds": 0.15,
+    "active_seconds": 0.08,
+    "cooldown_seconds": 0.32
+  },
+  "fly": {
+    "radius": 11.0,
+    "damping_per_second": 3.0,
+    "max_speed": 1000.0,
+    "escape_impulse": 880.0,
+    "escape_forward_bias": 0.35,
+    "turn_rate": 4.0,
+    "heading_tau": 0.12,
+    "heading_speed_threshold": 30.0,
+    "wander_speed": 42.0,
+    "wander_interval_seconds": 0.55,
+    "wall_push": 900.0
+  },
+  "brain": {
+    "data": "data",
+    "device": "cpu",
+    "seed": 64,
+    "dt_seconds": 0.02,
+    "sensory_input": false,
+    "refractory_seconds": 0.0,
+    "gain": 3.0,
+    "tonic": 0.14,
+    "noise_hz": 1.2,
+    "noise_amp": 0.22,
+    "trace_tau_seconds": 0.1
+  },
+  "encoder": {
+    "_comment": "LC4/LPLC2 populations are subsampled to min(left, right) using encoder_seed, matching PROTOCOL.md's balancing rule.",
+    "encoder_seed": 20260917,
+    "loom_gain": 10.0,
+    "loom_size": 0.0,
+    "cap": 0.8,
+    "threat_max": 0.8,
+    "threat_theta_reference": 0.8,
+    "threat_theta_dot_reference": 4.0,
+    "virtual_distance": 100.0
+  },
+  "policy": {
+    "_comment": "escape_threshold MUST come from a recorded calibration run (tools/calibrate_escape.py); null means 'load from calibration_paths'.",
+    "escape_threshold": null,
+    "calibration_paths": [
+      "artifacts/game/calibration.json",
+      "results/game/calibration.json"
+    ],
+    "refractory_seconds": 0.4,
+    "turn_gain": 0.8
+  }
+}

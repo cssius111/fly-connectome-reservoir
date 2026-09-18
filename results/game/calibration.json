@@ -1,0 +1,48 @@
+{
+  "created_utc": "2026-09-17T23:22:52Z",
+  "rule": "smallest sweep-grid value with zero false triggers across all no-loom ticks",
+  "escape_threshold": 1.45,
+  "detection_rate": 1.0,
+  "median_latency_seconds": 0.08,
+  "false_trigger_ticks": 0,
+  "detection_target": 0.9,
+  "detection_target_met": true,
+  "trials_per_condition": 28,
+  "tick_seconds": 0.02,
+  "no_loom": {
+    "ticks": 2520,
+    "mean": 0.07656511580779077,
+    "p99": 1.0000011847663084,
+    "max": 1.4493497014045715
+  },
+  "loom": {
+    "mean_peak": 3.3409303537218227,
+    "min_peak": 2.622739791870117,
+    "max_peak": 4.652338981628418
+  },
+  "config_sha256": "3ce0b0153dfdeb32fb2b271ba6e20ea401ff90e16202e4d7d39664410da4a60b",
+  "input_populations": {
+    "loom": {
+      "types": [
+        "LPLC2"
+      ],
+      "available_L": 94,
+      "available_R": 91,
+      "used_per_side": 91
+    },
+    "threat": {
+      "types": [
+        "LC4"
+      ],
+      "available_L": 71,
+      "available_R": 55,
+      "used_per_side": 55
+    }
+  },
+  "versions": {
+    "flybrain": "0.1.0",
+    "numpy": "2.4.6",
+    "scipy": "1.17.1",
+    "numba": "0.67.0"
+  }
+}
