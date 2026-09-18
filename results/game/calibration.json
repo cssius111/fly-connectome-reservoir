@@ -1,9 +1,9 @@
 {
-  "created_utc": "2026-09-18T16:28:27Z",
+  "created_utc": "2026-09-18T21:37:45Z",
   "rule": "smallest sweep-grid value with zero false triggers across all no-loom ticks",
   "escape_threshold": 1.45,
   "detection_rate": 1.0,
-  "median_latency_seconds": 0.08,
+  "median_latency_seconds": 0.06,
   "false_trigger_ticks": 0,
   "detection_target": 0.9,
   "detection_target_met": true,
@@ -11,21 +11,21 @@
   "tick_seconds": 0.02,
   "no_loom": {
     "ticks": 2520,
-    "mean": 0.08260499251899545,
-    "p99": 1.0000458478232503,
-    "max": 1.4493497014045715
+    "mean": 0.08753465546774793,
+    "p99": 1.0006099456580706,
+    "max": 1.4493297338485718
   },
   "loom": {
-    "mean_peak": 3.3326559545806567,
-    "min_peak": 2.622739791870117,
-    "max_peak": 4.652338981628418
+    "mean_peak": 3.805946049591707,
+    "min_peak": 2.734965000923694,
+    "max_peak": 4.85231913626194
   },
-  "config_sha256": "9787cdf81bcd72b1b260b434653572916b2eb205313184c7059a73633387b1ff",
+  "config_sha256": "846232763858ab4c36c0032c801cd6326bf2cf72ea28b63fd7fdcdcb6b10b28b",
   "provenance": {
     "schema_version": 2,
     "measurement_protocol": "fixed-fly-v2",
     "config_hash_format": "canonical-json-sort-keys-ascii-compact",
-    "game_config_sha256": "4bc6bf38991689eecbd2002bfb9a42a293fb6131f592c392a2e49a7c8b6fb2b3",
+    "game_config_sha256": "220c989ea8441f38e0c29ee57bb78933428f07ade21bee8859dde733319b5738",
     "flybrain_version": "0.1.0",
     "encoder_population_rule": "min-per-type-per-side-v1",
     "encoder_seed": 20260917,

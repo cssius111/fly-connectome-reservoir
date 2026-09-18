@@ -100,7 +100,9 @@ def build_policy(config: dict, root: Path = ROOT) -> tuple[FixedEscapePolicy, Th
                                refractory_seconds=float(p["refractory_seconds"]),
                                tick_seconds=float(config["sim"]["tick_seconds"]),
                                forward_bias=float(config["fly"]["escape_forward_bias"]),
-                               turn_gain=float(p["turn_gain"]))
+                               turn_gain=float(p["turn_gain"]),
+                               alert_threshold_fraction=float(p["alert_threshold_fraction"]),
+                               steering_tau_seconds=float(p["steering_tau_seconds"]))
     return policy, source
 
 
@@ -159,7 +161,7 @@ class Session:
         return self.world.stats
 
     @property
-    def policy_diagnostics(self) -> dict[str, float]:
+    def policy_diagnostics(self) -> dict[str, float | str]:
         """Optional display metadata; never part of policy decisions."""
         provider = getattr(self.policy, "diagnostics", None)
         return dict(provider()) if callable(provider) else {}

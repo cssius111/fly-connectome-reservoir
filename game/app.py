@@ -176,7 +176,7 @@ class App:
             action = self.session.fly_loop.last_action
             if action.escape and action.strength > 0.0:
                 self.escape_flash = 0.35
-                h = self.session.world.fly.heading
+                h = self._prev["heading"]
                 hx, hy = math.cos(h), math.sin(h)
                 self.escape_vector = (-hy * action.lateral + hx * action.forward,
                                       hx * action.lateral + hy * action.forward)
@@ -204,7 +204,8 @@ class App:
                          self.world_w - 2 * margin, self.world_h - 2 * margin), 1)
 
         self._draw_swatter(c, swat, height, face)
-        self._draw_fly(c, fly, now["heading"])
+        heading_delta = (now["heading"] - self._prev["heading"] + math.pi) % (2 * math.pi) - math.pi
+        self._draw_fly(c, fly, self._prev["heading"] + alpha * heading_delta)
         self._draw_hud(c)
         if self.paused:
             self._center_text(c, "PAUSED", "space / P to resume")
@@ -313,6 +314,12 @@ class App:
         azimuth = 0.0 if retina is None else retina.azimuth
         lines = [f"retina theta {theta:5.2f} rad   d/dt {theta_dot:+6.2f}",
                  f"azimuth {azimuth:+5.2f}"]
+        fly = self.session.world.fly
+        lines.append(f"cruise {self.session.world.baseline_speed:.0f}  speed {math.hypot(fly.vx, fly.vy):.0f} units/s")
+        if "behavior_state" in diagnostics:
+            lines.append(f"state {diagnostics['behavior_state']}")
+        if "escape_strength" in diagnostics:
+            lines.append(f"escape strength {diagnostics['escape_strength']:.2f}")
         optional = []
         if threshold is not None:
             optional.append(f"threshold (sum) {threshold:4.2f}")

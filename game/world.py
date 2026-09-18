@@ -105,9 +105,11 @@ class World:
         self.max_speed = float(f["max_speed"])
         self.escape_impulse = float(f["escape_impulse"])
         self.turn_rate = float(f["turn_rate"])
-        self.heading_tau = float(f["heading_tau"])
-        self.heading_speed_threshold = float(f["heading_speed_threshold"])
-        self.wander_speed = float(f["wander_speed"])
+        self.baseline_speed = float(f["baseline_speed"])
+        self.wander_turn_rate = float(f["wander_turn_rate"])
+        self.wander_turn_tau = float(f["wander_turn_tau_seconds"])
+        self.wall_lookahead = float(f["wall_lookahead"])
+        self.wall_turn_rate = float(f["wall_turn_rate"])
         self.wander_interval = float(f["wander_interval_seconds"])
         self.wall_push = float(f["wall_push"])
         # Measurement escape hatch: tools/calibrate_escape.py turns this off so
@@ -128,7 +130,8 @@ class World:
         self.fly = Fly(x=self.width * 0.5, y=self.height * 0.62, heading=0.0)
         self.stats = Stats()
         self.splat_elapsed = 0.0
-        self._wander = np.zeros(2)
+        self._wander_turn = 0.0
+        self._wander_target = 0.0
         self._wander_timer = 0.0
         self._escape_seen_this_strike = False
         self._strike_outcome_recorded = True
@@ -268,9 +271,9 @@ class World:
         sw.y += step_y
 
     def _resample_wander(self) -> None:
-        angle = float(self.rng.uniform(0.0, 2.0 * math.pi))
-        speed = float(self.rng.uniform(0.0, self.wander_speed))
-        self._wander = np.array([math.cos(angle) * speed, math.sin(angle) * speed])
+        # Tonic exploration changes angular velocity, never screen direction.
+        self._wander_target = float(self.rng.uniform(-self.wander_turn_rate,
+                                                     self.wander_turn_rate))
 
     def _move_fly(self, dt: float, action: Action) -> None:
         fly = self.fly
@@ -278,6 +281,8 @@ class World:
         if self._wander_timer >= self.wander_interval:
             self._wander_timer -= self.wander_interval
             self._resample_wander()
+        self._wander_turn += (self._wander_target - self._wander_turn) * (
+            1.0 - math.exp(-dt / self.wander_turn_tau))
 
         # Escape is an impulse on velocity, never a position jump.
         if action.escape:
@@ -290,8 +295,11 @@ class World:
                 fly.vx += self.escape_impulse * action.strength * ix / mag
                 fly.vy += self.escape_impulse * action.strength * iy / mag
 
-        ax = self._wander[0] - self.damping * fly.vx
-        ay = self._wander[1] - self.damping * fly.vy
+        # Tonic locomotion is game physics, NOT a connectome threat response.
+        # Damping relaxes velocity toward forward cruise, retaining inertia and
+        # lateral escape momentum. Threat steering arrives only via Action.
+        ax = self.damping * (self.baseline_speed * math.cos(fly.heading) - fly.vx)
+        ay = self.damping * (self.baseline_speed * math.sin(fly.heading) - fly.vy)
         lo_x, hi_x = self.margin, self.width - self.margin
         lo_y, hi_y = self.margin, self.height - self.margin
         if fly.x < lo_x:
@@ -321,11 +329,19 @@ class World:
             fly.y = min(max(fly.y, lo_y), hi_y)
             fly.vy *= -0.35
 
-        if speed > self.heading_speed_threshold:
-            desired = math.atan2(fly.vy, fly.vx)
-            delta = (desired - fly.heading + math.pi) % (2.0 * math.pi) - math.pi
-            fly.heading += delta * (1.0 - math.exp(-dt / self.heading_tau))
-        fly.heading = (fly.heading + action.turn * self.turn_rate * dt) % (2.0 * math.pi)
+        # Soft boundary steering is also game physics. It sees arena walls,
+        # never the swatter, and prevents cruise from parking against a wall.
+        look = self.wall_lookahead
+        away_x = max(0.0, 1.0 - (fly.x - lo_x) / look) - max(0.0, 1.0 - (hi_x - fly.x) / look)
+        away_y = max(0.0, 1.0 - (fly.y - lo_y) / look) - max(0.0, 1.0 - (hi_y - fly.y) / look)
+        wall_turn = 0.0
+        if away_x or away_y:
+            delta = (math.atan2(away_y, away_x) - fly.heading + math.pi) % (2 * math.pi) - math.pi
+            wall_turn = float(np.clip(delta, -1.0, 1.0)) * self.wall_turn_rate
+        # Do not overwrite heading from velocity: that used to erase steering
+        # at cruise speed and abruptly swivel the body after a lateral impulse.
+        fly.heading = (fly.heading + (action.turn * self.turn_rate + self._wander_turn
+                                     + wall_turn) * dt) % (2.0 * math.pi)
 
     def _resolve_collision(self) -> bool:
         """Lethal only inside the active strike window."""

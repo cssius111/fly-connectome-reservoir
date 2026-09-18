@@ -31,7 +31,7 @@ class BarePolicy:
 class TestActionStrength(unittest.TestCase):
     def delta(self, strength=1.0, lateral=1.0, forward=0.35, escape=True):
         cfg = copy.deepcopy(CONFIG)
-        cfg["fly"].update(wander_speed=0.0, damping_per_second=0.0, max_speed=10000.0)
+        cfg["fly"].update(baseline_speed=0.0, wander_turn_rate=0.0, damping_per_second=0.0, max_speed=10000.0)
         world = World(cfg, 19)
         world.fly.vx, world.fly.vy = 4.0, -3.0
         before = np.array([world.fly.vx, world.fly.vy])
@@ -76,7 +76,8 @@ class TestActionStrength(unittest.TestCase):
 
     def test_turn_is_independent_of_escape_strength(self):
         cfg = copy.deepcopy(CONFIG)
-        cfg["fly"]["wander_speed"] = 0.0
+        cfg["fly"]["wander_turn_rate"] = 0.0
+        cfg["fly"]["baseline_speed"] = 0.0
         world = World(cfg, 19)
         world.tick(0.02, Action(escape=True, lateral=1.0, strength=0.0, turn=0.5))
         self.assertAlmostEqual(world.fly.heading, 0.5 * cfg["fly"]["turn_rate"] * 0.02)
@@ -260,7 +261,8 @@ class TestOptionalPolicyHUD(unittest.TestCase):
         policy = FixedEscapePolicy(1.45, 0.4, 0.02)
         app = self.make_app(policy)
         diagnostics = app.session.policy_diagnostics
-        self.assertEqual(diagnostics, {"escape_threshold": 1.45, "refractory_seconds": 0.0})
+        self.assertEqual(diagnostics, {"escape_threshold": 1.45, "refractory_seconds": 0.0,
+                                       "behavior_state": "CALM", "escape_strength": 0.0})
         diagnostics["escape_threshold"] = 99
         self.assertEqual(app.session.policy_diagnostics["escape_threshold"], 1.45)
         app._draw()
