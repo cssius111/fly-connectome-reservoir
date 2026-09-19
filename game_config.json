@@ -1,5 +1,5 @@
 {
-  "config_version": 3,
+  "config_version": 4,
   "_comment": "Fly-swatter game parameters. Separate from config.json, which stays frozen for the reservoir experiment.",
   "sim": {
     "tick_seconds": 0.02,
@@ -33,13 +33,12 @@
     "escape_forward_bias": 0.35,
     "turn_rate": 4.0,
     "wander_interval_seconds": 1.6,
-    "wall_push": 900.0,
-    "baseline_speed": 85.0,
-    "wander_turn_rate": 0.24,
+    "baseline_speed": 160.0,
+    "wander_turn_rate": 0.08,
     "wander_turn_tau_seconds": 0.8,
-    "wall_lookahead": 110.0,
-    "wall_turn_rate": 2.4,
-    "max_yaw_rate": 6.0
+    "max_yaw_rate": 31.0,
+    "_comment": "body_length_px is the fly's drawn body length; it only defines the body-relative speed readout. Physics stays in px/s.",
+    "body_length_px": 24.0
   },
   "brain": {
     "data": "data",
@@ -81,15 +80,80 @@
     "alert_saccade_dwell_seconds": 0.06
   },
   "saccades": {
+    "_comment": "Turn actuator bounds. Duration is derived from a peak angular speed, so bigger turns take longer and no pulse exceeds peak_rate_cap.",
     "enabled": true,
-    "interval_min_seconds": 2.5,
-    "interval_max_seconds": 4.5,
-    "spontaneous_min_degrees": 16.0,
-    "spontaneous_max_degrees": 24.0,
-    "spontaneous_seconds": 0.3,
-    "alert_max_degrees": 30.0,
-    "alert_seconds": 0.26,
-    "escape_max_degrees": 60.0,
-    "escape_seconds": 0.3
+    "min_duration_seconds": 0.06,
+    "max_duration_seconds": 0.22,
+    "max_degrees": 120.0,
+    "peak_rate_cap_deg_per_second": 1500.0,
+    "alert_max_degrees": 55.0,
+    "alert_peak_rate_deg_per_second": 900.0,
+    "escape_max_degrees": 110.0,
+    "escape_peak_rate_deg_per_second": 1350.0
+  },
+  "flight": {
+    "_comment": "Category B: phenomenological free flight and boundary behaviour. Seeded, local, and independent of the connectome.",
+    "interval": {
+      "short_seconds": [
+        0.3,
+        0.7
+      ],
+      "ordinary_seconds": [
+        0.8,
+        1.9
+      ],
+      "long_seconds": [
+        2.6,
+        6.0
+      ],
+      "short_probability": 0.28,
+      "long_probability": 0.18,
+      "perimeter_multiplier": 1.7
+    },
+    "correction": {
+      "degrees": [
+        5.0,
+        18.0
+      ],
+      "peak_rate_deg_per_second": [
+        250.0,
+        600.0
+      ],
+      "probability": 0.42
+    },
+    "saccade": {
+      "degrees": [
+        25.0,
+        105.0
+      ],
+      "peak_rate_deg_per_second": [
+        700.0,
+        1400.0
+      ]
+    },
+    "boundary": {
+      "sense_range": 150.0,
+      "avoid_time_to_contact_seconds": 0.55,
+      "avoid_inward_degrees": 14.0,
+      "avoid_refractory_seconds": 0.2,
+      "avoid_peak_rate_deg_per_second": [
+        700.0,
+        1300.0
+      ],
+      "perimeter_enter_proximity": 0.45,
+      "perimeter_leave_proximity": 0.2,
+      "patience_seconds": [
+        1.2,
+        4.5
+      ],
+      "depart_degrees": [
+        40.0,
+        85.0
+      ],
+      "depart_peak_rate_deg_per_second": [
+        600.0,
+        1100.0
+      ]
+    }
   }
 }

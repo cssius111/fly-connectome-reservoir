@@ -21,7 +21,9 @@ from dataclasses import dataclass
 import numpy as np
 
 from .action import NO_ACTION, Action, MotionState
-from .saccade import Saccades
+from .enclosure import Enclosure, WallCue
+from .flight import FreeFlightController
+from .saccade import SaccadeActuator
 
 
 class StrikePhase(enum.Enum):
@@ -107,14 +109,22 @@ class World:
         self.escape_impulse = float(f["escape_impulse"])
         self.turn_rate = float(f["turn_rate"])
         self.max_yaw_rate = float(f["max_yaw_rate"])
-        self.saccades = Saccades(config["saccades"], seed)
+        self.body_length = float(f["body_length_px"])
+        if not (self.body_length > 0.0):
+            raise ValueError("fly.body_length_px must be positive")
         self.baseline_speed = float(f["baseline_speed"])
         self.wander_turn_rate = float(f["wander_turn_rate"])
         self.wander_turn_tau = float(f["wander_turn_tau_seconds"])
-        self.wall_lookahead = float(f["wall_lookahead"])
-        self.wall_turn_rate = float(f["wall_turn_rate"])
         self.wander_interval = float(f["wander_interval_seconds"])
-        self.wall_push = float(f["wall_push"])
+        sa = config["saccades"]
+        self.saccades = SaccadeActuator(sa)
+        self.alert_max_angle = math.radians(float(sa["alert_max_degrees"]))
+        self.alert_peak_rate = math.radians(float(sa["alert_peak_rate_deg_per_second"]))
+        self.escape_max_angle = math.radians(float(sa["escape_max_degrees"]))
+        self.escape_peak_rate = math.radians(float(sa["escape_peak_rate_deg_per_second"]))
+        self.enclosure = Enclosure(self.width, self.height, self.margin, self.fly_radius,
+                                   float(config["flight"]["boundary"]["sense_range"]))
+        self.flight = FreeFlightController(config["flight"], seed)
         # Measurement escape hatch: tools/calibrate_escape.py turns this off so
         # a full strike can be observed without the fly dying part-way through.
         # Always True during play.
@@ -127,12 +137,18 @@ class World:
     # ---- lifecycle --------------------------------------------------------
     def reset(self, seed: int) -> None:
         self.rng = np.random.default_rng(seed)
-        self.saccades.reset(seed)
+        self.saccades.reset()
+        self.flight.reset(seed)
         self.yaw_rate = 0.0
+        self.wall_cue = WallCue()
+        self.wall_contact = False
         self.swatter = Swatter(x=self.width * 0.5, y=self.height * 0.18,
                                target_x=self.width * 0.5, target_y=self.height * 0.18,
                                height=self.hover_height, face=0.0)
-        self.fly = Fly(x=self.width * 0.5, y=self.height * 0.62, heading=0.0)
+        # Airborne from the first frame: a fly does not accelerate from rest,
+        # and starting at cruise removes a visible start-up lurch.
+        self.fly = Fly(x=self.width * 0.5, y=self.height * 0.62, heading=0.0,
+                       vx=self.baseline_speed, vy=0.0)
         self.stats = Stats()
         self.splat_elapsed = 0.0
         self._wander_turn = 0.0
@@ -305,51 +321,67 @@ class World:
         # lateral escape momentum. Threat steering arrives only via Action.
         ax = self.damping * (self.baseline_speed * math.cos(fly.heading) - fly.vx)
         ay = self.damping * (self.baseline_speed * math.sin(fly.heading) - fly.vy)
-        lo_x, hi_x = self.margin, self.width - self.margin
-        lo_y, hi_y = self.margin, self.height - self.margin
-        if fly.x < lo_x:
-            ax += self.wall_push * (lo_x - fly.x) / self.margin
-        elif fly.x > hi_x:
-            ax -= self.wall_push * (fly.x - hi_x) / self.margin
-        if fly.y < lo_y:
-            ay += self.wall_push * (lo_y - fly.y) / self.margin
-        elif fly.y > hi_y:
-            ay -= self.wall_push * (fly.y - hi_y) / self.margin
-
         fly.vx += ax * dt
         fly.vy += ay * dt
         speed = math.hypot(fly.vx, fly.vy)
         if speed > self.max_speed:
             fly.vx *= self.max_speed / speed
             fly.vy *= self.max_speed / speed
-            speed = self.max_speed
         fly.x += fly.vx * dt
         fly.y += fly.vy * dt
 
-        # Hard containment: the fly can never leave the playable region.
-        if not (lo_x <= fly.x <= hi_x):
-            fly.x = min(max(fly.x, lo_x), hi_x)
-            fly.vx *= -0.35
-        if not (lo_y <= fly.y <= hi_y):
-            fly.y = min(max(fly.y, lo_y), hi_y)
-            fly.vy *= -0.35
+        # (D) Pure physics: the last-resort constraint, a slide rather than a
+        # bounce. Reaching it means boundary avoidance already failed.
+        self.wall_contact = self.enclosure.contain(fly)
+        # (A) Local sensory geometry: what the surrounding surfaces look like
+        # from the fly's own heading. No wall coordinates leave the enclosure.
+        self.wall_cue = self.enclosure.sense(fly.x, fly.y, fly.vx, fly.vy, fly.heading)
+        # (C) Threat turns, and only these, come from the connectome.
+        self._request_threat_pulse(action)
+        # (B) Free flight and boundary behaviour, driven by the local cue.
+        self.flight.update(dt, self.wall_cue, self.saccades,
+                           neural_active=self._neural_active(action))
 
-        # Soft boundary steering is also game physics. It sees arena walls,
-        # never the swatter, and prevents cruise from parking against a wall.
-        look = self.wall_lookahead
-        away_x = max(0.0, 1.0 - (fly.x - lo_x) / look) - max(0.0, 1.0 - (hi_x - fly.x) / look)
-        away_y = max(0.0, 1.0 - (fly.y - lo_y) / look) - max(0.0, 1.0 - (hi_y - fly.y) / look)
-        wall_turn = 0.0
-        if away_x or away_y:
-            delta = (math.atan2(away_y, away_x) - fly.heading + math.pi) % (2 * math.pi) - math.pi
-            wall_turn = float(np.clip(delta, -1.0, 1.0)) * self.wall_turn_rate
         # Do not overwrite heading from velocity: that used to erase steering
         # at cruise speed and abruptly swivel the body after a lateral impulse.
-        pulse = self.saccades.step(dt, action, near_wall=bool(away_x or away_y))
+        # The clip is an actuator safety bound; it sits above every pulse peak
+        # rate, so it never silently truncates a requested turn.
+        pulse = self.saccades.step(dt)
         self.yaw_rate = float(np.clip(action.turn * self.turn_rate + self._wander_turn
-                                     + wall_turn + pulse / dt,
-                                     -self.max_yaw_rate, self.max_yaw_rate))
+                                      + pulse / dt,
+                                      -self.max_yaw_rate, self.max_yaw_rate))
         fly.heading = (fly.heading + self.yaw_rate * dt) % (2.0 * math.pi)
+
+    @staticmethod
+    def _neural_active(action: Action) -> bool:
+        """True while the descending-neuron policy is steering the fly."""
+        return bool(action.escape or action.saccade or abs(action.turn) > 0.03)
+
+    def _request_threat_pulse(self, action: Action) -> None:
+        """Category C: the only route from the connectome to a rapid turn.
+
+        Amplitude and side come from the policy's reading of DNp01/DNa02.
+        Peak rates are fixed rather than sampled, so a threat response can
+        never be manufactured by the baseline RNG.
+        """
+        if not action.saccade:
+            return
+        if action.escape:
+            if action.strength > 0.0:
+                self.saccades.request("ESCAPE", self.escape_max_angle * action.saccade,
+                                      self.escape_peak_rate)
+        else:
+            self.saccades.request("ALERT", self.alert_max_angle * action.saccade,
+                                  self.alert_peak_rate)
+
+    # ---- body-relative scale ----------------------------------------------
+    @property
+    def cruise_body_lengths_per_second(self) -> float:
+        return self.baseline_speed / self.body_length
+
+    @property
+    def body_lengths_per_second(self) -> float:
+        return math.hypot(self.fly.vx, self.fly.vy) / self.body_length
 
     def motion_state(self) -> MotionState:
         """Whitelisted body-frame feedback, with no absolute pose or threat."""
