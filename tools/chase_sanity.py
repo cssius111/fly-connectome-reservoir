@@ -1,6 +1,6 @@
 """Scripted untrained BIO FLY chase diagnostics; human playtest remains the acceptance test.
 
-    python tools/chase_sanity.py --label m1-3
+    python tools/chase_sanity.py --label m1-4
 
 Four fixed seeds: fresh episode, one second tracking from 300 units above,
 then approach without clicking, click at 1.90 s, and observe the lethal window.
@@ -44,6 +44,7 @@ def chase(session: Session, seed: int) -> list[dict]:
                      "pointer": pointer, "phase": w.swatter.phase.value,
                      "alive": w.fly.alive, "hit": event.hit,
                      "position": [w.fly.x, w.fly.y], "heading": w.fly.heading,
+                     "yaw_rate": w.yaw_rate, "wall_contact": w.wall_contact,
                      "distance_moved": math.dist(previous, (w.fly.x, w.fly.y)),
                      "speed": math.hypot(w.fly.vx, w.fly.vy),
                      "theta": retina.theta, "theta_dot": retina.theta_dot,
@@ -69,12 +70,14 @@ def summarize(rows: list[dict], dt: float) -> dict:
             "pre_click_peak_dnp01": max(r["dnp01_left"] + r["dnp01_right"] for r in approach),
             "path_before_click": sum(r["distance_moved"] for r in rows[:CLICK_TICK]),
             "max_step_distance": max(r["distance_moved"] for r in rows),
+            "max_actual_yaw_rad_s": max(abs(r["yaw_rate"]) for r in rows),
+            "constraint_ticks": sum(r["wall_contact"] for r in rows),
             "hit": any(r["hit"] for r in rows)}
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--label", choices=("m1-2", "m1-3"), default="m1-3")
+    parser.add_argument("--label", choices=("m1-2", "m1-3", "m1-4"), default="m1-4")
     args = parser.parse_args()
     started = time.perf_counter()
     config = load_config()

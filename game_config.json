@@ -83,7 +83,7 @@
     "_comment": "Turn actuator bounds. Duration is derived from a peak angular speed, so bigger turns take longer and no pulse exceeds peak_rate_cap.",
     "enabled": true,
     "min_duration_seconds": 0.06,
-    "max_duration_seconds": 0.22,
+    "max_duration_seconds": 0.3,
     "max_degrees": 120.0,
     "peak_rate_cap_deg_per_second": 1500.0,
     "alert_max_degrees": 55.0,

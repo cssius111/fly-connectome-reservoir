@@ -1,5 +1,5 @@
 {
-  "created_utc": "2026-09-18T22:53:20Z",
+  "created_utc": "2026-09-19T03:34:03Z",
   "rule": "smallest sweep-grid value with zero false triggers across all no-loom ticks",
   "escape_threshold": 1.45,
   "detection_rate": 1.0,
@@ -20,12 +20,12 @@
     "min_peak": 2.734965000923694,
     "max_peak": 4.85231913626194
   },
-  "config_sha256": "c17f8a97b6caf88153c7ce27dccb7ebb2a6144d329eadf215cff39fd2054d9ff",
+  "config_sha256": "6d50e0c9c11582b6bb5ae6744f95fa163b206c4278a193eda3270c2ee3449c0e",
   "provenance": {
     "schema_version": 2,
     "measurement_protocol": "fixed-fly-v2",
     "config_hash_format": "canonical-json-sort-keys-ascii-compact",
-    "game_config_sha256": "c29e3b7d32461d039f089260624f6b9b422cd848020e2e870b64d399b712c49f",
+    "game_config_sha256": "3371686a01c42d14d55a6bcf4d558fdeb4050ffe936dca58399a186a4987f4ab",
     "flybrain_version": "0.1.0",
     "encoder_population_rule": "min-per-type-per-side-v1",
     "encoder_seed": 20260917,

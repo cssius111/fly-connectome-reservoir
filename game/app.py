@@ -80,7 +80,10 @@ class App:
         self.tick_seconds = float(config["sim"]["tick_seconds"])
         self.base_seed = int(config["sim"]["seed"])
 
-        pygame.init()
+        # Only the subsystems this game uses. pygame.init() also probes
+        # joysticks/audio on Windows and can stall every restart test.
+        pygame.display.init()
+        pygame.font.init()
         pygame.display.set_caption("MaleCNS fly-swatter")
         self.windowed_size = (int(self.world_w), int(self.world_h))
         self.fullscreen = False
@@ -258,8 +261,20 @@ class App:
         for y in range(0, int(self.world_h), 80):
             pygame.draw.line(c, GRID, (0, y), (self.world_w, y))
         margin = self.config["world"]["margin"]
-        pygame.draw.rect(c, (40, 44, 52), pygame.Rect(margin, margin,
-                         self.world_w - 2 * margin, self.world_h - 2 * margin), 1)
+        # A visible solid rim sits outside the same surfaces used by sensing
+        # and collision. No opening exists in this milestone.
+        wall = (53, 59, 70)
+        for rect in ((0, 0, self.world_w, margin),
+                     (0, self.world_h-margin, self.world_w, margin),
+                     (0, margin, margin, self.world_h-2*margin),
+                     (self.world_w-margin, margin, margin, self.world_h-2*margin)):
+            pygame.draw.rect(c, wall, pygame.Rect(rect))
+        pygame.draw.rect(c, (113, 122, 138), pygame.Rect(margin, margin,
+                         self.world_w - 2 * margin, self.world_h - 2 * margin), 2)
+        for x in range(int(margin)+40, int(self.world_w-margin), 80):
+            pygame.draw.line(c, (77, 85, 99), (x, 3), (x-12, margin-3), 2)
+            pygame.draw.line(c, (77, 85, 99), (x, self.world_h-margin+3),
+                             (x-12, self.world_h-3), 2)
 
         self._draw_swatter(c, swat, height, face)
         heading_delta = (now["heading"] - self._prev["heading"] + math.pi) % (2 * math.pi) - math.pi
@@ -314,6 +329,8 @@ class App:
                 pygame.draw.circle(c, (86, 28, 34), (int(x + dx), int(y + dy)), int(rad))
             pygame.draw.circle(c, (150, 44, 50), (int(x), int(y)), int(r * 0.8))
             return
+        # Longitudinal body polygon spans 3.3*r; collision radius is separate.
+        r = w.body_length / 3.3
         hx, hy = math.cos(heading), math.sin(heading)
         rx, ry = -hy, hx
         if self.escape_flash > 0.0:
@@ -373,7 +390,10 @@ class App:
         lines = [f"retina theta {theta:5.2f} rad   d/dt {theta_dot:+6.2f}",
                  f"azimuth {azimuth:+5.2f}"]
         fly = self.session.world.fly
-        lines.append(f"cruise {self.session.world.baseline_speed:.0f}  speed {math.hypot(fly.vx, fly.vy):.0f} units/s")
+        lines.append(f"cruise {self.session.world.baseline_speed:.0f}  speed {math.hypot(fly.vx, fly.vy):.0f} px/s")
+        w = self.session.world
+        lines.append(f"body {w.body_length:.0f}px  cruise {w.cruise_body_lengths_per_second:.2f} BL/s")
+        lines.append(f"wall {w.flight.diagnostics()['boundary_mode']}  near {w.wall_cue.proximity:.2f}")
         if "behavior_state" in diagnostics:
             lines.append(f"state {diagnostics['behavior_state']}")
         if "escape_strength" in diagnostics:

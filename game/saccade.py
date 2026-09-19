@@ -45,6 +45,10 @@ class SaccadeActuator:
             raise ValueError("saccade durations must be positive and ordered")
         if not (self.max_degrees > 0.0) or self.max_degrees >= 180.0:
             raise ValueError("max_degrees must be positive and below a half turn")
+        if not math.isfinite(self.peak_rate_cap) or self.peak_rate_cap <= 0:
+            raise ValueError("peak rate cap must be finite and positive")
+        if not math.isfinite(self.max_duration):
+            raise ValueError("duration must be finite")
         self.reset()
 
     def reset(self) -> None:
@@ -63,12 +67,22 @@ class SaccadeActuator:
     def duration_for(self, angle: float, peak_rate: float) -> float:
         """Half-sine peak rate is pi/2 times the mean, hence the pi/2 factor.
 
-        Clamped so a pulse never exceeds the actuator's angular-speed cap and
-        never collapses into a single-frame snap.
+        Infeasible requests raise without changing the active pulse. The
+        minimum duration prevents one-frame snaps, and the pulse never
+        exceeds the actuator angular-speed cap.
         """
-        peak = min(abs(float(peak_rate)), self.peak_rate_cap)
-        needed = abs(angle) * math.pi / (2.0 * max(peak, 1e-6))
-        return min(self.max_duration, max(self.min_duration, needed))
+        peak = min(float(peak_rate), self.peak_rate_cap)
+        if peak <= 0 or not math.isfinite(peak):
+            raise ValueError("peak rate must be positive and finite")
+        needed = abs(angle) * math.pi / (2.0 * peak)
+        if needed > self.max_duration:
+            raise ValueError("requested angle/rate cannot fit max_duration_seconds")
+        return max(self.min_duration, needed)
+
+    def can_request(self, kind: str) -> bool:
+        """Arbitration without sampling or mutating pulse state."""
+        return (self.enabled and kind in PRIORITY and kind != "NONE"
+                and PRIORITY[kind] > PRIORITY[self.kind])
 
     def request(self, kind: str, angle: float, peak_rate: float) -> bool:
         """Ask for a pulse. Returns True if it was started.
@@ -78,22 +92,23 @@ class SaccadeActuator:
         current heading, so heading stays continuous across the switch, but
         this is not an angular-inertia model.
         """
-        if not self.enabled or kind not in PRIORITY or kind == "NONE":
+        if not self.can_request(kind):
             return False
         if not math.isfinite(angle) or not math.isfinite(peak_rate):
             raise ValueError("saccade request must be finite")
-        if PRIORITY[kind] <= PRIORITY[self.kind]:
-            return False
         limit = math.radians(self.max_degrees)
         angle = max(-limit, min(limit, float(angle)))
         if angle == 0.0:
             return False
+        duration = self.duration_for(angle, peak_rate)
         self.kind, self.angle = kind, angle
-        self.duration, self.elapsed = self.duration_for(angle, peak_rate), 0.0
+        self.duration, self.elapsed = duration, 0.0
         return True
 
     def step(self, dt: float) -> float:
         """Advance the active pulse and return this tick's heading delta."""
+        if not math.isfinite(dt) or dt <= 0:
+            raise ValueError("dt must be positive and finite")
         self.last_delta = 0.0
         if not self.active:
             return 0.0

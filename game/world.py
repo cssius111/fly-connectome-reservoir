@@ -148,7 +148,7 @@ class World:
         # Airborne from the first frame: a fly does not accelerate from rest,
         # and starting at cruise removes a visible start-up lurch.
         self.fly = Fly(x=self.width * 0.5, y=self.height * 0.62, heading=0.0,
-                       vx=self.baseline_speed, vy=0.0)
+                       vx=self.baseline_speed if self.fly_motion_enabled else 0.0, vy=0.0)
         self.stats = Stats()
         self.splat_elapsed = 0.0
         self._wander_turn = 0.0
@@ -196,6 +196,8 @@ class World:
 
     # ---- update -----------------------------------------------------------
     def tick(self, dt: float, action: Action = NO_ACTION) -> TickEvents:
+        # Per-tick event, not a sticky state after death or calibration freeze.
+        self.wall_contact = False
         hit = False
         if self.fly.alive:
             self.stats.survival_seconds += dt
@@ -330,12 +332,12 @@ class World:
         fly.x += fly.vx * dt
         fly.y += fly.vy * dt
 
-        # (D) Pure physics: the last-resort constraint, a slide rather than a
-        # bounce. Reaching it means boundary avoidance already failed.
-        self.wall_contact = self.enclosure.contain(fly)
         # (A) Local sensory geometry: what the surrounding surfaces look like
         # from the fly's own heading. No wall coordinates leave the enclosure.
         self.wall_cue = self.enclosure.sense(fly.x, fly.y, fly.vx, fly.vy, fly.heading)
+        # (D) Last-resort constraint: slide, never bounce. Sense approach
+        # before this safety constraint removes outward speed.
+        self.wall_contact = self.enclosure.contain(fly)
         # (C) Threat turns, and only these, come from the connectome.
         self._request_threat_pulse(action)
         # (B) Free flight and boundary behaviour, driven by the local cue.
@@ -345,7 +347,8 @@ class World:
         # Do not overwrite heading from velocity: that used to erase steering
         # at cruise speed and abruptly swivel the body after a lateral impulse.
         # The clip is an actuator safety bound; it sits above every pulse peak
-        # rate, so it never silently truncates a requested turn.
+        # rate plus normal steering/drift under the shipped configuration.
+        # Custom excessive steering is clipped as a final safety constraint.
         pulse = self.saccades.step(dt)
         self.yaw_rate = float(np.clip(action.turn * self.turn_rate + self._wander_turn
                                       + pulse / dt,

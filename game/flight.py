@@ -69,6 +69,8 @@ class FreeFlightController:
         # the world's drift or the brain's noise.
         self.rng = np.random.default_rng(seed + 3907)
         self.perimeter_seconds = 0.0
+        self.near_wall = False
+        self.departing = False
         self.avoid_refractory = 0.0
         self.patience = self._uniform(self.patience_range)
         self.wall_side = 1.0 if self.rng.random() < 0.5 else -1.0
@@ -127,34 +129,46 @@ class FreeFlightController:
         swatter must not be stuck there forever. The actuator's own priorities
         still let an ESCAPE outrank an AVOID.
         """
+        if type(cue) is not WallCue:
+            raise TypeError("FreeFlightController accepts only WallCue")
+        if not math.isfinite(dt) or dt <= 0:
+            raise ValueError("dt must be finite and positive")
         self.avoid_refractory = max(0.0, self.avoid_refractory - dt)
-        if cue.proximity >= self.perimeter_enter:
-            if self.perimeter_seconds == 0.0:
-                self.patience = self._uniform(self.patience_range)
-            self.perimeter_seconds += dt
+        if cue.proximity >= self.perimeter_enter and not self.near_wall:
+            self.near_wall = True
+            self.patience = self._uniform(self.patience_range)
         elif cue.proximity <= self.perimeter_leave:
+            self.near_wall = self.departing = False
             self.perimeter_seconds = 0.0
-        near = self.perimeter_seconds > 0.0
-        self.wait -= dt
+        near = self.near_wall
+        if near:
+            self.perimeter_seconds += dt
+        # Gaps measure quiet eligible flight time *after* a pulse. An occupied
+        # actuator never causes frame-wise resampling of a rejected event.
+        if not actuator.active and not neural_active:
+            self.wait -= dt
 
         if (cue.expansion * self.avoid_ttc >= 1.0 and not cue.open_ahead
-                and self.avoid_refractory <= 0.0):
+                and abs(cue.contact_bearing) < math.pi / 2 + self.avoid_inward
+                and self.avoid_refractory <= 0.0 and actuator.can_request("AVOID")):
             if actuator.request("AVOID", self._avoid_angle(cue),
                                 math.radians(self._uniform(self.avoid_peak))):
-                self.avoid_refractory = self.avoid_refractory_seconds
+                self.avoid_refractory = actuator.duration + self.avoid_refractory_seconds
                 self.last_request = "AVOID"
                 return
 
-        if near and self.perimeter_seconds >= self.patience:
+        if (near and not self.departing and self.perimeter_seconds >= self.patience
+                and actuator.can_request("DEPART")):
             angle = math.radians(self._uniform(self.depart_degrees))
             if actuator.request("DEPART", angle * self._away_sign(cue.surface_bearing),
                                 math.radians(self._uniform(self.depart_peak))):
-                self.perimeter_seconds = 0.0
+                self.departing = True
                 self.wait = self._interval(near=False)
                 self.last_request = "DEPART"
                 return
 
-        if self.wait <= 0.0 and not neural_active:
+        if (self.wait <= 0.0 and not neural_active and not actuator.active
+                and not self.departing and actuator.enabled):
             self._spontaneous(cue, actuator, near)
 
     def _spontaneous(self, cue: WallCue, actuator, near: bool) -> None:
@@ -181,4 +195,5 @@ class FreeFlightController:
     def diagnostics(self) -> dict[str, float | str]:
         return {"requested": self.last_request,
                 "perimeter_seconds": self.perimeter_seconds,
+                "boundary_mode": "departing" if self.departing else "perimeter" if self.near_wall else "interior",
                 "next_turn_seconds": max(0.0, self.wait)}

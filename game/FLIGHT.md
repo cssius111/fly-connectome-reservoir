@@ -1,28 +1,126 @@
-# M1.3 untrained BIO FLY: flight and playtest notes
+# M1.4 untrained BIO FLY: local enclosure and flight
 
-M1.2 checkpoint: `85253f9abec36d01719fee548c4f7f7f869338e2`.
-No learning, reinforcement learning, or synaptic plasticity is implemented.
+Resumed from Claude's `182c5a9` checkpoint on `wip/m1-4-enclosure`, based on
+stable M1.3 `85f987b279dbd2b1f725fa79aa299281259258ab`. This is the validated M1.4 baseline, with no M2, training, RL or plasticity.
 
-## Biological motivation versus game conventions
+## Scientific scope
 
-Free-flight experiments describe straighter flight segments separated by rapid course changes ([Tammero & Dickinson, 2002](https://pubmed.ncbi.nlm.nih.gov/11854370/)). Looming can elicit visually directed evasive banked turns ([Muijres et al., 2014](https://pubmed.ncbi.nlm.nih.gov/24723606/)). These motivate the pattern, not the numeric parameters or this decoder. Neither study validates this MaleCNS-based decoder.
+The biological data are MaleCNS-derived connectivity and cell annotations.
+The game uses frozen LIF dynamics with modeling assumptions and a fixed
+DNp01/DNa02 decoder. With `sensory_input=false`, incoming sensory-neuron edges
+are removed: **25,088,107 runtime connections**, compared with **25,582,938
+connections in the original dataset**. The dataset and original reservoir
+experiment/results remain unchanged.
 
-This game is a 2D abstraction with a 20 ms neural tick. It does not simulate wings, roll, pitch, lift, halteres, photoreceptors, or full retinal images. No claim is made that DNp01/DNa02 naturally implement this actuator or that these numbers reproduce real flight. All angles, intervals, gains, and caps below are human-readable gameplay choices, deliberately modest/slower than many measured fly maneuvers.
+Free-flight observations motivate coherent segments interrupted by rapid
+course changes ([Tammero & Dickinson, 2002](https://pubmed.ncbi.nlm.nih.gov/11854370/));
+looming-evoked evasive flight motivates the threat response pattern
+([Muijres et al., 2014](https://pubmed.ncbi.nlm.nih.gov/24723606/)). These sources
+are not validations of this model or its decoder. Wall exploration and all
+numeric flight distributions below are phenomenological game choices, not
+extracted MaleCNS dynamics or fitted animal measurements.
 
-| Component | Source | Requested behavior |
-|---|---|---|
-| Cruise | Tonic game physics | 85 units/s forward target, damping 3/s, existing seeded drift and wall avoidance |
-| Spontaneous saccade | Independent seeded physics RNG | 16–24 degrees in 0.30 s; wait 2.5–4.5 s of calm, wall-clear time between pulses |
-| ALERT saccade | Sustained DNp01 gate and smoothed neural laterality | Up to 18 degrees in 0.26 s under the fixed policy; at least 0.06 s qualifying activity; request interval 0.8 s |
-| ESCAPE saccade | Calibrated DNp01 emergency gate | Up to 60 degrees in 0.30 s, scaled by neural laterality and escape strength; existing 0.4 s refractory retained |
-| Escape velocity impulse | Same neural policy | 880 × strength, with strength 0.5–1, before damping and speed cap |
-| Total yaw | Actuator safety bound | At most 6 rad/s, including continuous neural steering, drift, walls, and pulse |
+This is 2D, with a 20 ms tick and no wing mechanics, bank, roll, pitch, lift,
+photoreceptors or full retinal images. LC4/LPLC2 are stimulated directly.
+HUD bars show injection voltage, not measured cell firing.
 
-A half-sine angular-velocity profile integrates to each requested angle. There is no instantaneous heading assignment. Velocity retains inertia; heading and velocity need not align during a maneuver. Angle values describe the pulse component before total-yaw clipping, not the sum of pulse plus continuous steering. An emergency may interrupt a weaker pulse; an active emergency is not restarted every frame. Heading remains continuous at interruption, but this is not a full angular-inertia model. Walls suppress/cancel spontaneous pulses. Boundary containment and rebound remain game conventions.
+## Scale and turn actuator
 
-Neural laterality retains the M1.2 0.12 s smoothing. A contralateral noise spike cannot immediately flip the stored side estimate. DNa02 can modulate turn magnitude by at most 15%, not override the DNp01-derived sign. ALERT pulses require sustained activity; an isolated subthreshold noise spike cannot request one. Neural noise, latency, and ambiguity still mean an occasional imperfect response is possible.
+The drawn longitudinal body polygon is **24 px** before integer rasterization
+(wings excluded), independent of its approximate 11 px collision radius.
+Cruise target is **160 px/s = 6.667 body lengths/s**. The safety speed cap is
+**1,000 px/s = 41.667 body lengths/s**, not a cruising target. There is no
+px-to-mm physical calibration. Escape retains the 880 × strength velocity
+impulse, followed by damping and speed limiting.
 
-The chain remains world → Retina(theta, theta_dot, azimuth) → LC4/LPLC2 stimulation → MaleCNS-derived frozen runtime graph → descending activity → policy → physics. The runtime removes incoming sensory-neuron edges (`sensory_input=false`): 25,088,107 edges versus 25,582,938 in the original dataset. Tonic cruise, spontaneous saccades, and arena-wall handling do not originate in the connectome. Threat actions do. HUD LC4/LPLC2 bars show injection drive, not measured cell firing.
+| Request | Angle magnitude | Requested peak rate | Source |
+|---|---|---|---|
+| CORRECTION | uniform 5–18° | uniform 250–600°/s | seeded flight controller |
+| SACCADE | uniform 25–105° | uniform 700–1,400°/s | same controller |
+| AVOID | local bearing to tangent + 14° inward | uniform 700–1,300°/s | local time-to-contact proxy |
+| DEPART | uniform 40–85° away from surface | uniform 600–1,100°/s | perimeter residence |
+| ALERT | up to 55° × signed policy request | 900°/s | sustained descending activity |
+| ESCAPE | up to 110° × signed policy request | 1,350°/s | calibrated DNp01 emergency gate |
+
+A half-sine yaw pulse is integrated analytically:
+`delta(t) = angle * (1 - cos(pi*t/T)) / 2`.
+`T = max(0.06 s, abs(angle)*pi/(2*min(requested_peak, rate_cap)))`.
+Angle is capped at 120°, peak rate at 1,500°/s. A request requiring over
+0.30 s at its requested peak raises before changing actuator state; duration
+is never shortened to violate the rate. Minimum duration reduces the actual
+peak of small requests. Completion is quantized to the 20 ms tick, while the
+integrated pulse angle remains exact.
+
+Priority: ESCAPE > AVOID = ALERT > SACCADE = DEPART > CORRECTION. Equal or
+weaker requests cannot restart or interrupt an active pulse. Preemption
+preserves heading, not yaw acceleration; this is not angular inertia.
+Continuous neural steering and smooth drift add to pulse yaw. A final
+31 rad/s safety cap leaves headroom under the shipped bounds; custom excessive
+steering may be clipped. Translational velocity retains inertia, so broad
+turns may briefly slow flight. There is no heading teleport, direct rotation
+of the velocity vector or instantaneous 180° reversal.
+
+## Event timing
+
+Quiet eligible flight time after a pulse uses a seeded mixture:
+28% uniform 0.3–0.7 s; 54% uniform 0.8–1.9 s; 18% uniform 2.6–6.0 s.
+Near the perimeter, gaps are multiplied by 1.7 and spontaneous turns become
+small corrections. The clock pauses during active pulses or neural steering;
+rejected turns are not randomly resampled each frame. In open space,
+CORRECTION probability is 0.42; otherwise the event is SACCADE.
+World drift is a separate small angular target (±0.08 rad/s), drawn every
+1.6 s with 0.8 s smoothing. These RNG streams are independent of brain noise.
+
+## Four distinct mechanisms
+
+A. **Local sensory geometry**, `enclosure.py`: frozen/slotted `WallCue` has
+only `expansion` (inverse seconds), `contact_bearing` (body radians),
+`proximity` (0–1), `surface_bearing` (body radians) and `open_ahead` (boolean).
+The sensing horizon is 150 px. This is a direct geometry proxy, not wall
+vision through the connectome. No position, wall identifier, map, exit
+coordinate or waypoint is supplied to behavior.
+
+B. **Phenomenological exploration**, `flight.py`: estimated contact within
+0.55 s requests a tangent turn with 14° inward bias. The shorter turn preserves
+course; a head-on tie retains a seeded side. An already inward heading is not
+turned back toward the wall just because inertial velocity still points
+outward. Avoidance waits for the pulse duration plus 0.2 s before retriggering.
+Perimeter entry/leave uses proximity 0.45/0.2 hysteresis. After a seeded
+1.2–4.5 s residence, DEPART turns inward; ordinary corrections are suppressed
+until the fly leaves the zone, while safety avoidance remains available.
+This is local perimeter-following and departure, not attraction to a global
+destination. A boolean derived from Action pauses spontaneous turns during
+neural steering; no brain values or swatter state enter this controller.
+
+C. **Neural swatter response**: mouse/swatter → world geometry →
+`Retina(theta, theta_dot, azimuth)` → balanced LC4/LPLC2 stimulation → frozen
+MaleCNS-derived graph → descending activity → fixed policy → physics.
+DNp01, DNa02, CALM/ALERT/ESCAPE and 0.12 s laterality smoothing are preserved.
+DNa02 can modulate amplitude by 15%, but cannot reverse the DNp01 sign.
+
+D. **Hard containment**: a final body-radius-aware clamp cancels only outward
+velocity, retaining inward and tangential velocity. It does not bounce or set
+heading. The visible solid rim shares the sensing surfaces. A contact means
+predictive avoidance was insufficient, especially after large escape impulses
+or an initial placement very close to a corner. This is reported game physics.
+
+`Opening` reserves geometry for future gaps, but **no opening exists in the
+shipped world**. Tests cover body clearance, screen-top orientation, local
+visibility and solid-corner priority. There is no exit-seeking state or planner.
+
+## Validation and limitations
+
+Exact results are in [results/game/M1_4.md](../results/game/M1_4.md).
+Run `python tools/flight_sanity.py` for isolated locomotion and
+`python tools/chase_sanity.py --label m1-4` for neural pursuit. Full traces and
+screenshots stay in ignored `artifacts/m1-4/`; small summaries and a figure are
+in `results/game/`. Earlier M1.2/M1.3 chase summaries are preserved.
+
+Fixed scenarios demonstrate reproducibility and regression properties, not
+universal absence of wall contacts or optimized survival. Brief constraints
+and inertial slowdowns remain, especially during neural escape near walls.
+Difficulty, visibility of the smaller body, corner behavior under repeated
+strikes and fairness of trajectory leading need human playtesting.
 
 ## Policy boundary for a future comparison
 
@@ -54,7 +152,7 @@ nothing here touches perception, the connectome or the policy.
 
 Launch from the repository with `.\.venv\Scripts\python.exe -m game.app`. Use H for diagnostics; R starts the next reproducible episode seed. Fixed-seed replay is deterministic by design; course changes need not be predictable to a human who does not know the RNG state.
 
-1. **Minute 0–1: no interaction.** Leave the swatter far away. The fly should keep cruising, occasionally make a short course change, then settle into smooth flight. Watch for jitter, stalls, long high-speed runs, or wall oscillation. SPONTANEOUS does not mean the brain detected a threat.
+1. **Minute 0–1: no interaction.** Leave the swatter far away. The fly should keep cruising, occasionally make a short course change, then settle into smooth flight. Watch for jitter, stalls, long high-speed runs, or wall oscillation. CORRECTION / SACCADE / AVOID / DEPART are phenomenological, not brain-detected threats.
 2. **Minutes 1–3: approach without clicking.** Move toward it gradually, then more quickly. Watch theta_dot, descending traces, and CALM/ALERT/ESCAPE. Evasion should sometimes begin before clicking; rapid approach may itself trigger ESCAPE. Repeat from both body-relative sides; azimuth sign helps distinguish body-left/right from screen-left/right.
 3. **Minutes 3–5: strike and lead.** First try clicking at its current location, then aim slightly ahead. Both successful hits and misses should remain possible. Observe whether the wind-up creates a stronger response than a gentle approach. A good result requires anticipation without feeling impossible to follow.
 4. **Minutes 5–7: inspect direction after misses.** Watch heading and trajectory through recovery. Short turns should have a discernible direction and preserve momentum, not jump or reverse instantly. Look for wrong-way reactions, repeated alternating turns, or escape that feels unrelated to the approach.

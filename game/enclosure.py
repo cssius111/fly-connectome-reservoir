@@ -41,7 +41,7 @@ SIDES = (LEFT, RIGHT, TOP, BOTTOM)
 
 
 def wrap(angle: float) -> float:
-    """Signed angle in (-pi, pi]."""
+    """Signed angle in [-pi, pi)."""
     return (angle + math.pi) % TAU - math.pi
 
 
@@ -59,7 +59,7 @@ class Opening:
     def __post_init__(self) -> None:
         if self.side not in SIDES:
             raise ValueError(f"unknown wall side {self.side!r}")
-        if not math.isfinite(self.center) or not (self.half_width > 0.0):
+        if not math.isfinite(self.center) or not math.isfinite(self.half_width) or self.half_width <= 0:
             raise ValueError("opening needs a finite center and a positive half width")
 
     def spans(self, coordinate: float) -> bool:
@@ -87,6 +87,17 @@ class WallCue:
     surface_bearing: float = 0.0
     open_ahead: bool = False
 
+    def __post_init__(self) -> None:
+        if not all(math.isfinite(v) for v in (self.expansion, self.contact_bearing,
+                                              self.proximity, self.surface_bearing)):
+            raise ValueError("wall cues must be finite")
+        if self.expansion < 0 or not 0 <= self.proximity <= 1:
+            raise ValueError("invalid expansion/proximity")
+        if not all(-math.pi <= v <= math.pi for v in (self.contact_bearing, self.surface_bearing)):
+            raise ValueError("wall bearings must be in [-pi, pi]")
+        if type(self.open_ahead) is not bool:
+            raise TypeError("open_ahead must be bool")
+
 
 class Enclosure:
     """Rectangular box, optionally with gaps in its walls."""
@@ -100,7 +111,11 @@ class Enclosure:
         self.hi_y = float(height) - float(margin)
         self.body_radius = float(body_radius)
         self.sense_range = float(sense_range)
-        if self.hi_x <= self.lo_x or self.hi_y <= self.lo_y:
+        if not all(math.isfinite(v) for v in (width, height, margin, body_radius, sense_range)):
+            raise ValueError("enclosure dimensions must be finite")
+        if body_radius <= 0 or margin < 0:
+            raise ValueError("body radius must be positive and margin nonnegative")
+        if self.hi_x - self.lo_x <= 2 * body_radius or self.hi_y - self.lo_y <= 2 * body_radius:
             raise ValueError("enclosure margin leaves no playable region")
         if not (self.sense_range > 0.0):
             raise ValueError("sense_range must be positive")
@@ -112,17 +127,22 @@ class Enclosure:
         r = self.body_radius
         return ((LEFT, x - self.lo_x - r, (-1.0, 0.0), y),
                 (RIGHT, self.hi_x - x - r, (1.0, 0.0), y),
-                (BOTTOM, y - self.lo_y - r, (0.0, -1.0), x),
-                (TOP, self.hi_y - y - r, (0.0, 1.0), x))
+                (TOP, y - self.lo_y - r, (0.0, -1.0), x),
+                (BOTTOM, self.hi_y - y - r, (0.0, 1.0), x))
 
     def _is_open(self, side: str, coordinate: float) -> bool:
-        return any(o.side == side and o.spans(coordinate) for o in self.openings)
+        return any(o.side == side and abs(coordinate - o.center) + self.body_radius <= o.half_width
+                   for o in self.openings)
 
     # ---- category A: local sensory geometry -------------------------------
     def sense(self, x: float, y: float, vx: float, vy: float, heading: float) -> WallCue:
-        best_expansion, contact_bearing, open_ahead = 0.0, 0.0, False
+        best_expansion, contact_bearing = 0.0, 0.0
         best_proximity, surface_bearing = 0.0, 0.0
+        gap_on_path = False
         for side, clearance, (nx, ny), along in self._walls(x, y):
+            # A distant opening cannot be discovered from across the box.
+            if clearance > self.sense_range:
+                continue
             bearing = wrap(math.atan2(ny, nx) - heading)
             if not self._is_open(side, along):
                 proximity = max(0.0, min(1.0, 1.0 - clearance / self.sense_range))
@@ -132,19 +152,17 @@ class Enclosure:
             if closing <= _EPS:
                 continue
             ttc = max(0.0, clearance) / closing
-            expansion = 1.0 / max(ttc, _EPS)
-            if expansion <= best_expansion:
-                continue
-            # Where the current flight path would meet this wall. If that
-            # point is a gap the surface does not loom; the fly perceives an
-            # opening in front of it, never the location of one.
             crossing = (y + vy * ttc) if nx else (x + vx * ttc)
-            if self._is_open(side, crossing):
-                open_ahead = True
+            if (math.hypot(max(0.0, clearance), crossing - along) <= self.sense_range
+                    and self._is_open(side, crossing)):
+                gap_on_path = True
                 continue
-            best_expansion, contact_bearing, open_ahead = expansion, bearing, False
+            expansion = 1.0 / max(ttc, _EPS)
+            if expansion > best_expansion:
+                best_expansion, contact_bearing = expansion, bearing
+        # A gap on one surface must not suppress a solid corner collision.
         return WallCue(best_expansion, contact_bearing, best_proximity,
-                       surface_bearing, open_ahead)
+                       surface_bearing, gap_on_path and best_expansion == 0.0)
 
     # ---- category D: pure physics -----------------------------------------
     def contain(self, fly) -> bool:
@@ -156,16 +174,18 @@ class Enclosure:
         a fly crossing one is not clamped.
         """
         acted = False
-        if fly.x < self.lo_x or fly.x > self.hi_x:
-            side = LEFT if fly.x < self.lo_x else RIGHT
+        r = self.body_radius
+        lx, hx, ly, hy = self.lo_x + r, self.hi_x - r, self.lo_y + r, self.hi_y - r
+        if fly.x < lx or fly.x > hx:
+            side = LEFT if fly.x < lx else RIGHT
             if not self._is_open(side, fly.y):
-                fly.x = min(max(fly.x, self.lo_x), self.hi_x)
-                fly.vx = 0.0
+                fly.x = min(max(fly.x, lx), hx)
+                fly.vx = max(0.0, fly.vx) if side == LEFT else min(0.0, fly.vx)
                 acted = True
-        if fly.y < self.lo_y or fly.y > self.hi_y:
-            side = BOTTOM if fly.y < self.lo_y else TOP
+        if fly.y < ly or fly.y > hy:
+            side = TOP if fly.y < ly else BOTTOM
             if not self._is_open(side, fly.x):
-                fly.y = min(max(fly.y, self.lo_y), self.hi_y)
-                fly.vy = 0.0
+                fly.y = min(max(fly.y, ly), hy)
+                fly.vy = max(0.0, fly.vy) if side == TOP else min(0.0, fly.vy)
                 acted = True
         return acted

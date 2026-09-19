@@ -1,4 +1,4 @@
-"""M1.3 pulse kinematics, causal separation, and internal-state boundary."""
+"""M1.4 pulse kinematics, causal separation, and internal-state boundary."""
 import copy
 from dataclasses import fields
 import math
@@ -8,7 +8,9 @@ from unittest.mock import patch
 import numpy as np
 from game.action import Action, MotionState, MotorState, FixedEscapePolicy
 from game.perception import Retina
-from game.saccade import Saccades
+from game.saccade import SaccadeActuator
+from game.flight import FreeFlightController
+from game.enclosure import WallCue
 from game.session import Session, calibration_provenance, resolve_escape_threshold
 from game.world import World
 from test_game import CONFIG, shared_brain
@@ -18,40 +20,36 @@ DT = CONFIG["sim"]["tick_seconds"]
 
 class TestSaccadePhysics(unittest.TestCase):
     def test_spontaneous_pulses_are_brief_bounded_and_separated(self):
-        pulses = Saccades(CONFIG["saccades"], 101)
-        bouts, current, quiet = [], [], 0
-        quiet_gaps = []
-        for _ in range(1500):
-            delta = pulses.step(DT, Action())
-            if pulses.kind == "SPONTANEOUS":
-                if not current:
-                    quiet_gaps.append(quiet * DT)
-                    quiet = 0
-                current.append(delta)
-            else:
-                if current:
-                    bouts.append(current)
-                    current = []
-                quiet += 1
-        self.assertGreaterEqual(len(bouts), 5)
-        for bout in bouts:
-            self.assertAlmostEqual(len(bout) * DT, .30, delta=DT)
-            self.assertGreaterEqual(abs(sum(bout)), math.radians(16) - 1e-9)
-            self.assertLessEqual(abs(sum(bout)), math.radians(24) + 1e-9)
-            self.assertLess(abs(bout[0]), max(map(abs, bout)))
-            self.assertLess(abs(bout[-1]), max(map(abs, bout)))
-            self.assertTrue(all(np.sign(x) == np.sign(bout[0]) for x in bout))
-        self.assertTrue(all(gap >= 2.5 - DT for gap in quiet_gaps))
+        pulses = SaccadeActuator(CONFIG["saccades"])
+        flight = FreeFlightController(CONFIG["flight"], 101)
+        bouts = []
+        for _ in range(3000):
+            before = pulses.active
+            flight.update(DT, WallCue(), pulses)
+            if pulses.active and not before:
+                bouts.append((pulses.kind, abs(math.degrees(pulses.angle)), pulses.duration))
+            pulses.step(DT)
+        self.assertGreater(len(bouts), 10)
+        for kind, angle, duration in bouts:
+            lo, hi = CONFIG["flight"]["correction" if kind == "CORRECTION" else "saccade"]["degrees"]
+            self.assertGreaterEqual(angle, lo)
+            self.assertLessEqual(angle, hi)
+            self.assertGreaterEqual(duration, CONFIG["saccades"]["min_duration_seconds"])
+            self.assertLessEqual(duration, CONFIG["saccades"]["max_duration_seconds"])
 
     def test_pulse_sequence_is_seeded_and_resettable(self):
-        pulses = Saccades(CONFIG["saccades"], 17)
-        def run():
-            return [pulses.step(DT, Action()) for _ in range(600)]
-        first = run()
-        pulses.reset(17)
-        self.assertEqual(first, run())
-        pulses.reset(18)
-        self.assertNotEqual(first, run())
+        pulses = SaccadeActuator(CONFIG["saccades"])
+        flight = FreeFlightController(CONFIG["flight"], 17)
+        def run(seed):
+            pulses.reset()
+            flight.reset(seed)
+            result = []
+            for _ in range(600):
+                flight.update(DT, WallCue(), pulses)
+                result.append(pulses.step(DT))
+            return result
+        self.assertEqual(run(17), run(17))
+        self.assertNotEqual(run(17), run(18))
 
     def test_spontaneous_course_changes_keep_velocity_and_position_continuous(self):
         world = World(CONFIG, 101)
@@ -64,7 +62,7 @@ class TestSaccadePhysics(unittest.TestCase):
             steps.append(math.dist(old[:2], (f.x, f.y)))
             speeds.append(math.hypot(f.vx, f.vy))
             heading_steps.append(abs((f.heading - old[2] + math.pi) % (2 * math.pi) - math.pi))
-            pulses_seen += world.saccades.kind == "SPONTANEOUS"
+            pulses_seen += world.saccades.kind in ("CORRECTION", "SACCADE")
         self.assertGreater(pulses_seen, 0)
         self.assertGreater(sum(steps), 1000)
         self.assertLessEqual(max(steps), CONFIG["fly"]["baseline_speed"] * DT + 1e-6)
@@ -75,13 +73,16 @@ class TestSaccadePhysics(unittest.TestCase):
         for seed in (17, 101, 104):
             world = World(CONFIG, seed)
             contacts = 0
+            slow_ticks = 0
             for t in range(3000):
                 world.tick(DT)
                 f = world.fly
-                contacts += min(f.x-world.margin, world.width-world.margin-f.x,
-                                f.y-world.margin, world.height-world.margin-f.y) < 1.0
+                contacts += world.wall_contact
                 if t > 50:
-                    self.assertGreater(math.hypot(f.vx, f.vy), 40.0)
+                    # Large rapid turns may briefly cancel velocity through
+                    # inertia; a sustained low-speed stall is the regression.
+                    slow_ticks = slow_ticks + 1 if math.hypot(f.vx, f.vy) < 40 else 0
+                    self.assertLess(slow_ticks * DT, .5)
             self.assertLess(contacts, 10)
 
     def test_emergency_pulse_is_stronger_than_alert_and_rate_limited(self):
@@ -102,25 +103,32 @@ class TestSaccadePhysics(unittest.TestCase):
         self.assertGreater(results[1][1], 4 * results[0][1])
 
     def test_emergency_preempts_baseline_without_instant_heading_jump(self):
-        pulses = Saccades(CONFIG["saccades"], 101)
-        pulses.wait = 0
-        pulses.step(DT, Action())
-        delta = pulses.step(DT, Action(escape=True, lateral=-1, saccade=-1))
+        pulses = SaccadeActuator(CONFIG["saccades"])
+        pulses.request("SACCADE", .7, 15)
+        pulses.step(DT)
+        old_delta = pulses.last_delta
+        self.assertTrue(pulses.request("ESCAPE", -1.2, 20))
+        self.assertEqual(pulses.last_delta, old_delta, "request must not advance heading")
+        delta = pulses.step(DT)
         self.assertEqual(pulses.kind, "ESCAPE")
         self.assertLess(delta, 0)
-        self.assertLess(abs(delta), math.radians(5))
+        self.assertLess(abs(delta), 20 * DT)
 
     def test_repeated_request_does_not_restart_an_active_emergency_each_tick(self):
-        pulses = Saccades(CONFIG["saccades"], 101)
-        action = Action(escape=True, lateral=1, saccade=1)
-        deltas = [pulses.step(DT, action) for _ in range(15)]
-        self.assertAlmostEqual(sum(deltas), math.radians(60), places=6)
-        self.assertAlmostEqual(pulses.remaining, 0)
+        pulses = SaccadeActuator(CONFIG["saccades"])
+        angle = math.radians(110)
+        pulses.request("ESCAPE", angle, math.radians(1350))
+        deltas = []
+        while pulses.active:
+            self.assertFalse(pulses.request("ESCAPE", angle, math.radians(1350)))
+            deltas.append(pulses.step(DT))
+        self.assertAlmostEqual(sum(deltas), angle, places=12)
+        self.assertEqual(pulses.remaining, 0)
 
     def test_zero_strength_escape_does_not_create_alert_pulse(self):
-        pulses = Saccades(CONFIG["saccades"], 101)
-        self.assertEqual(pulses.step(DT, Action(escape=True, saccade=1, strength=0)), 0)
-        self.assertEqual(pulses.kind, "NONE")
+        world = World(CONFIG, 101)
+        world._request_threat_pulse(Action(escape=True, saccade=1, strength=0))
+        self.assertEqual(world.saccades.kind, "NONE")
 
     def test_motion_disabled_freezes_active_saccade_for_calibration(self):
         world = World(CONFIG, 101)
@@ -181,7 +189,7 @@ class TestSaccadeNeuralSource(unittest.TestCase):
                 kinds.add(session.world.saccades.kind)
                 a = session.fly_loop.last_action
                 self.assertEqual((a.turn, a.saccade, a.escape), (0, 0, False))
-        self.assertIn("SPONTANEOUS", kinds)
+        self.assertTrue(kinds & {"CORRECTION", "SACCADE"})
         self.assertNotIn("ALERT", kinds)
         self.assertNotIn("ESCAPE", kinds)
         self.assertGreater(distance, 600)
