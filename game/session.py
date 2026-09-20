@@ -32,6 +32,9 @@ from .action import Action, FixedEscapePolicy, Policy
 from .fly import ROOT, FlyLoop, build_brain
 from .perception import LOOM_TYPES, THREAT_TYPES, Retina, RetinaProjector, RetinalEncoder
 from .world import TickEvents, World
+from .modes import resolve_mode
+from .room import EcologicalProjector
+from .ecology import EcologicalController, ThreatState
 
 CONFIG_PATH = ROOT / "game_config.json"
 
@@ -116,8 +119,10 @@ class Session:
     """One playable run. Deterministic for a fixed seed and input sequence."""
 
     def __init__(self, config: dict, brain=None, policy: Policy | None = None,
-                 root: Path = ROOT, seed: int | None = None):
+                 root: Path = ROOT, seed: int | None = None, mode: str = "lab", recorder=None, ecology_enabled: bool | None = None):
         self.config = config
+        self.mode = resolve_mode(mode)
+        self.recorder = recorder
         self.root = root
         self.tick_seconds = float(config["sim"]["tick_seconds"])
         self.seed = int(config["sim"]["seed"] if seed is None else seed)
@@ -136,20 +141,36 @@ class Session:
         self.fly_loop = FlyLoop(self.brain, self.encoder, policy, config)
         self.projector = RetinaProjector(self.tick_seconds)
         self.world = World(config, self.seed)
+        enabled = config.get("ecology", {}).get("enabled", False) if ecology_enabled is None else ecology_enabled
+        self.ecology = EcologicalController(config["ecology"],self.seed) if enabled and self.world.room is not None else None
+        self.ecological_projector = EcologicalProjector(config["room"]["sensing"]) if self.ecology is not None else None
+        self.last_ecological_sense = None
         self.last_retina: Retina | None = None
         self.ticks = 0
         self.reset(self.seed)
 
     def reset(self, seed: int | None = None) -> None:
+        if self.recorder is not None and self.recorder.active:
+            self.recorder.finish(self, "restart")
         if seed is not None:
             self.seed = int(seed)
         self.world.reset(self.seed)
         self.projector.reset()
+        self.last_ecological_sense = None
+        if self.ecology is not None:
+            self.ecology.reset(self.seed)
+            self.ecological_projector.reset()
         # Offset so the neuronal noise stream is not the same stream as the
         # world's wander stream.
         self.fly_loop.reset(self.seed + 977)
         self.last_retina = None
         self.ticks = 0
+        if self.recorder is not None:
+            self.recorder.start(self)
+
+    def close(self):
+        if self.recorder is not None:
+            self.recorder.close(self)
 
     def tick(self, pointer: tuple[float, float] | None = None, strike: bool = False) -> TickEvents:
         if pointer is not None:
@@ -157,10 +178,22 @@ class Session:
         started = self.world.request_strike() if strike else False
         retina = self.projector.project(self.world)
         self.last_retina = retina
+        before_state = self.policy_diagnostics.get("behavior_state", "UNSPECIFIED")
         action = self.fly_loop.step(retina, self.world.motion_state()) if self.world.fly.alive else Action()
+        self.world.ecological_command = None
+        if self.ecology is not None and self.world.fly_motion_enabled and self.world.fly.alive:
+            self.last_ecological_sense = self.ecological_projector.project(self.world.room,self.world.fly,self.world.time_seconds,self.tick_seconds)
+            neural_state = self.policy_diagnostics.get("behavior_state", "CALM")
+            threat = (ThreatState.ESCAPE if action.escape or neural_state=="ESCAPE" or self.world.saccades.kind=="ESCAPE"
+                      else ThreatState.ALERT if neural_state=="ALERT" or action.saccade or self.world.saccades.kind=="ALERT"
+                      else ThreatState.CALM)
+            self.world.ecological_command = self.ecology.step(self.last_ecological_sense,threat,self.tick_seconds)
         events = self.world.tick(self.tick_seconds, action)
         self.ticks += 1
-        return TickEvents(started, events.strike_resolved, events.hit, events.escaped)
+        result = TickEvents(started, events.strike_resolved, events.hit, events.escaped)
+        if self.recorder is not None:
+            self.recorder.capture(self, result, before_state)
+        return result
 
     @property
     def stats(self):

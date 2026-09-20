@@ -119,7 +119,8 @@ class FreeFlightController:
         return delta
 
     # ---- main entry point -------------------------------------------------
-    def update(self, dt: float, cue: WallCue, actuator, neural_active: bool = False) -> None:
+    def update(self, dt: float, cue: WallCue, actuator, neural_active: bool = False,
+               spontaneous_clock_rate: float = 1.0) -> None:
         """Advance the clock and, at most, request one pulse.
 
         `neural_active` means the connectome-driven policy is currently
@@ -133,6 +134,8 @@ class FreeFlightController:
             raise TypeError("FreeFlightController accepts only WallCue")
         if not math.isfinite(dt) or dt <= 0:
             raise ValueError("dt must be finite and positive")
+        if not math.isfinite(spontaneous_clock_rate) or not 0 <= spontaneous_clock_rate <= 2:
+            raise ValueError("spontaneous clock rate must be in [0,2]")
         self.avoid_refractory = max(0.0, self.avoid_refractory - dt)
         if cue.proximity >= self.perimeter_enter and not self.near_wall:
             self.near_wall = True
@@ -146,7 +149,7 @@ class FreeFlightController:
         # Gaps measure quiet eligible flight time *after* a pulse. An occupied
         # actuator never causes frame-wise resampling of a rejected event.
         if not actuator.active and not neural_active:
-            self.wait -= dt
+            self.wait -= dt * spontaneous_clock_rate
 
         if (cue.expansion * self.avoid_ttc >= 1.0 and not cue.open_ahead
                 and abs(cue.contact_bearing) < math.pi / 2 + self.avoid_inward

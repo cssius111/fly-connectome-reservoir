@@ -126,6 +126,12 @@ class RetinalEncoder:
             self.population[channel] = {"types": list(types), "available_L": len(pools[0]),
                                         "available_R": len(pools[1]), "used_per_side": n}
 
+    def sensory_spikes(self, fired) -> dict:
+        """Analysis-only spike counts, distinct from injection-drive voltage."""
+        return {label+suffix: int(np.isin(fired, self._fd.cells[channel][side]).sum())
+                for channel,label in (("threat","LC4"),("loom","LPLC2"))
+                for side,suffix in (("L","_left"),("R","_right"))}
+
     def threat_level(self, retina: Retina) -> float:
         """LC4 drive: fast looming *at close range*, so the product of a size
         term and an expansion term. Derived from the retina alone -- the strike

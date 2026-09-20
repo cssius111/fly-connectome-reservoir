@@ -98,6 +98,12 @@ def main() -> int:
 
     config = load_config(args.config)
     tick = float(config["sim"]["tick_seconds"])
+    paths = config["policy"]["calibration_paths"]
+    if len(paths) != 2 or paths[0] == paths[1]:
+        raise ValueError("calibration requires distinct full-record and summary paths")
+    full_path, summary_path = (ROOT / name for name in paths)
+    full_path.parent.mkdir(parents=True, exist_ok=True)
+    summary_path.parent.mkdir(parents=True, exist_ok=True)
     started = time.perf_counter()
     policy = RecordingPolicy()
     session = Session(config, policy=policy, root=ROOT)
@@ -207,7 +213,7 @@ def main() -> int:
 
     (ROOT / "artifacts" / "game").mkdir(parents=True, exist_ok=True)
     (ROOT / "results" / "game").mkdir(parents=True, exist_ok=True)
-    (ROOT / "artifacts" / "game" / "calibration.json").write_text(
+    full_path.write_text(
         json.dumps(record, indent=2), encoding="utf-8")
     summary = {k: record[k] for k in ("created_utc", "rule", "escape_threshold", "detection_rate",
                                       "median_latency_seconds", "false_trigger_ticks",
@@ -217,9 +223,9 @@ def main() -> int:
                                       "neurons", "connections", "input_populations", "versions")}
     summary["no_loom"] = {k: v for k, v in record["no_loom"].items() if k != "trial_peaks"}
     summary["loom"] = {k: v for k, v in record["loom"].items() if k != "trial_peaks"}
-    (ROOT / "results" / "game" / "calibration.json").write_text(
+    summary_path.write_text(
         json.dumps(summary, indent=2), encoding="utf-8")
-    _plot(record, null_trials, loom_trials, tick)
+    _plot(record, null_trials, loom_trials, tick, full_path.with_suffix(".png"))
 
     print("\n--- calibration ---")
     print(f"rule                : {rule}")
@@ -232,14 +238,13 @@ def main() -> int:
           f"(target {DETECTION_TARGET}, met={chosen['detection_rate'] >= DETECTION_TARGET})")
     print(f"median latency      : {chosen['median_latency_seconds']} s after click")
     print(f"false triggers      : {chosen['false_trigger_ticks']} / {len(null_all)} no-loom ticks")
-    print(f"wrote artifacts/game/calibration.json, artifacts/game/calibration.png, "
-          f"results/game/calibration.json")
+    print(f"wrote {full_path}, {full_path.with_suffix('.png')}, {summary_path}")
     if chosen["detection_rate"] < DETECTION_TARGET:
         print("WARNING: detection below target; the fly will often fail to react.", file=sys.stderr)
     return 0
 
 
-def _plot(record, null_trials, loom_trials, tick) -> None:
+def _plot(record, null_trials, loom_trials, tick, output_path) -> None:
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -283,7 +288,7 @@ def _plot(record, null_trials, loom_trials, tick) -> None:
 
     fig.suptitle("DNp01 escape-threshold calibration (untrained decoder)", fontsize=13)
     fig.tight_layout(rect=(0, 0, 1, 0.94))
-    fig.savefig(ROOT / "artifacts" / "game" / "calibration.png", dpi=160)
+    fig.savefig(output_path, dpi=160)
     plt.close(fig)
 
 

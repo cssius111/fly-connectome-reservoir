@@ -71,6 +71,7 @@ class FlyLoop:
         self.policy.reset()
         self.last_motor = None
         self.last_action = Action()
+        self.last_sensory_spikes = {k:0 for k in ("LC4_left","LC4_right","LPLC2_left","LPLC2_right")}
 
     def step(self, retina: Retina, motion: MotionState = MotionState()) -> Action:
         # Strict type check, not isinstance: a Retina subclass carrying extra
@@ -83,6 +84,7 @@ class FlyLoop:
             raise TypeError("FlyLoop motion feedback accepts only MotionState; no world or mouse state")
         inject = self.encoder.inject(retina)
         fired = self.brain.step(inject=inject)
+        self.last_sensory_spikes = self.encoder.sensory_spikes(fired)
         features = self.trace.observe(fired)
         motor = MotorState(
             dnp01_left=float(features[self._escape_slots[0]].sum()),

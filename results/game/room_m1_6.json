@@ -1,0 +1,521 @@
+{
+  "provenance": {
+    "schema_version": 2,
+    "measurement_protocol": "fixed-fly-v2",
+    "config_hash_format": "canonical-json-sort-keys-ascii-compact",
+    "game_config_sha256": "4a80419ac105d116effbe4306e5e4a775ccc3514ba67d09cf38fb625e30bdaad",
+    "flybrain_version": "0.1.0",
+    "encoder_population_rule": "min-per-type-per-side-v1",
+    "encoder_seed": 20260917,
+    "encoder_types": {
+      "loom": [
+        "LPLC2"
+      ],
+      "threat": [
+        "LC4"
+      ]
+    },
+    "sensory_input": false,
+    "tick_seconds": 0.02,
+    "brain_dt_seconds": 0.02
+  },
+  "ecology_controls": [
+    {
+      "variant": "room",
+      "seed": 101,
+      "seconds": 120,
+      "landing_attempts": 2,
+      "state_seconds": {
+        "EXPLORE": 48.26,
+        "LAND_OR_PERCH": 1.8,
+        "ODOR_SEARCH": 11.5,
+        "ODOR_TRACK": 13.74,
+        "TRANSIT": 44.7
+      },
+      "speed_bl_s_min_mean_max": [
+        3.9504148758230593,
+        8.385149008179944,
+        12.801373414523546
+      ],
+      "odor_max": 2.257151872571765,
+      "max_yaw_rad_s": 22.01833299389377,
+      "near_wall_fraction": 0.11966666666666667,
+      "object_contact_ticks": 0,
+      "path_length_units": 24145.16280925437
+    },
+    {
+      "variant": "room",
+      "seed": 102,
+      "seconds": 120,
+      "landing_attempts": 2,
+      "state_seconds": {
+        "EXPLORE": 48.300000000000004,
+        "LAND_OR_PERCH": 1.8,
+        "ODOR_SEARCH": 7.58,
+        "ODOR_TRACK": 17.42,
+        "TRANSIT": 44.9
+      },
+      "speed_bl_s_min_mean_max": [
+        2.7832263561101667,
+        8.64253121635255,
+        12.800287970394647
+      ],
+      "odor_max": 1.446565051226876,
+      "max_yaw_rad_s": 22.61554872812041,
+      "near_wall_fraction": 0.09283333333333334,
+      "object_contact_ticks": 0,
+      "path_length_units": 24886.250832374943
+    },
+    {
+      "variant": "room",
+      "seed": 103,
+      "seconds": 120,
+      "landing_attempts": 2,
+      "state_seconds": {
+        "EXPLORE": 57.24,
+        "LAND_OR_PERCH": 1.8,
+        "ODOR_SEARCH": 18.06,
+        "ODOR_TRACK": 9.96,
+        "TRANSIT": 32.94
+      },
+      "speed_bl_s_min_mean_max": [
+        3.8031824537005803,
+        7.748621590248947,
+        12.769844533431153
+      ],
+      "odor_max": 2.160735986657351,
+      "max_yaw_rad_s": 23.323320364781505,
+      "near_wall_fraction": 0.155,
+      "object_contact_ticks": 0,
+      "path_length_units": 22311.668072279477
+    },
+    {
+      "variant": "room",
+      "seed": 104,
+      "seconds": 120,
+      "landing_attempts": 0,
+      "state_seconds": {
+        "EXPLORE": 57.14,
+        "ODOR_SEARCH": 12.200000000000001,
+        "ODOR_TRACK": 16.02,
+        "TRANSIT": 34.64
+      },
+      "speed_bl_s_min_mean_max": [
+        3.73651421771663,
+        8.109753337066373,
+        12.678104193592404
+      ],
+      "odor_max": 2.9208625503047765,
+      "max_yaw_rad_s": 23.54000667792322,
+      "near_wall_fraction": 0.09433333333333334,
+      "object_contact_ticks": 0,
+      "path_length_units": 23351.879746094444
+    },
+    {
+      "variant": "room",
+      "seed": 105,
+      "seconds": 120,
+      "landing_attempts": 1,
+      "state_seconds": {
+        "EXPLORE": 44.84,
+        "LAND_OR_PERCH": 0.9,
+        "ODOR_SEARCH": 18.06,
+        "ODOR_TRACK": 27.26,
+        "TRANSIT": 28.94
+      },
+      "speed_bl_s_min_mean_max": [
+        1.7024462399819098,
+        8.209067863788263,
+        12.802244245312544
+      ],
+      "odor_max": 2.9028820470452485,
+      "max_yaw_rad_s": 23.341991396383605,
+      "near_wall_fraction": 0.10033333333333333,
+      "object_contact_ticks": 60,
+      "path_length_units": 23486.62269840324
+    },
+    {
+      "variant": "odor_off",
+      "seed": 101,
+      "seconds": 120,
+      "landing_attempts": 0,
+      "state_seconds": {
+        "EXPLORE": 71.86,
+        "TRANSIT": 48.14
+      },
+      "speed_bl_s_min_mean_max": [
+        0.042460835985611574,
+        8.118470113837827,
+        12.759887702417153
+      ],
+      "odor_max": 0.0,
+      "max_yaw_rad_s": 22.799442014658514,
+      "near_wall_fraction": 0.11183333333333334,
+      "object_contact_ticks": 104,
+      "path_length_units": 22963.710665855728
+    },
+    {
+      "variant": "odor_off",
+      "seed": 102,
+      "seconds": 120,
+      "landing_attempts": 0,
+      "state_seconds": {
+        "EXPLORE": 71.66,
+        "TRANSIT": 48.34
+      },
+      "speed_bl_s_min_mean_max": [
+        4.463234147029687,
+        8.234879098640144,
+        12.799286143266807
+      ],
+      "odor_max": 0.0,
+      "max_yaw_rad_s": 22.61554872812041,
+      "near_wall_fraction": 0.11266666666666666,
+      "object_contact_ticks": 0,
+      "path_length_units": 23712.022385060067
+    },
+    {
+      "variant": "odor_off",
+      "seed": 103,
+      "seconds": 120,
+      "landing_attempts": 0,
+      "state_seconds": {
+        "EXPLORE": 71.10000000000001,
+        "TRANSIT": 48.9
+      },
+      "speed_bl_s_min_mean_max": [
+        4.579142610571611,
+        8.243662824527295,
+        12.684051097198589
+      ],
+      "odor_max": 0.0,
+      "max_yaw_rad_s": 23.85301032255583,
+      "near_wall_fraction": 0.1475,
+      "object_contact_ticks": 0,
+      "path_length_units": 23737.386827001123
+    },
+    {
+      "variant": "odor_off",
+      "seed": 104,
+      "seconds": 120,
+      "landing_attempts": 0,
+      "state_seconds": {
+        "EXPLORE": 70.68,
+        "TRANSIT": 49.32
+      },
+      "speed_bl_s_min_mean_max": [
+        4.464547050320244,
+        8.192406874769018,
+        12.644558706606619
+      ],
+      "odor_max": 0.0,
+      "max_yaw_rad_s": 23.54000667792322,
+      "near_wall_fraction": 0.096,
+      "object_contact_ticks": 0,
+      "path_length_units": 23589.92193467806
+    },
+    {
+      "variant": "odor_off",
+      "seed": 105,
+      "seconds": 120,
+      "landing_attempts": 0,
+      "state_seconds": {
+        "EXPLORE": 74.36,
+        "TRANSIT": 45.64
+      },
+      "speed_bl_s_min_mean_max": [
+        4.621468893006936,
+        7.976761375584659,
+        12.48922192537803
+      ],
+      "odor_max": 0.0,
+      "max_yaw_rad_s": 23.066003086953877,
+      "near_wall_fraction": 0.11316666666666667,
+      "object_contact_ticks": 41,
+      "path_length_units": 22750.40036642147
+    },
+    {
+      "variant": "wind_reversed",
+      "seed": 101,
+      "seconds": 120,
+      "landing_attempts": 2,
+      "state_seconds": {
+        "EXPLORE": 54.1,
+        "LAND_OR_PERCH": 1.8,
+        "ODOR_SEARCH": 12.040000000000001,
+        "ODOR_TRACK": 9.92,
+        "TRANSIT": 42.14
+      },
+      "speed_bl_s_min_mean_max": [
+        4.094193457954344,
+        8.14125556000211,
+        12.782975697403495
+      ],
+      "odor_max": 2.7759765377595915,
+      "max_yaw_rad_s": 22.762970172884433,
+      "near_wall_fraction": 0.0555,
+      "object_contact_ticks": 73,
+      "path_length_units": 23188.97592087616
+    },
+    {
+      "variant": "wind_reversed",
+      "seed": 102,
+      "seconds": 120,
+      "landing_attempts": 0,
+      "state_seconds": {
+        "EXPLORE": 67.5,
+        "ODOR_SEARCH": 6.0200000000000005,
+        "ODOR_TRACK": 3.24,
+        "TRANSIT": 43.24
+      },
+      "speed_bl_s_min_mean_max": [
+        2.062337992243783,
+        7.996689322280035,
+        12.723374933991224
+      ],
+      "odor_max": 1.6692773870468451,
+      "max_yaw_rad_s": 22.93387597544432,
+      "near_wall_fraction": 0.10583333333333333,
+      "object_contact_ticks": 0,
+      "path_length_units": 23026.30875345695
+    },
+    {
+      "variant": "wind_reversed",
+      "seed": 103,
+      "seconds": 120,
+      "landing_attempts": 1,
+      "state_seconds": {
+        "EXPLORE": 54.120000000000005,
+        "LAND_OR_PERCH": 0.9,
+        "ODOR_SEARCH": 16.82,
+        "ODOR_TRACK": 8.24,
+        "TRANSIT": 39.92
+      },
+      "speed_bl_s_min_mean_max": [
+        4.056480398319367,
+        8.035108668676482,
+        12.780795031709276
+      ],
+      "odor_max": 2.544231789010355,
+      "max_yaw_rad_s": 22.965331302275118,
+      "near_wall_fraction": 0.12933333333333333,
+      "object_contact_ticks": 0,
+      "path_length_units": 23136.750858150757
+    },
+    {
+      "variant": "wind_reversed",
+      "seed": 104,
+      "seconds": 120,
+      "landing_attempts": 1,
+      "state_seconds": {
+        "EXPLORE": 64.22,
+        "LAND_OR_PERCH": 0.9,
+        "ODOR_SEARCH": 6.0200000000000005,
+        "ODOR_TRACK": 3.96,
+        "TRANSIT": 44.9
+      },
+      "speed_bl_s_min_mean_max": [
+        2.098191810950133,
+        8.068520672480256,
+        12.729094981211214
+      ],
+      "odor_max": 1.5971299078898904,
+      "max_yaw_rad_s": 24.12445698118728,
+      "near_wall_fraction": 0.10533333333333333,
+      "object_contact_ticks": 0,
+      "path_length_units": 23235.854142231427
+    },
+    {
+      "variant": "wind_reversed",
+      "seed": 105,
+      "seconds": 120,
+      "landing_attempts": 1,
+      "state_seconds": {
+        "EXPLORE": 61.6,
+        "LAND_OR_PERCH": 0.9,
+        "ODOR_SEARCH": 6.0200000000000005,
+        "ODOR_TRACK": 5.16,
+        "TRANSIT": 46.32
+      },
+      "speed_bl_s_min_mean_max": [
+        4.138418184480423,
+        8.11175168251867,
+        12.624987563098395
+      ],
+      "odor_max": 2.0070776478792323,
+      "max_yaw_rad_s": 22.898867970477415,
+      "near_wall_fraction": 0.09516666666666666,
+      "object_contact_ticks": 41,
+      "path_length_units": 23139.172450391423
+    }
+  ],
+  "real_neural_idle": [
+    {
+      "seed": 101,
+      "seconds": 60,
+      "landing_attempts": 2,
+      "neural_state_seconds": {
+        "CALM": 53.4,
+        "ALERT": 5.76,
+        "ESCAPE": 0.84
+      },
+      "state_seconds": {
+        "ALERT": 5.84,
+        "ESCAPE": 0.84,
+        "EXPLORE": 27.04,
+        "LAND_OR_PERCH": 1.8,
+        "ODOR_SEARCH": 1.3800000000000001,
+        "ODOR_TRACK": 6.44,
+        "RECOVER": 11.72,
+        "TRANSIT": 4.94
+      },
+      "speed_bl_s_min_mean_max": [
+        2.770833563197883,
+        7.879257578003278,
+        25.823636956622853
+      ],
+      "odor_max": 3.1511413891067432,
+      "max_yaw_rad_s": 21.10371150239773,
+      "near_wall_fraction": 0.138,
+      "object_contact_ticks": 0,
+      "path_length_units": 11342.059457504203
+    },
+    {
+      "seed": 102,
+      "seconds": 60,
+      "landing_attempts": 1,
+      "neural_state_seconds": {
+        "CALM": 52.1,
+        "ALERT": 6.22,
+        "ESCAPE": 1.68
+      },
+      "state_seconds": {
+        "ALERT": 6.22,
+        "ESCAPE": 1.68,
+        "EXPLORE": 27.84,
+        "LAND_OR_PERCH": 0.9,
+        "ODOR_SEARCH": 3.16,
+        "ODOR_TRACK": 2.04,
+        "RECOVER": 15.22,
+        "TRANSIT": 2.94
+      },
+      "speed_bl_s_min_mean_max": [
+        3.6708621571210416,
+        7.843790771091095,
+        29.683509563143673
+      ],
+      "odor_max": 1.6730915947689797,
+      "max_yaw_rad_s": 22.950032552440796,
+      "near_wall_fraction": 0.17933333333333334,
+      "object_contact_ticks": 0,
+      "path_length_units": 11290.629291347617
+    },
+    {
+      "seed": 103,
+      "seconds": 60,
+      "landing_attempts": 0,
+      "neural_state_seconds": {
+        "CALM": 52.76,
+        "ALERT": 6.4,
+        "ESCAPE": 0.84
+      },
+      "state_seconds": {
+        "ALERT": 6.48,
+        "ESCAPE": 0.84,
+        "EXPLORE": 34.74,
+        "ODOR_SEARCH": 1.04,
+        "ODOR_TRACK": 3.8200000000000003,
+        "RECOVER": 13.08
+      },
+      "speed_bl_s_min_mean_max": [
+        4.9279810035191645,
+        7.518590990005461,
+        33.519645985961624
+      ],
+      "odor_max": 2.3536403461654585,
+      "max_yaw_rad_s": 23.042621482785407,
+      "near_wall_fraction": 0.183,
+      "object_contact_ticks": 0,
+      "path_length_units": 10822.408917970366
+    }
+  ],
+  "visual_encounters": [
+    {
+      "approach_degrees": 0,
+      "hit": true,
+      "ecological_states": {
+        "EXPLORE": 9,
+        "ALERT": 41,
+        "ESCAPE": 58,
+        "RECOVER": 9
+      },
+      "strikes": 1,
+      "escapes": 0
+    },
+    {
+      "approach_degrees": 60,
+      "hit": true,
+      "ecological_states": {
+        "EXPLORE": 11,
+        "ALERT": 33,
+        "RECOVER": 15,
+        "ODOR_TRACK": 8,
+        "ESCAPE": 50
+      },
+      "strikes": 1,
+      "escapes": 0
+    },
+    {
+      "approach_degrees": 120,
+      "hit": true,
+      "ecological_states": {
+        "EXPLORE": 10,
+        "ALERT": 22,
+        "ESCAPE": 70,
+        "RECOVER": 15
+      },
+      "strikes": 1,
+      "escapes": 0
+    },
+    {
+      "approach_degrees": 180,
+      "hit": true,
+      "ecological_states": {
+        "EXPLORE": 5,
+        "ODOR_TRACK": 6,
+        "ALERT": 20,
+        "RECOVER": 25,
+        "ESCAPE": 61
+      },
+      "strikes": 1,
+      "escapes": 0
+    },
+    {
+      "approach_degrees": 240,
+      "hit": true,
+      "ecological_states": {
+        "EXPLORE": 11,
+        "ALERT": 21,
+        "ESCAPE": 76,
+        "RECOVER": 9
+      },
+      "strikes": 1,
+      "escapes": 0
+    },
+    {
+      "approach_degrees": 300,
+      "hit": true,
+      "ecological_states": {
+        "EXPLORE": 10,
+        "ALERT": 25,
+        "ESCAPE": 67,
+        "RECOVER": 15
+      },
+      "strikes": 1,
+      "escapes": 0
+    }
+  ],
+  "recording_run": "artifacts\\m1-6\\idle-records\\runs\\20260919T194711-8277fe03",
+  "wall_seconds": 41.07164079999984,
+  "limitations": "Finite scripted diagnostics. No optimized parameters, odor localization success metric, learning or biological validation."
+}

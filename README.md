@@ -6,6 +6,41 @@ A reproducible Windows CPU computational neuroscience experiment and an untraine
 
 The frozen experiment is specified in [PROTOCOL.md](PROTOCOL.md), with historical results in [results/REPORT.md](results/REPORT.md). These protected artifacts retain their original language and bytes for reproducibility. Editable project content is English.
 
+
+## M1.6 ROOM: current playtest candidate
+
+Default launch now selects the ecological ROOM preset. LAB and the preserved
+M1.5 GAME preset remain available. No RL, personalized learning or M1.5.1
+universal-speed calibration is implemented.
+
+```powershell
+Set-Location D:\Projects\flybrain-lab
+& .\.venv\Scripts\python.exe -m game.app
+& .\.venv\Scripts\python.exe -m game.app --arena room --seed 101 --windowed
+& .\.venv\Scripts\python.exe -m game.app --arena room --seed 101 --no-ecology --windowed
+& .\.venv\Scripts\python.exe -m game.app --arena game --seed 101 --windowed
+& .\.venv\Scripts\python.exe -m game.app --mode lab --windowed
+```
+
+ROOM adds a wind-shaped analytic odor plume, a fermentation surface, a column
+and a future perch. A strict local EcologicalSense drives a phenomenological
+state controller with context-dependent speed, upwind/search tendencies and
+approach-only landing attempts. It receives no hidden source coordinates.
+The frozen MaleCNS visual threat pathway remains separate and has priority.
+
+See [ROOM architecture, exact field equations, state/speed table and checklist](game/ROOM.md)
+and [actual M1.6 validation](results/game/M1_6.md). Environmental analysis logs
+stay separate from the unchanged future-policy observation schema. ROOM uses
+its own exact-provenance calibration; LAB/GAME records are preserved:
+
+```text
+python tools/calibrate_escape.py --config game_room_config.json --trials 28
+python tools/room_sanity.py
+```
+
+M1.6 is uncommitted pending human playtesting. Historical sections below describe
+the preserved experimental milestones; select `--arena game` to run M1.5.
+
 ## Environment and original experiment
 
 The actual virtual environment is `D:\Projects\flybrain-lab\.venv`, inside the repository. Python 3.11.16 and the CPU implementation are the validated path; CUDA/CuPy is not installed.
@@ -39,16 +74,50 @@ $env:FLY_DATA = "$PWD\data"
 | `experiment.py`, `test_protocol.py` | Splits, three networks, raw-input and shuffled-label controls, linear readout and tests |
 | `report.py`, `results/` | Original reports, metrics and figures; preserve protected history |
 | `artifacts/` | Ignored local arrays, classifiers, logs and render captures |
-| `game/`, `game_config.json` | Interactive game and independent configuration |
+| `game/`, `game_config.json`, `game_play_config.json` | Interactive game and independent configuration |
 | `tools/calibrate_escape.py` | Fixed-fly DNp01 distributions and escape threshold |
 | `tools/flight_sanity.py`, `tools/chase_sanity.py` | Isolated locomotion and neural pursuit checks |
 | `test_game*.py` | Game regressions and strict perception/action interfaces |
+
+## M1.5: fullscreen GAME and controlled LAB
+
+Default launch now uses the larger GAME arena and records interaction data;
+H reveals the optional neural HUD. M1.4 was committed separately as
+`fe2efb758a10802442edabad01e5a976f4c58b16`. M1.5 remains uncommitted for human
+playtesting, with no learning or policy updates.
+
+```powershell
+& .\.venv\Scripts\python.exe -m game.app                         # fullscreen PLAY
+& .\.venv\Scripts\python.exe -m game.app --windowed --seed 101   # reproducible GAME
+& .\.venv\Scripts\python.exe -m game.app --mode lab --windowed   # unchanged LAB preset
+& .\.venv\Scripts\python.exe -m game.app --mode evaluation --seed 101 --windowed
+```
+
+GAME uses 3840×2160 logical units (160×90 body lengths), a 24-unit body,
+216 units/s cruise (9 BL/s), and a 288-unit paddle diameter (12 BL). Monitor
+resolution changes rendering scale only. Spawns, headings, initial velocity
+and flight phases vary deterministically by episode seed. Mouse trajectory
+changes physical stroke direction; only retinal consequences reach MaleCNS.
+Low-frequency curvature and bounded, gradually realigning sideslip supplement
+the existing saccades. No airflow or CFD is added.
+
+See [game/M1_5.md](game/M1_5.md) for architecture, exact observation/log schemas,
+mode boundaries, modeling assumptions and the 5–10 minute checklist. Actual
+results are in [results/game/M1_5.md](results/game/M1_5.md). Run
+`python tools/encounter_sanity.py` to reproduce the new encounter diagnostics.
+
+PLAY/TRAINING use a new base seed per launch unless `--seed` is given;
+EVALUATION/LAB default to fixed seeds. All four modes are frozen today.
+`--mode training` collects data only. Default logs and persistent counters are
+under `artifacts/game/player-default/`; `--record-dir PATH` selects another
+profile and `--no-record` disables recording. World/debug data and policy
+observations are stored separately. No checkpoint is trained or loaded.
 
 ## Interactive fly-swatter
 
 ```powershell
 Set-Location D:\Projects\flybrain-lab
-& .\.venv\Scripts\python.exe tools\calibrate_escape.py --trials 28
+& .\.venv\Scripts\python.exe tools\calibrate_escape.py --config game_room_config.json --trials 28
 & .\.venv\Scripts\python.exe -m game.app
 & .\.venv\Scripts\python.exe -m unittest discover -v
 & .\.venv\Scripts\python.exe -m game.app --smoke 3
@@ -76,7 +145,7 @@ python tools/calibrate_escape.py --trials 28
 
 The threshold is the smallest predefined grid value with zero crossings across all no-loom samples. Runtime requires exact provenance: canonical full-config SHA256, protocol, FlyBrain version, encoder seed/types/population rule, sensory flag and tick duration. Stale local artifacts cannot override matching committed records. Missing matches fail clearly with the calibration command. Custom configs require matching `--config PATH` in both tools and game.
 
-The fixed-fly result is threshold 1.45, detection 28/28, median latency 0.06 s and zero crossings in 2,520 no-loom ticks. These are calibration-sample results, not a guarantee of zero false triggers in arbitrary free flight.
+The LAB fixed-fly result is threshold 1.45; GAME and ROOM have separate measured thresholds of 1.35. All three detect 28/28 with median latency 0.06 s and zero crossings in 2,520 no-loom ticks. These are calibration-sample results, not a guarantee of zero false triggers in arbitrary free flight.
 
 ## M1.4 flight and enclosure baseline
 

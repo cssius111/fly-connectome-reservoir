@@ -1,4 +1,22 @@
-# M1.4 untrained BIO FLY: local enclosure and flight
+# Flight model: LAB baseline and M1.5 GAME
+
+M1.6 adds an optional [ROOM ecological layer](ROOM.md); LAB and M1.5 GAME
+retain the behavior described here. ROOM modulates speed, spontaneous waiting
+and bounded steering through local cues, with neural threat priority.
+
+M1.5 GAME adds a 160×90-body-length arena, 9 BL/s cruise, seeded randomized
+spawning, directional pointer-history-driven swatter geometry, smooth
+low-frequency curvature and an 80° sideslip cone with gradual realignment.
+The M1.4 sections below describe the preserved LAB preset; saccade and local
+wall mechanisms remain shared. GAME differs only through explicit configuration
+and opt-in physics. No learning or airflow is implemented.
+
+Read [M1_5.md](M1_5.md) for GAME/LAB commands, interaction-data boundaries,
+exact future policy observation schema, biological grounding and modeling
+assumptions, and the current human playtest checklist. M1.4 is committed as
+`fe2efb758a10802442edabad01e5a976f4c58b16`; M1.5 is not committed.
+
+## Preserved M1.4 LAB model
 
 Resumed from Claude's `182c5a9` checkpoint on `wip/m1-4-enclosure`, based on
 stable M1.3 `85f987b279dbd2b1f725fa79aa299281259258ab`. This is the validated M1.4 baseline, with no M2, training, RL or plasticity.

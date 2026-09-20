@@ -27,6 +27,7 @@ import argparse
 import os
 import sys
 import time
+import secrets
 from pathlib import Path
 
 os.environ.setdefault("NUMBA_NUM_THREADS", "4")
@@ -73,19 +74,23 @@ def control_for(event) -> str | None:
 
 
 class App:
-    def __init__(self, config: dict, root: Path = ROOT, fullscreen: bool = False):
+    def __init__(self, config: dict, root: Path = ROOT, fullscreen: bool = False,
+                 seed: int | None = None, mode: str = "lab", recorder=None, ecology_enabled: bool | None = None):
         self.config = config
         self.world_w = float(config["world"]["width"])
         self.world_h = float(config["world"]["height"])
         self.tick_seconds = float(config["sim"]["tick_seconds"])
-        self.base_seed = int(config["sim"]["seed"])
+        self.base_seed = int(config["sim"]["seed"] if seed is None else seed)
 
         # Only the subsystems this game uses. pygame.init() also probes
         # joysticks/audio on Windows and can stall every restart test.
         pygame.display.init()
         pygame.font.init()
         pygame.display.set_caption("MaleCNS fly-swatter")
-        self.windowed_size = (int(self.world_w), int(self.world_h))
+        # A fixed logical rendering canvas keeps HUD size legible while world
+        # scale remains independent of monitor resolution and window size.
+        self.render_scale = 1280.0 / self.world_w
+        self.windowed_size = (1280, round(self.world_h*self.render_scale))
         self.fullscreen = False
         self.screen = pygame.display.set_mode(self.windowed_size, pygame.RESIZABLE)
         self.canvas = pygame.Surface(self.windowed_size)
@@ -94,10 +99,10 @@ class App:
         self.font_small = pygame.font.SysFont(None, 18)
         self._splash("Loading MaleCNS connectome (166,700 neurons)...")
 
-        self.session = Session(config, root=root)
+        self.session = Session(config, root=root, seed=self.base_seed, mode=mode, recorder=recorder, ecology_enabled=ecology_enabled)
         self._splash("Compiling simulation kernels...")
         self.clock = pygame.time.Clock()
-        self.show_neural = True
+        self.show_neural = mode != "play"
         self.paused = False
         self.run_index = 0
         self.accumulator = 0.0
@@ -209,6 +214,7 @@ class App:
             self._draw()
             if max_seconds is not None and time.perf_counter() - started >= max_seconds:
                 running = False
+        self.session.close()
         pygame.quit()
         return 0
 
@@ -249,34 +255,29 @@ class App:
     def _draw(self) -> None:
         alpha = min(1.0, self.accumulator / self.tick_seconds)
         now = self._snapshot()
-        fly = self._lerp(self._prev["fly"], now["fly"], alpha)
-        swat = self._lerp(self._prev["swatter"], now["swatter"], alpha)
+        fly = tuple(v*self.render_scale for v in self._lerp(self._prev["fly"], now["fly"], alpha))
+        swat = tuple(v*self.render_scale for v in self._lerp(self._prev["swatter"], now["swatter"], alpha))
         height = self._prev["height"] + (now["height"] - self._prev["height"]) * alpha
         face = self._prev["face"] + (now["face"] - self._prev["face"]) * alpha
 
         c = self.canvas
+        cw,ch = c.get_size()
         c.fill(BG)
-        for x in range(0, int(self.world_w), 80):
-            pygame.draw.line(c, GRID, (x, 0), (x, self.world_h))
-        for y in range(0, int(self.world_h), 80):
-            pygame.draw.line(c, GRID, (0, y), (self.world_w, y))
-        margin = self.config["world"]["margin"]
-        # A visible solid rim sits outside the same surfaces used by sensing
-        # and collision. No opening exists in this milestone.
-        wall = (53, 59, 70)
-        for rect in ((0, 0, self.world_w, margin),
-                     (0, self.world_h-margin, self.world_w, margin),
-                     (0, margin, margin, self.world_h-2*margin),
-                     (self.world_w-margin, margin, margin, self.world_h-2*margin)):
-            pygame.draw.rect(c, wall, pygame.Rect(rect))
-        pygame.draw.rect(c, (113, 122, 138), pygame.Rect(margin, margin,
-                         self.world_w - 2 * margin, self.world_h - 2 * margin), 2)
-        for x in range(int(margin)+40, int(self.world_w-margin), 80):
-            pygame.draw.line(c, (77, 85, 99), (x, 3), (x-12, margin-3), 2)
-            pygame.draw.line(c, (77, 85, 99), (x, self.world_h-margin+3),
-                             (x-12, self.world_h-3), 2)
+        grid = max(16, round(80*self.render_scale))
+        for x in range(0, cw, grid): pygame.draw.line(c, GRID, (x,0), (x,ch))
+        for y in range(0, ch, grid): pygame.draw.line(c, GRID, (0,y), (cw,y))
+        margin = self.config["world"]["margin"]*self.render_scale
+        wall = (53,59,70)
+        for rect in ((0,0,cw,margin),(0,ch-margin,cw,margin),
+                     (0,margin,margin,ch-2*margin),(cw-margin,margin,margin,ch-2*margin)):
+            pygame.draw.rect(c,wall,pygame.Rect(rect))
+        pygame.draw.rect(c,(113,122,138),pygame.Rect(margin,margin,cw-2*margin,ch-2*margin),2)
+        for x in range(int(margin)+40,int(cw-margin),80):
+            pygame.draw.line(c,(77,85,99),(x,3),(x-12,margin-3),2)
+            pygame.draw.line(c,(77,85,99),(x,ch-margin+3),(x-12,ch-3),2)
 
-        self._draw_swatter(c, swat, height, face)
+        self._draw_room(c)
+        self._draw_swatter(c, swat, height*self.render_scale, face)
         heading_delta = (now["heading"] - self._prev["heading"] + math.pi) % (2 * math.pi) - math.pi
         self._draw_fly(c, fly, self._prev["heading"] + alpha * heading_delta)
         self._draw_hud(c)
@@ -296,33 +297,67 @@ class App:
     def _lerp(a, b, t):
         return (a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t)
 
+    def _draw_room(self, c):
+        room = self.session.world.room
+        if room is None:
+            return
+        scale = self.render_scale
+        for obj in room.surfaces():
+            center = (round(obj['x']*scale), round(obj['y']*scale))
+            radius = max(2, round(obj['radius']*scale))
+            colour = (88, 76, 49) if obj['name']=='fermentation source' else (65, 77, 84)
+            pygame.draw.circle(c, colour, center, radius)
+            pygame.draw.circle(c, (144,154,135), center, radius, 1)
+            label = self.font_small.render(obj['name'],True,DIM)
+            c.blit(label, label.get_rect(midtop=(center[0],center[1]+radius+3)))
+        wx,wy = room.wind(self.session.world.time_seconds)
+        mag = math.hypot(wx,wy)
+        start = (c.get_width()//2-30,38)
+        end = (start[0]+50*wx/mag,start[1]+50*wy/mag)
+        pygame.draw.line(c,(130,170,165),start,end,2)
+        for side in (-1,1):
+            pygame.draw.line(c,(130,170,165),end,(end[0]-8*wx/mag+side*5*wy/mag,end[1]-8*wy/mag-side*5*wx/mag),2)
+        c.blit(self.font_small.render('local ambient wind (no body force)',True,DIM),(start[0]-70,58))
+
     def _draw_swatter(self, c, pos, height, face) -> None:
         w = self.session.world
         phase = w.swatter.phase
         colour = PHASE_COLOR[phase]
-        r = w.paddle_radius
+        r = w.paddle_radius*self.render_scale
         # Footprint: exactly the lethal area, so the player can aim.
         pygame.draw.circle(c, colour, (int(pos[0]), int(pos[1])), int(r), 2)
         if phase is StrikePhase.ACTIVE:
             pygame.draw.circle(c, (90, 26, 26), (int(pos[0]), int(pos[1])), int(r * 0.92))
             pygame.draw.circle(c, colour, (int(pos[0]), int(pos[1])), int(r), 3)
         # Paddle, lifted by its height and rotating edge-on -> face-on. This is
-        # literally what perception.py measures as angular size.
+        # shared physical geometry for the scalar retinal projection; this
+        # schematic sprite is not a simulated retinal image.
         lift = height * 0.30
         thin = w.edge_on_factor + (1.0 - w.edge_on_factor) * face
         rect = pygame.Rect(0, 0, int(2 * r), max(4, int(2 * r * thin)))
         rect.center = (int(pos[0]), int(pos[1] - lift))
-        pygame.draw.ellipse(c, (52, 58, 70), rect)
-        pygame.draw.ellipse(c, colour, rect, 3)
-        pygame.draw.line(c, colour, rect.center,
-                         (rect.centerx + int(r * 1.5), rect.centery - int(r * 1.1)), 5)
+        if w.directional:
+            angle=w.swatter.orientation
+            hx,hy=math.cos(angle),math.sin(angle)
+            pts=[(rect.centerx+r*math.cos(t)*hx-r*thin*math.sin(t)*hy,
+                  rect.centery+r*math.cos(t)*hy+r*thin*math.sin(t)*hx)
+                 for t in (2*math.pi*i/32 for i in range(32))]
+            pygame.draw.polygon(c,(52,58,70),pts)
+            pygame.draw.polygon(c,colour,pts,2)
+            pygame.draw.line(c,colour,rect.center,
+                             (rect.centerx-hx*r*1.8,rect.centery-hy*r*1.8),4)
+        else:
+            pygame.draw.ellipse(c, (52, 58, 70), rect)
+            pygame.draw.ellipse(c, colour, rect, 3)
+            pygame.draw.line(c, colour, rect.center,
+                             (rect.centerx + int(r * 1.5), rect.centery - int(r * 1.1)), 5)
         pygame.draw.line(c, (60, 66, 78), (int(pos[0]), int(pos[1])),
                          (rect.centerx, rect.centery), 1)
 
     def _draw_fly(self, c, pos, heading) -> None:
         w = self.session.world
         x, y = pos
-        r = w.fly_radius
+        r = w.fly_radius*self.render_scale
         if not w.fly.alive:
             for dx, dy, rad in ((0, 0, r * 1.9), (r * 1.5, r * 0.6, r * 0.9),
                                 (-r * 1.3, r * 1.1, r * 0.7), (r * 0.4, -r * 1.6, r * 0.6)):
@@ -330,7 +365,7 @@ class App:
             pygame.draw.circle(c, (150, 44, 50), (int(x), int(y)), int(r * 0.8))
             return
         # Longitudinal body polygon spans 3.3*r; collision radius is separate.
-        r = w.body_length / 3.3
+        r = w.body_length*self.render_scale / 3.3
         hx, hy = math.cos(heading), math.sin(heading)
         rx, ry = -hy, hx
         if self.escape_flash > 0.0:
@@ -355,12 +390,12 @@ class App:
                            (int(x + hx * r * 1.4), int(y + hy * r * 1.4)), max(2, int(r * 0.36)))
 
     def _center_text(self, c, title: str, subtitle: str) -> None:
-        overlay = pygame.Surface((int(self.world_w), int(self.world_h)), pygame.SRCALPHA)
+        overlay = pygame.Surface(c.get_size(), pygame.SRCALPHA)
         overlay.fill((10, 11, 14, 150))
         c.blit(overlay, (0, 0))
         t = self.font_big.render(title, True, INK)
         s = self.font.render(subtitle, True, DIM)
-        cx, cy = int(self.world_w * 0.5), int(self.world_h * 0.5)
+        cx, cy = c.get_width()//2, c.get_height()//2
         c.blit(t, t.get_rect(center=(cx, cy - 16)))
         c.blit(s, s.get_rect(center=(cx, cy + 22)))
 
@@ -371,10 +406,13 @@ class App:
                 f"escapes {st.escapes}",
                 f"hit rate {100 * st.hit_rate:5.1f}%", f"escape rate {100 * st.escape_rate:5.1f}%"]
         x = 14
+        pygame.draw.rect(c, (10,12,16), pygame.Rect(8,8,174,len(rows)*21+8))
         for i, text in enumerate(rows):
             c.blit(self.font.render(text, True, INK), (x, 12 + i * 21))
         hint = "H neural  R/enter restart  space pause  F11 fullscreen  esc quit"
-        c.blit(self.font_small.render(hint, True, DIM), (x, int(self.world_h) - 24))
+        hint_surface = self.font_small.render(hint, True, DIM)
+        pygame.draw.rect(c, (10,12,16), pygame.Rect(x-4,c.get_height()-28,hint_surface.get_width()+8,22))
+        c.blit(hint_surface, (x, c.get_height() - 24))
         if not self.show_neural:
             return
 
@@ -390,9 +428,9 @@ class App:
         lines = [f"retina theta {theta:5.2f} rad   d/dt {theta_dot:+6.2f}",
                  f"azimuth {azimuth:+5.2f}"]
         fly = self.session.world.fly
-        lines.append(f"cruise {self.session.world.baseline_speed:.0f}  speed {math.hypot(fly.vx, fly.vy):.0f} px/s")
+        lines.append(f"cruise {self.session.world.baseline_speed:.0f}  speed {math.hypot(fly.vx, fly.vy):.0f} units/s")
         w = self.session.world
-        lines.append(f"body {w.body_length:.0f}px  cruise {w.cruise_body_lengths_per_second:.2f} BL/s")
+        lines.append(f"body {w.body_length:.0f} units  cruise {w.cruise_body_lengths_per_second:.2f} BL/s")
         lines.append(f"wall {w.flight.diagnostics()['boundary_mode']}  near {w.wall_cue.proximity:.2f}")
         if "behavior_state" in diagnostics:
             lines.append(f"state {diagnostics['behavior_state']}")
@@ -400,6 +438,16 @@ class App:
             lines.append(f"escape strength {diagnostics['escape_strength']:.2f}")
         lines.append(f"saccade {self.session.world.saccades.kind}  {self.session.world.saccades.remaining:.2f}s")
         lines.append(f"seed {self.session.seed}")
+        lines.append(f"mode {self.session.mode.name.upper()}  arena {self.config.get('arena', {}).get('name', 'lab').upper()}")
+        eco = self.session.ecology
+        sense = self.session.last_ecological_sense
+        if eco is not None:
+            lines.append(f"ecology {eco.state}  requested {eco.speed:.1f} BL/s")
+            lines.append(f"applied drive {w.applied_target_speed/w.body_length:.1f} BL/s")
+            if sense is not None:
+                lines.append(f"odor {sense.odor:.3f}  d/dt {sense.odor_rate:+.2f}")
+                lines.append(f"wind body F/R {sense.wind_forward:+.0f}/{sense.wind_lateral:+.0f}")
+            lines.append(f"landing attempts {eco.landing_attempts} (approach only)")
         steer_left = 0.0 if motor is None else motor.dna02_left
         steer_right = 0.0 if motor is None else motor.dna02_right
         lines.append(f"DNa02 L/R {steer_left:.2f}/{steer_right:.2f}  turn {self.session.fly_loop.last_action.turn:+.2f}")
@@ -419,7 +467,7 @@ class App:
         bar_count = 6 + int(threshold is not None)
         panel_w = 380
         panel_h = 34 + bar_count * 26 + 10 + len(lines) * 17 + 12
-        px = int(self.world_w) - panel_w - 14
+        px = c.get_width() - panel_w - 14
         py = 12
         panel = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
         panel.fill((10, 12, 16, 190))
@@ -460,17 +508,40 @@ class App:
 
 
 def main(argv=None) -> int:
+    from .modes import resolve_mode
+    from .recording import InteractionRecorder
     parser = argparse.ArgumentParser(description="Connectome-driven fly-swatter game")
-    parser.add_argument("--config", type=Path, default=ROOT / "game_config.json")
-    parser.add_argument("--fullscreen", action="store_true")
-    parser.add_argument("--smoke", type=float, default=None, metavar="SECONDS",
-                        help="run headless for N seconds and exit (CI check)")
-    args = parser.parse_args(argv)
-    if args.smoke is not None:
-        os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
-    config = load_config(args.config)
-    app = App(config, fullscreen=args.fullscreen)
-    return app.run(max_seconds=args.smoke)
+    parser.add_argument("--config", type=Path)
+    parser.add_argument("--mode", choices=("play","lab","evaluation","training"), default="play")
+    parser.add_argument("--arena", choices=("room","game","lab"))
+    parser.add_argument("--seed", type=int)
+    parser.add_argument("--ecology", action=argparse.BooleanOptionalAction, default=None, help="enable/disable ROOM ecological controller; neural policy stays frozen")
+    display=parser.add_mutually_exclusive_group()
+    display.add_argument("--fullscreen", action="store_true")
+    display.add_argument("--windowed", action="store_true")
+    parser.add_argument("--record", action=argparse.BooleanOptionalAction, default=None)
+    parser.add_argument("--record-dir", type=Path, default=ROOT/"artifacts"/"game"/"player-default")
+    parser.add_argument("--smoke", type=float, default=None, metavar="SECONDS")
+    args=parser.parse_args(argv)
+    mode=resolve_mode(args.mode)
+    arena=args.arena or ("lab" if args.mode=="lab" else "room")
+    config=load_config(args.config or ROOT/{"lab":"game_config.json","game":"game_play_config.json","room":"game_room_config.json"}[arena])
+    seed=args.seed if args.seed is not None else (config["sim"]["seed"] if mode.deterministic_default_seed else secrets.randbits(31))
+    if seed < 0: parser.error("seed must be nonnegative")
+    if args.smoke is not None: os.environ.setdefault("SDL_VIDEODRIVER","dummy")
+    record=args.record if args.record is not None else mode.record_by_default and args.smoke is None
+    recorder=InteractionRecorder(args.record_dir) if record else None
+    fullscreen=args.fullscreen or (not args.windowed and arena in ("game","room") and args.smoke is None)
+    print(f"mode={mode.name} arena={config.get('arena',{}).get('name','lab')} seed={seed} learning=disabled recording={record}",flush=True)
+    app=None
+    try:
+        app=App(config,fullscreen=fullscreen,seed=seed,mode=mode.name,recorder=recorder,ecology_enabled=args.ecology)
+        return app.run(max_seconds=args.smoke)
+    finally:
+        if app is not None: app.session.close()
+        elif recorder is not None:
+            for file in recorder.files.values(): file.close()
+        pygame.quit()
 
 
 if __name__ == "__main__":

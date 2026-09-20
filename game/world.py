@@ -17,6 +17,7 @@ from __future__ import annotations
 import enum
 import math
 from dataclasses import dataclass
+from collections import deque
 
 import numpy as np
 
@@ -24,6 +25,8 @@ from .action import NO_ACTION, Action, MotionState
 from .enclosure import Enclosure, WallCue
 from .flight import FreeFlightController
 from .saccade import SaccadeActuator
+from .room import RoomEnvironment
+from .ecology import EcologicalCommand
 
 
 class StrikePhase(enum.Enum):
@@ -47,6 +50,10 @@ class Swatter:
     phase_elapsed: float = 0.0
     height: float = 0.0
     face: float = 0.0          # 0 = edge-on, 1 = face-on
+    orientation: float = 0.0   # world-only paddle/sweep axis
+    attack_speed: float = 0.0
+    sweep_vx: float = 0.0
+    sweep_vy: float = 0.0
 
 
 @dataclass
@@ -87,6 +94,11 @@ class TickEvents:
 class World:
     def __init__(self, config: dict, seed: int):
         w, s, f = config["world"], config["swatter"], config["fly"]
+        self.config = config
+        self.spawn_config = config.get("spawn", {})
+        self.directional = s.get("directional")
+        self.curvature = f.get("curvature")
+        self.sideslip = f.get("sideslip")
         self.width = float(w["width"])
         self.height = float(w["height"])
         self.margin = float(w["margin"])
@@ -136,6 +148,10 @@ class World:
 
     # ---- lifecycle --------------------------------------------------------
     def reset(self, seed: int) -> None:
+        self.room = RoomEnvironment(self.config["room"], seed) if "room" in self.config else None
+        self.ecological_command = None
+        self.object_contact = False
+        self.applied_target_speed = self.baseline_speed
         self.rng = np.random.default_rng(seed)
         self.saccades.reset()
         self.flight.reset(seed)
@@ -149,6 +165,18 @@ class World:
         # and starting at cruise removes a visible start-up lurch.
         self.fly = Fly(x=self.width * 0.5, y=self.height * 0.62, heading=0.0,
                        vx=self.baseline_speed if self.fly_motion_enabled else 0.0, vy=0.0)
+        self.time_seconds = 0.0
+        self._flight_time = 0.0
+        self.pointer_history = deque()
+        self.pointer_history.append((0.0, self.swatter.x, self.swatter.y))
+        self._spawn_rng = np.random.default_rng(seed + 8191)
+        self._curve_phases = self._spawn_rng.uniform(0, 2*math.pi, 2)
+        if self.spawn_config.get("randomized", False) and self.fly_motion_enabled:
+            self._randomize_spawn()
+        self.spawn_state = {"x": self.fly.x, "y": self.fly.y,
+                            "heading": self.fly.heading, "vx": self.fly.vx, "vy": self.fly.vy,
+                            "next_turn_seconds": self.flight.wait,
+                            "curvature_phases": self._curve_phases.tolist()}
         self.stats = Stats()
         self.splat_elapsed = 0.0
         self._wander_turn = 0.0
@@ -157,6 +185,48 @@ class World:
         self._escape_seen_this_strike = False
         self._strike_outcome_recorded = True
         self._resample_wander()
+
+    def _randomize_spawn(self) -> None:
+        cfg = self.spawn_config
+        pad = self.margin + self.fly_radius + cfg["wall_clearance_body_lengths"] * self.body_length
+        if self.width <= 2*pad or self.height <= 2*pad:
+            raise ValueError("arena is too small for randomized spawn clearance")
+        clearance = self.paddle_radius + self.fly_radius + cfg["swatter_clearance_body_lengths"]*self.body_length
+        for _ in range(1000):
+            x, y = self._spawn_rng.uniform(pad, self.width-pad), self._spawn_rng.uniform(pad, self.height-pad)
+            if (math.hypot(x-self.swatter.x, y-self.swatter.y) > clearance
+                    and (self.room is None or self.room.valid_spawn(x,y,self.fly_radius))):
+                break
+        else:
+            raise ValueError("no safe spawn found away from swatter")
+        heading = float(self._spawn_rng.uniform(-math.pi, math.pi))
+        slip = math.radians(float(self._spawn_rng.uniform(-cfg["max_slip_degrees"], cfg["max_slip_degrees"])))
+        speed = self.baseline_speed * float(self._spawn_rng.uniform(*cfg["speed_fraction"]))
+        self.fly = Fly(float(x), float(y), speed*math.cos(heading+slip), speed*math.sin(heading+slip), heading)
+        self.flight.wait = max(.15, self.flight.wait * float(self._spawn_rng.uniform(.1, 1)))
+
+    def _sample_pointer(self) -> None:
+        if not self.directional:
+            return
+        sample = (self.time_seconds, self.swatter.target_x, self.swatter.target_y)
+        if self.pointer_history and self.pointer_history[-1][0] == sample[0]:
+            self.pointer_history[-1] = sample
+        else:
+            self.pointer_history.append(sample)
+        horizon = self.directional["history_seconds"]
+        while len(self.pointer_history) > 2 and self.pointer_history[1][0] < self.time_seconds-horizon:
+            self.pointer_history.popleft()
+
+    def pointer_velocity(self) -> tuple[float, float]:
+        """Least-squares velocity over fixed-tick world-side pointer samples."""
+        if len(self.pointer_history) < 2:
+            return 0.0, 0.0
+        a = np.asarray(self.pointer_history)
+        t = a[:,0]-a[:,0].mean()
+        denom = float(t@t)
+        if denom <= 1e-12:
+            return 0.0, 0.0
+        return float(t@a[:,1]/denom), float(t@a[:,2]/denom)
 
     # ---- input (the only mouse entry point in the codebase) ---------------
     def set_pointer(self, x: float, y: float) -> None:
@@ -170,6 +240,18 @@ class World:
         cooldown between strikes."""
         if self.swatter.phase is not StrikePhase.IDLE or not self.fly.alive:
             return False
+        if self.directional:
+            self._sample_pointer()
+            vx, vy = self.pointer_velocity()
+            speed = min(math.hypot(vx, vy), self.max_tracking_speed)
+            if speed >= self.directional["min_speed"]:
+                self.swatter.orientation = math.atan2(vy, vx)
+            else:
+                speed = 0.0
+            self.swatter.attack_speed = speed
+            sweep = min(speed*self.directional["sweep_fraction"], self.directional["max_sweep_speed"])
+            self.swatter.sweep_vx = sweep*math.cos(self.swatter.orientation)
+            self.swatter.sweep_vy = sweep*math.sin(self.swatter.orientation)
         self.swatter.phase = StrikePhase.WINDUP
         self.swatter.phase_elapsed = 0.0
         self.stats.strikes += 1
@@ -184,6 +266,11 @@ class World:
         edge-on while hovering and face-on while striking, so this grows during
         the wind-up without anyone telling the fly a strike is coming."""
         f = self.edge_on_factor + (1.0 - self.edge_on_factor) * self.swatter.face
+        if self.directional:
+            bearing = math.atan2(self.fly.y-self.swatter.y, self.fly.x-self.swatter.x)
+            # Direction changes the visible projected span of a tilted paddle.
+            # This is geometric foreshortening, never an attack-direction flag.
+            f *= 1.0 - self.directional["tilt_anisotropy"]*(1-self.swatter.face)*abs(math.sin(bearing-self.swatter.orientation))
         return self.paddle_radius * f
 
     @property
@@ -198,6 +285,9 @@ class World:
     def tick(self, dt: float, action: Action = NO_ACTION) -> TickEvents:
         # Per-tick event, not a sticky state after death or calibration freeze.
         self.wall_contact = False
+        self.object_contact = False
+        self._sample_pointer()
+        self.time_seconds += dt
         hit = False
         if self.fly.alive:
             self.stats.survival_seconds += dt
@@ -280,6 +370,15 @@ class World:
                   StrikePhase.COOLDOWN: 1.0,
                   StrikePhase.WINDUP: self.windup_tracking_factor,
                   StrikePhase.ACTIVE: self.active_tracking_factor}[sw.phase]
+        if self.directional and sw.phase in (StrikePhase.WINDUP, StrikePhase.ACTIVE):
+            elapsed = sw.phase_elapsed + (self.windup_seconds if sw.phase is StrikePhase.ACTIVE else 0)
+            total = self.windup_seconds + self.active_seconds
+            envelope = math.sin(math.pi*min(1.0, elapsed/total))
+            # Commit to measured pointer momentum. Later pointer motion cannot
+            # retarget the stroke while it is in progress.
+            sw.x = min(self.width, max(0.0, sw.x + sw.sweep_vx*envelope*dt))
+            sw.y = min(self.height, max(0.0, sw.y + sw.sweep_vy*envelope*dt))
+            return
         if factor <= 0.0:
             return
         alpha = 1.0 - math.exp(-dt / self.smoothing_tau)
@@ -292,6 +391,8 @@ class World:
             step_y *= limit / mag
         sw.x += step_x
         sw.y += step_y
+        if self.directional and math.hypot(step_x, step_y) > 1e-6:
+            sw.orientation = math.atan2(step_y, step_x)
 
     def _resample_wander(self) -> None:
         # Tonic exploration changes angular velocity, never screen direction.
@@ -300,12 +401,25 @@ class World:
 
     def _move_fly(self, dt: float, action: Action) -> None:
         fly = self.fly
+        previous = (fly.x,fly.y)
+        command = self.ecological_command
+        if command is not None and type(command) is not EcologicalCommand:
+            raise TypeError("world accepts only EcologicalCommand for ecological modulation")
+        threat_priority = self._neural_active(action) or self.saccades.kind in ("ALERT","ESCAPE")
+        target_speed = self.baseline_speed if command is None or threat_priority else min(self.max_speed, command.target_speed_bl_s*self.body_length)
+        eco_turn = 0.0 if command is None or threat_priority else command.steering_rad_s
+        self.applied_target_speed = target_speed
+        self._flight_time += dt
         self._wander_timer += dt
         if self._wander_timer >= self.wander_interval:
             self._wander_timer -= self.wander_interval
             self._resample_wander()
         self._wander_turn += (self._wander_target - self._wander_turn) * (
             1.0 - math.exp(-dt / self.wander_turn_tau))
+        if self.curvature:
+            self._wander_turn = sum(a*math.sin(2*math.pi*self._flight_time/p+phase)
+                                   for a,p,phase in zip(self.curvature["amplitudes_rad_s"],
+                                                        self.curvature["periods_seconds"], self._curve_phases))
 
         # Escape is an impulse on velocity, never a position jump.
         if action.escape:
@@ -321,8 +435,8 @@ class World:
         # Tonic locomotion is game physics, NOT a connectome threat response.
         # Damping relaxes velocity toward forward cruise, retaining inertia and
         # lateral escape momentum. Threat steering arrives only via Action.
-        ax = self.damping * (self.baseline_speed * math.cos(fly.heading) - fly.vx)
-        ay = self.damping * (self.baseline_speed * math.sin(fly.heading) - fly.vy)
+        ax = self.damping * (target_speed * math.cos(fly.heading) - fly.vx)
+        ay = self.damping * (target_speed * math.sin(fly.heading) - fly.vy)
         fly.vx += ax * dt
         fly.vy += ay * dt
         speed = math.hypot(fly.vx, fly.vy)
@@ -331,6 +445,8 @@ class World:
             fly.vy *= self.max_speed / speed
         fly.x += fly.vx * dt
         fly.y += fly.vy * dt
+        if self.room is not None and self.collisions_enabled:
+            self.object_contact = self.room.constrain_motion(fly,previous,self.fly_radius)
 
         # (A) Local sensory geometry: what the surrounding surfaces look like
         # from the fly's own heading. No wall coordinates leave the enclosure.
@@ -342,7 +458,8 @@ class World:
         self._request_threat_pulse(action)
         # (B) Free flight and boundary behaviour, driven by the local cue.
         self.flight.update(dt, self.wall_cue, self.saccades,
-                           neural_active=self._neural_active(action))
+                           neural_active=self._neural_active(action),
+                           spontaneous_clock_rate=1.0 if command is None or threat_priority else command.spontaneous_clock_rate)
 
         # Do not overwrite heading from velocity: that used to erase steering
         # at cruise speed and abruptly swivel the body after a lateral impulse.
@@ -350,10 +467,19 @@ class World:
         # rate plus normal steering/drift under the shipped configuration.
         # Custom excessive steering is clipped as a final safety constraint.
         pulse = self.saccades.step(dt)
-        self.yaw_rate = float(np.clip(action.turn * self.turn_rate + self._wander_turn
+        self.yaw_rate = float(np.clip(action.turn * self.turn_rate + self._wander_turn + eco_turn
                                       + pulse / dt,
                                       -self.max_yaw_rate, self.max_yaw_rate))
         fly.heading = (fly.heading + self.yaw_rate * dt) % (2.0 * math.pi)
+        if self.sideslip:
+            speed = math.hypot(fly.vx, fly.vy)
+            if speed > 1e-9:
+                slip = (math.atan2(fly.vy, fly.vx)-fly.heading+math.pi) % (2*math.pi)-math.pi
+                slip *= math.exp(-dt/self.sideslip["realignment_tau_seconds"])
+                bound = math.radians(self.sideslip["max_degrees"])
+                slip = min(bound, max(-bound, slip))
+                fly.vx = speed*math.cos(fly.heading+slip)
+                fly.vy = speed*math.sin(fly.heading+slip)
 
     @staticmethod
     def _neural_active(action: Action) -> bool:
