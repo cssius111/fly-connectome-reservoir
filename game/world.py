@@ -27,9 +27,16 @@ from .flight import FreeFlightController
 from .saccade import SaccadeActuator
 from .room import RoomEnvironment
 from .ecology import EcologicalCommand
+from .physical_swatter import PhysicalSwatter
 
 
 class StrikePhase(enum.Enum):
+    APPROACH = "approach"
+    COMMIT = "commit"
+    FAST_SWING = "fast_swing"
+    ACTIVE_CONTACT = "active_contact"
+    FOLLOW_THROUGH = "follow_through"
+    RECOVERY = "recovery"
     IDLE = "idle"
     WINDUP = "windup"
     ACTIVE = "active"
@@ -37,7 +44,8 @@ class StrikePhase(enum.Enum):
 
 
 _PHASE_CODE = {StrikePhase.IDLE: 0.0, StrikePhase.WINDUP: 1.0,
-               StrikePhase.ACTIVE: 2.0, StrikePhase.COOLDOWN: 3.0}
+               StrikePhase.ACTIVE: 2.0, StrikePhase.COOLDOWN: 3.0,
+               **{p:float(i+4) for i,p in enumerate((StrikePhase.APPROACH,StrikePhase.COMMIT,StrikePhase.FAST_SWING,StrikePhase.ACTIVE_CONTACT,StrikePhase.FOLLOW_THROUGH,StrikePhase.RECOVERY))}}
 
 
 @dataclass
@@ -54,6 +62,14 @@ class Swatter:
     attack_speed: float = 0.0
     sweep_vx: float = 0.0
     sweep_vy: float = 0.0
+    vx: float = 0.0
+    vy: float = 0.0
+    ax: float = 0.0
+    ay: float = 0.0
+    angular_velocity: float = 0.0
+    attack_orientation: float = 0.0
+    attack_acceleration: float = 0.0
+    swing_speed: float = 0.0
 
 
 @dataclass
@@ -144,6 +160,8 @@ class World:
         # Calibration freezes position, heading and velocity, including wander.
         # This flag persists across reset(), like collisions_enabled.
         self.fly_motion_enabled = True
+        physical = s.get("physical", {})
+        self.physical_swatter = PhysicalSwatter(physical,self.width,self.height,float(physical.get("center_inset",self.paddle_radius+self.hover_height*.3))) if physical.get("enabled") else None
         self.reset(seed)
 
     # ---- lifecycle --------------------------------------------------------
@@ -161,6 +179,10 @@ class World:
         self.swatter = Swatter(x=self.width * 0.5, y=self.height * 0.18,
                                target_x=self.width * 0.5, target_y=self.height * 0.18,
                                height=self.hover_height, face=0.0)
+        if self.physical_swatter is not None:
+            self.swatter.phase = StrikePhase.APPROACH
+            self.physical_swatter.segments = []
+        self._fly_before = (0.0,0.0)
         # Airborne from the first frame: a fly does not accelerate from rest,
         # and starting at cruise removes a visible start-up lurch.
         self.fly = Fly(x=self.width * 0.5, y=self.height * 0.62, heading=0.0,
@@ -236,10 +258,16 @@ class World:
         self.swatter.target_y = float(min(max(y, 0.0), self.height))
 
     def request_strike(self) -> bool:
-        """Left click. Accepted only from IDLE, which is what enforces the
-        cooldown between strikes."""
-        if self.swatter.phase is not StrikePhase.IDLE or not self.fly.alive:
+        """Accept a click from legacy IDLE or physical APPROACH after recovery."""
+        if self.swatter.phase not in (StrikePhase.IDLE,StrikePhase.APPROACH) or not self.fly.alive:
             return False
+        if self.physical_swatter is not None:
+            self._sample_pointer()
+            self.physical_swatter.commit(self.swatter,self.pointer_history)
+            self.stats.strikes += 1
+            self._escape_seen_this_strike = False
+            self._strike_outcome_recorded = False
+            return True
         if self.directional:
             self._sample_pointer()
             vx, vy = self.pointer_velocity()
@@ -275,7 +303,7 @@ class World:
 
     @property
     def lethal(self) -> bool:
-        return self.swatter.phase is StrikePhase.ACTIVE
+        return self.swatter.phase in (StrikePhase.ACTIVE,StrikePhase.ACTIVE_CONTACT)
 
     @property
     def splat_finished(self) -> bool:
@@ -296,8 +324,12 @@ class World:
                 self._escape_seen_this_strike = True
         else:
             self.splat_elapsed += dt
-        resolved = self._advance_phase(dt)
-        self._move_swatter(dt)
+        self._fly_before = (self.fly.x,self.fly.y)
+        if self.physical_swatter is not None:
+            resolved = self.physical_swatter.advance(self.swatter,dt)
+        else:
+            resolved = self._advance_phase(dt)
+            self._move_swatter(dt)
         if self.fly.alive:
             if self.fly_motion_enabled:
                 self._move_fly(dt, action)
@@ -521,7 +553,11 @@ class World:
 
     def _resolve_collision(self) -> bool:
         """Lethal only inside the active strike window."""
-        if not self.lethal or not self.collisions_enabled:
+        if not self.collisions_enabled:
+            return False
+        if self.physical_swatter is not None:
+            return self.physical_swatter.collision(self._fly_before,(self.fly.x,self.fly.y),self.paddle_radius+self.fly_radius)
+        if not self.lethal:
             return False
         d = math.hypot(self.swatter.x - self.fly.x, self.swatter.y - self.fly.y)
         return d <= self.paddle_radius + self.fly_radius

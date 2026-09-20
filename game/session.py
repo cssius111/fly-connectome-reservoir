@@ -172,9 +172,22 @@ class Session:
         if self.recorder is not None:
             self.recorder.close(self)
 
+    def record_control(self, name, **payload):
+        callback = getattr(self.recorder, "control", None)
+        if callable(callback):callback(self, name, **payload)
+
+    def request_strike(self):
+        """Record a click consumed between ticks without inventing render timing."""
+        accepted = self.world.request_strike()
+        callback = getattr(self.recorder, "input", None)
+        if callable(callback):callback(self, "request_strike", accepted=accepted)
+        return accepted
+
     def tick(self, pointer: tuple[float, float] | None = None, strike: bool = False) -> TickEvents:
         if pointer is not None:
             self.world.set_pointer(pointer[0], pointer[1])
+        callback = getattr(self.recorder, "input", None)
+        if callable(callback):callback(self, "tick", pointer=None if pointer is None else [self.world.swatter.target_x,self.world.swatter.target_y], strike=bool(strike))
         started = self.world.request_strike() if strike else False
         retina = self.projector.project(self.world)
         self.last_retina = retina

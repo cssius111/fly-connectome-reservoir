@@ -3,8 +3,8 @@
     python -m game.app
 
 Controls
-    mouse move   move the swatter
-    left click   strike (wind-up, brief lethal window, cooldown)
+    mouse move   aim the swatter (bounded inertial motion in ROOM)
+    left click   commit a strike (swing, contact, follow-through, recovery)
     R / Enter    restart into a running episode (never a paused one)
     Space / P    pause
     H            toggle the neural HUD
@@ -48,6 +48,9 @@ PHASE_COLOR = {StrikePhase.IDLE: (110, 118, 132),
                StrikePhase.WINDUP: (198, 150, 52),
                StrikePhase.ACTIVE: (208, 64, 58),
                StrikePhase.COOLDOWN: (78, 84, 96)}
+PHASE_COLOR.update({StrikePhase.APPROACH:(110,118,132), StrikePhase.COMMIT:(198,150,52),
+                    StrikePhase.FAST_SWING:(228,125,52), StrikePhase.ACTIVE_CONTACT:(220,64,58),
+                    StrikePhase.FOLLOW_THROUGH:(182,112,70), StrikePhase.RECOVERY:(94,115,145)})
 LOOM_COLOR = (74, 134, 196)
 THREAT_COLOR = (196, 112, 58)
 ESCAPE_COLOR = (108, 190, 120)
@@ -202,6 +205,7 @@ class App:
                             restarted = True
                     elif control == "pause":
                         self.paused = not self.paused
+                        self.session.record_control("pause", paused=self.paused)
                     elif control == "hud":
                         self.show_neural = not self.show_neural
             if restarted:
@@ -237,6 +241,8 @@ class App:
             self.accumulator -= self.tick_seconds
             self._prev = self._snapshot()
             t0 = time.perf_counter()
+            presentation = getattr(self.session.recorder, "set_presentation", None)
+            if callable(presentation):presentation(fps=self.clock.get_fps(), brain_ms_per_tick=self.tick_ms, hud_visible=self.show_neural, fullscreen=self.fullscreen)
             self.session.tick(pointer=self.pointer_world, strike=pending_strike)
             self.tick_ms = 0.85 * self.tick_ms + 0.15 * (time.perf_counter() - t0) * 1000.0
             pending_strike = False
@@ -249,7 +255,7 @@ class App:
                                       hx * action.lateral + hy * action.forward)
         if pending_strike:
             # Click landed between ticks: don't drop it.
-            self.session.world.request_strike()
+            self.session.request_strike()
 
     # ---- drawing -----------------------------------------------------------
     def _draw(self) -> None:
@@ -351,6 +357,9 @@ class App:
             pygame.draw.ellipse(c, colour, rect, 3)
             pygame.draw.line(c, colour, rect.center,
                              (rect.centerx + int(r * 1.5), rect.centery - int(r * 1.1)), 5)
+        if w.physical_swatter is not None:
+            label=self.font_small.render(w.swatter.phase.value.replace("_"," ").upper(),True,colour)
+            c.blit(label,label.get_rect(midtop=(rect.centerx,rect.bottom+4)))
         pygame.draw.line(c, (60, 66, 78), (int(pos[0]), int(pos[1])),
                          (rect.centerx, rect.centery), 1)
 
@@ -413,6 +422,9 @@ class App:
         hint_surface = self.font_small.render(hint, True, DIM)
         pygame.draw.rect(c, (10,12,16), pygame.Rect(x-4,c.get_height()-28,hint_surface.get_width()+8,22))
         c.blit(hint_surface, (x, c.get_height() - 24))
+        if self.session.recorder is not None and not self.session.recorder.closed:
+            pygame.draw.circle(c,(220,66,60),(206,21),4)
+            c.blit(self.font_small.render("REC",True,INK),(216,14))
         if not self.show_neural:
             return
 
@@ -437,6 +449,8 @@ class App:
         if "escape_strength" in diagnostics:
             lines.append(f"escape strength {diagnostics['escape_strength']:.2f}")
         lines.append(f"saccade {self.session.world.saccades.kind}  {self.session.world.saccades.remaining:.2f}s")
+        if w.physical_swatter is not None:
+            lines.append(f"swatter {w.swatter.phase.value} {math.hypot(w.swatter.vx,w.swatter.vy):.0f} units/s")
         lines.append(f"seed {self.session.seed}")
         lines.append(f"mode {self.session.mode.name.upper()}  arena {self.config.get('arena', {}).get('name', 'lab').upper()}")
         eco = self.session.ecology
@@ -509,9 +523,10 @@ class App:
 
 def main(argv=None) -> int:
     from .modes import resolve_mode
-    from .recording import InteractionRecorder
+    from .session_recording import HumanSessionRecorder
     parser = argparse.ArgumentParser(description="Connectome-driven fly-swatter game")
     parser.add_argument("--config", type=Path)
+    parser.add_argument("--replay", type=Path, help="verify a recorded session headlessly using its archived config and consumed inputs")
     parser.add_argument("--mode", choices=("play","lab","evaluation","training"), default="play")
     parser.add_argument("--arena", choices=("room","game","lab"))
     parser.add_argument("--seed", type=int)
@@ -520,17 +535,24 @@ def main(argv=None) -> int:
     display.add_argument("--fullscreen", action="store_true")
     display.add_argument("--windowed", action="store_true")
     parser.add_argument("--record", action=argparse.BooleanOptionalAction, default=None)
-    parser.add_argument("--record-dir", type=Path, default=ROOT/"artifacts"/"game"/"player-default")
+    parser.add_argument("--record-dir", type=Path, default=ROOT/"results"/"game"/"sessions")
     parser.add_argument("--smoke", type=float, default=None, metavar="SECONDS")
     args=parser.parse_args(argv)
+    if args.replay is not None:
+        import json
+        from .replay import replay_session
+        print(json.dumps(replay_session(args.replay),indent=2))
+        return 0
     mode=resolve_mode(args.mode)
     arena=args.arena or ("lab" if args.mode=="lab" else "room")
-    config=load_config(args.config or ROOT/{"lab":"game_config.json","game":"game_play_config.json","room":"game_room_config.json"}[arena])
+    config_path=args.config or ROOT/{"lab":"game_config.json","game":"game_play_config.json","room":"game_room_config.json"}[arena]
+    config=load_config(config_path)
     seed=args.seed if args.seed is not None else (config["sim"]["seed"] if mode.deterministic_default_seed else secrets.randbits(31))
     if seed < 0: parser.error("seed must be nonnegative")
     if args.smoke is not None: os.environ.setdefault("SDL_VIDEODRIVER","dummy")
     record=args.record if args.record is not None else mode.record_by_default and args.smoke is None
-    recorder=InteractionRecorder(args.record_dir) if record else None
+    recorder=HumanSessionRecorder(args.record_dir,config_file=config_path) if record else None
+    if recorder is not None:print(f"Recording session: {recorder.path}",flush=True)
     fullscreen=args.fullscreen or (not args.windowed and arena in ("game","room") and args.smoke is None)
     print(f"mode={mode.name} arena={config.get('arena',{}).get('name','lab')} seed={seed} learning=disabled recording={record}",flush=True)
     app=None

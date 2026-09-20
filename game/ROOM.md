@@ -1,5 +1,10 @@
 # M1.6 ecological ROOM foundation
 
+M1.7 preserves this ecology and adds the [session recorder and physical paddle](SESSIONS.md).
+The active ROOM config is version 8, calibrated separately in
+`results/game/calibration_room_m1_7_edge.json` (threshold 1.70). The M1.6 calibration
+and result files remain historical evidence; they do not match the new config.
+
 ROOM is the primary PLAY environment; LAB remains the controlled experiment,
 and the preserved M1.5 GAME preset remains selectable. M1.6 implements no
 M1.5.1 universal-speed calibration, reinforcement learning or personalization.

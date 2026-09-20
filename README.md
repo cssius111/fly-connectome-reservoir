@@ -7,39 +7,46 @@ A reproducible Windows CPU computational neuroscience experiment and an untraine
 The frozen experiment is specified in [PROTOCOL.md](PROTOCOL.md), with historical results in [results/REPORT.md](results/REPORT.md). These protected artifacts retain their original language and bytes for reproducibility. Editable project content is English.
 
 
-## M1.6 ROOM: current playtest candidate
+## M1.7: recorded human playtests and physical ROOM swatter
 
-Default launch now selects the ecological ROOM preset. LAB and the preserved
-M1.5 GAME preset remain available. No RL, personalized learning or M1.5.1
-universal-speed calibration is implemented.
+M1.6 is preserved locally as `58ffd60fb60239a911c1ca0baea458ec743774b7`.
+M1.7 includes an uncommitted edge-reachability repair for renewed human playtesting. No reinforcement learning,
+personalization or M1.5.1 universal-speed calibration is implemented.
 
 ```powershell
 Set-Location D:\Projects\flybrain-lab
-& .\.venv\Scripts\python.exe -m game.app
-& .\.venv\Scripts\python.exe -m game.app --arena room --seed 101 --windowed
-& .\.venv\Scripts\python.exe -m game.app --arena room --seed 101 --no-ecology --windowed
-& .\.venv\Scripts\python.exe -m game.app --arena game --seed 101 --windowed
-& .\.venv\Scripts\python.exe -m game.app --mode lab --windowed
+& .\.venv\Scripts\python.exe -m game.app --arena room --record
+& .\.venv\Scripts\python.exe -m game.app --arena room --record --windowed --seed 101
+& .\.venv\Scripts\python.exe -m game.app --replay 'results/game/sessions/SESSION_ID'
 ```
 
-ROOM adds a wind-shaped analytic odor plume, a fermentation surface, a column
-and a future perch. A strict local EcologicalSense drives a phenomenological
-state controller with context-dependent speed, upwind/search tendencies and
-approach-only landing attempts. It receives no hidden source coordinates.
-The frozen MaleCNS visual threat pathway remains separate and has priority.
+Play normally; the REC indicator confirms logging. Each unique directory under
+`results/game/sessions/` contains an automatic English report, summary, manifest,
+50 Hz state log, consumed input stream, indexed strike windows and separate
+whitelisted policy observations. Sessions are ignored by Git. Normal exit
+finalizes the report; a force-killed process leaves an explicitly incomplete log.
+PLAY records by default; `--no-record` disables it. Use `--record-dir PATH` for
+a separate profile. World/debug data never enter the future policy whitelist.
 
-See [ROOM architecture, exact field equations, state/speed table and checklist](game/ROOM.md)
-and [actual M1.6 validation](results/game/M1_6.md). Environmental analysis logs
-stay separate from the unchanged future-policy observation schema. ROOM uses
-its own exact-provenance calibration; LAB/GAME records are preserved:
+In ROOM the mouse controls desired hand motion. A bounded inertial paddle uses
+200 ms of recent input to commit a continuous swing, contact, follow-through and
+recovery. LAB and GAME retain their previous swatter dynamics and calibrations.
+The ecological ROOM controller and frozen neural threat pathway remain intact.
+
+See [recording, replay, physics and playtest guide](game/SESSIONS.md),
+[ROOM ecology](game/ROOM.md), and [actual M1.7 validation](results/game/M1_7.md).
+M1.6 evidence remains unchanged in [its historical report](results/game/M1_6.md).
+The edge repair allows partially offscreen paddle heads without changing fly bounds
+or motor limits. See the [edge audit and validation](results/game/M1_7_EDGE.md).
+The active ROOM calibration is `calibration_room_m1_7_edge.json`, threshold **1.70**:
 
 ```text
 python tools/calibrate_escape.py --config game_room_config.json --trials 28
-python tools/room_sanity.py
+python tools/session_sanity.py
 ```
 
-M1.6 is uncommitted pending human playtesting. Historical sections below describe
-the preserved experimental milestones; select `--arena game` to run M1.5.
+Historical sections below describe earlier milestones. Use `--arena game` for
+the preserved GAME preset and `--mode lab` for LAB.
 
 ## Environment and original experiment
 
@@ -81,14 +88,14 @@ $env:FLY_DATA = "$PWD\data"
 
 ## M1.5: fullscreen GAME and controlled LAB
 
-Default launch now uses the larger GAME arena and records interaction data;
+At M1.5, the default became GAME; current M1.7 defaults to ROOM instead.
 H reveals the optional neural HUD. M1.4 was committed separately as
-`fe2efb758a10802442edabad01e5a976f4c58b16`. M1.5 remains uncommitted for human
-playtesting, with no learning or policy updates.
+`fe2efb758a10802442edabad01e5a976f4c58b16`; the validated M1.5 foundation is
+preserved in the M1.6 checkpoint above. No learning or policy updates occurred.
 
 ```powershell
 & .\.venv\Scripts\python.exe -m game.app                         # fullscreen PLAY
-& .\.venv\Scripts\python.exe -m game.app --windowed --seed 101   # reproducible GAME
+& .\.venv\Scripts\python.exe -m game.app --windowed --seed 101   # reproducible default ROOM
 & .\.venv\Scripts\python.exe -m game.app --mode lab --windowed   # unchanged LAB preset
 & .\.venv\Scripts\python.exe -m game.app --mode evaluation --seed 101 --windowed
 ```
@@ -108,9 +115,10 @@ results are in [results/game/M1_5.md](results/game/M1_5.md). Run
 
 PLAY/TRAINING use a new base seed per launch unless `--seed` is given;
 EVALUATION/LAB default to fixed seeds. All four modes are frozen today.
-`--mode training` collects data only. Default logs and persistent counters are
-under `artifacts/game/player-default/`; `--record-dir PATH` selects another
-profile and `--no-record` disables recording. World/debug data and policy
+`--mode training` collects data only. Historical M1.5 logs and counters remain
+under `artifacts/game/player-default/`. M1.7 starts a separate recorder/profile
+under `results/game/sessions/`; `--record-dir PATH` selects another profile and
+`--no-record` disables recording. World/debug data and policy
 observations are stored separately. No checkpoint is trained or loaded.
 
 ## Interactive fly-swatter

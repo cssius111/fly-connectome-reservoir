@@ -75,7 +75,8 @@ def _trial(session: Session, policy: RecordingPolicy, seed: int, offset: tuple[f
     fly = session.world.fly
     pointer = (fly.x + offset[0], fly.y + offset[1])
     # Let the swatter settle at the hover position before anything is recorded.
-    for _ in range(40):
+    settle_ticks = max(40, round(session.config["swatter"].get("physical", {}).get("calibration_settle_seconds", 0.8)/session.tick_seconds))
+    for _ in range(settle_ticks):
         session.tick(pointer=pointer, strike=False)
     settle = len(policy.history)
     phases = []
@@ -85,7 +86,7 @@ def _trial(session: Session, policy: RecordingPolicy, seed: int, offset: tuple[f
     total = np.array([m.dnp01_total for m in policy.history[settle:]], dtype=np.float64)
     left = np.array([m.dnp01_left for m in policy.history[settle:]], dtype=np.float64)
     right = np.array([m.dnp01_right for m in policy.history[settle:]], dtype=np.float64)
-    committed = np.array([p in (StrikePhase.WINDUP, StrikePhase.ACTIVE) for p in phases])
+    committed = np.array([p in (StrikePhase.WINDUP, StrikePhase.ACTIVE, StrikePhase.COMMIT, StrikePhase.FAST_SWING, StrikePhase.ACTIVE_CONTACT) for p in phases])
     return {"total": total, "left": left, "right": right, "committed": committed,
             "click_tick": click_tick}
 
@@ -181,6 +182,7 @@ def main() -> int:
             "collisions_enabled": False,
             "escape_disabled": True,
             "fly_motion_enabled": False,
+            "swatter_settle_ticks": max(40, round(config["swatter"].get("physical", {}).get("calibration_settle_seconds",0.8)/tick)),
             "note": "fly position and heading are fixed; velocity stays zero, wander is disabled, and collisions/escape actions are disabled",
         },
         "escape_threshold": threshold,
