@@ -45,6 +45,48 @@ RELAXATIONS = (DAMPED_CRUISE, EXPONENTIAL_APPROACH, DIRECT)
 
 
 @dataclass(frozen=True, slots=True)
+class KinematicCaps:
+    """Three separated ceilings, replacing one overloaded `fly.max_speed`.
+
+    All three are **Class C** engineering values: numerical stability and simulator
+    protection. None of them is a species flight maximum, and none is a biological
+    escape-speed constant. See results/game/M1_8_B2B_I.md.
+
+    * `ecological`      truncates commanded (later: sampled) ecological locomotion.
+    * `legacy_accepted` the accepted constraint on threat-priority cruise, the neural
+      escape impulse and the frozen M1.8-A lifecycle bounds. Held at the legacy value.
+    * `safety_ceiling`  a global numerical guard applied last, on every path. It should
+      never bind in normal play.
+
+    M1.8-B2b-i sets all three to the legacy `fly.max_speed`, so every clamp reduces to
+    the accepted arithmetic and the refactor is bit-identical.
+    """
+
+    ecological: float
+    legacy_accepted: float
+    safety_ceiling: float
+
+    def __post_init__(self):
+        for name in ('ecological', 'legacy_accepted', 'safety_ceiling'):
+            value = getattr(self, name)
+            if not math.isfinite(value) or value <= 0.0:
+                raise ValueError('kinematic cap must be positive and finite: ' + name)
+
+    @classmethod
+    def from_config(cls, config: dict, legacy_max_speed: float):
+        """Absent keys fall back to the legacy ceiling, so LAB and GAME are unchanged."""
+        block = config.get('kinematics', {})
+        legacy = float(legacy_max_speed)
+        return cls(float(block.get('ecological_cap_units_s', legacy)),
+                   float(block.get('legacy_accepted_cap_units_s', legacy)),
+                   float(block.get('safety_ceiling_units_s', legacy)))
+
+    def effective(self, profile_cap: float) -> float:
+        """The single clamp the executor applies: the tighter of profile and guard."""
+        return min(profile_cap, self.safety_ceiling)
+
+
+@dataclass(frozen=True, slots=True)
 class KinematicProfile:
     """A request for body kinematics, separate from the context that produced it.
 
@@ -61,7 +103,12 @@ class KinematicProfile:
     steering_rad_s: float = 0.0
     spontaneous_clock_rate: float = 1.0
     turn_gain: float = 1.0
-    max_speed: float = math.inf
+    # `effective_cap` is what the executor clamps against. `profile_cap` and
+    # `safety_ceiling` record which separated ceiling produced it, so the overloaded
+    # legacy `max_speed` no longer has to mean three different things at once.
+    effective_cap: float = math.inf
+    profile_cap: float = math.inf
+    safety_ceiling: float = math.inf
     clamp_speed: bool = False
     # ---- inert M1.8-B2 hooks; None means "use the accepted B1 behavior" -------------
     speed_envelope_bl_s: tuple[float, float] | None = None
@@ -74,6 +121,8 @@ class KinematicProfile:
             raise ValueError('unknown kinematic relaxation law: ' + str(self.relaxation))
         if not self.context:
             raise ValueError('kinematic profile requires a context identity')
+        if self.effective_cap > min(self.profile_cap, self.safety_ceiling) + 1e-12:
+            raise ValueError('effective cap must not exceed its components')
         for name in ('target_speed', 'relaxation_rate', 'steering_rad_s',
                      'spontaneous_clock_rate', 'turn_gain'):
             if not math.isfinite(getattr(self, name)):
@@ -96,9 +145,14 @@ class KinematicResolver:
     """
 
     def __init__(self, baseline_speed: float, max_speed: float, body_length: float,
-                 damping: float, room_kinematic_scale: float = 1.0):
+                 damping: float, room_kinematic_scale: float = 1.0,
+                 caps: 'KinematicCaps | None' = None):
         self.baseline_speed = float(baseline_speed)
+        # Retained as the legacy alias for callers outside the kinematics layer; the
+        # separated ceilings in `self.caps` are what this resolver actually applies.
         self.max_speed = float(max_speed)
+        self.caps = caps if caps is not None else KinematicCaps(
+            float(max_speed), float(max_speed), float(max_speed))
         self.body_length = float(body_length)
         self.damping = float(damping)
         # Class C simulator/environment mapping, not a measured biological constant.
@@ -123,36 +177,48 @@ class KinematicResolver:
         ecological command unchanged", which is the only behavior B2a produces.
         """
         if command is None or threat_priority:
+            # Threat-priority cruise and the neural escape impulse share the accepted
+            # legacy constraint; B2b-i does not change its effective value.
+            cap = self.caps.legacy_accepted
             return KinematicProfile(
                 context='baseline_cruise' if command is None else 'neural_priority',
                 relaxation=DAMPED_CRUISE, target_speed=self.baseline_speed,
                 relaxation_rate=self.damping, steering_rad_s=0.0,
-                spontaneous_clock_rate=1.0, max_speed=self.max_speed, clamp_speed=True)
+                spontaneous_clock_rate=1.0, effective_cap=self.caps.effective(cap),
+                profile_cap=cap, safety_ceiling=self.caps.safety_ceiling,
+                clamp_speed=True)
         requested = (command.target_speed_bl_s if sampled_speed_bl_s is None
                      else float(sampled_speed_bl_s))
+        cap = self.caps.ecological
         return KinematicProfile(
             context='ecology_' + command.state.lower(), relaxation=DAMPED_CRUISE,
-            target_speed=min(self.max_speed, self.ecological_units(requested)),
+            target_speed=min(cap, self.ecological_units(requested)),
             relaxation_rate=self.damping, steering_rad_s=command.steering_rad_s,
             spontaneous_clock_rate=command.spontaneous_clock_rate,
-            max_speed=self.max_speed, clamp_speed=True)
+            effective_cap=self.caps.effective(cap), profile_cap=cap,
+            safety_ceiling=self.caps.safety_ceiling, clamp_speed=True)
 
     def landing_approach(self, target_speed_bl_s: float, tau_seconds: float,
                          turn_rad_s: float) -> KinematicProfile:
         """Lifecycle-owned visual approach. Ecological intent is not executed here."""
+        # Frozen M1.8-A: the lifecycle uses the accepted legacy constraint, and neither
+        # the ROOM mapping nor the ecological cap applies to it.
+        cap = self.caps.legacy_accepted
         return KinematicProfile(
             context='lifecycle_visual_approach', relaxation=EXPONENTIAL_APPROACH,
-            # No room_kinematic_scale here: landing approach speed belongs to the frozen
-            # M1.8-A lifecycle. The asymmetry is deliberate and deferred to B2b.
-            target_speed=min(self.max_speed, target_speed_bl_s*self.body_length),
+            target_speed=min(cap, target_speed_bl_s*self.body_length),
             relaxation_rate=float(tau_seconds), steering_rad_s=turn_rad_s,
-            spontaneous_clock_rate=0.0, max_speed=self.max_speed, clamp_speed=False)
+            spontaneous_clock_rate=0.0, effective_cap=self.caps.effective(cap),
+            profile_cap=cap, safety_ceiling=self.caps.safety_ceiling, clamp_speed=False)
 
     def lifecycle_direct(self, context: str, target_speed: float = 0.0) -> KinematicProfile:
         """Stationary contact and launch, where WORLD sets velocity directly."""
+        cap = self.caps.legacy_accepted
         return KinematicProfile(context=context, relaxation=DIRECT,
                                 target_speed=target_speed, spontaneous_clock_rate=0.0,
-                                max_speed=self.max_speed, clamp_speed=False)
+                                effective_cap=self.caps.effective(cap), profile_cap=cap,
+                                safety_ceiling=self.caps.safety_ceiling,
+                                clamp_speed=False)
 
 
 class KinematicExecutor:
@@ -180,9 +246,9 @@ class KinematicExecutor:
             return
         if profile.clamp_speed:
             speed = math.hypot(fly.vx, fly.vy)
-            if speed > profile.max_speed:
-                fly.vx *= profile.max_speed / speed
-                fly.vy *= profile.max_speed / speed
+            if speed > profile.effective_cap:
+                fly.vx *= profile.effective_cap / speed
+                fly.vy *= profile.effective_cap / speed
 
     @staticmethod
     def yaw_rate(profile: KinematicProfile, neural_turn: float, drift_turn: float,

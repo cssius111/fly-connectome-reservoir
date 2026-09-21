@@ -14,8 +14,8 @@ from game.action import Action
 from game.ecology import EcologicalCommand
 from game.kinematics import (DAMPED_CRUISE, DIRECT, EXPONENTIAL_APPROACH,
                              LIFECYCLE_OWNED_CONTEXTS, NEURAL_OVERRIDE_CONTEXTS,
-                             SAMPLED_CONTEXTS, KinematicExecutor, KinematicProfile,
-                             KinematicResolver, KinematicSampler)
+                             SAMPLED_CONTEXTS, KinematicCaps, KinematicExecutor,
+                             KinematicProfile, KinematicResolver, KinematicSampler)
 from game.session import load_config
 from game.world import Fly, World
 
@@ -101,7 +101,8 @@ class TestExecutorMatchesLegacyArithmetic(unittest.TestCase):
             if speed > cap:
                 legacy_vx *= cap/speed;legacy_vy *= cap/speed
             KinematicExecutor.translate(KinematicProfile('c', DAMPED_CRUISE, target, damping,
-                                                         max_speed=cap, clamp_speed=True), fly, DT)
+                                                         effective_cap=cap, profile_cap=cap,
+                                                         safety_ceiling=cap, clamp_speed=True), fly, DT)
             self.assertEqual((fly.vx, fly.vy), (legacy_vx, legacy_vy))
 
     def test_exponential_approach_is_bit_identical_and_unclamped(self):
@@ -266,6 +267,71 @@ class TestB2aSamplerAndScale(unittest.TestCase):
             config = load_config(ROOT/name)
             self.assertNotIn('kinematics', config)
             self.assertEqual(World(config, 5).kinematics.room_kinematic_scale, 1.0)
+
+
+class TestB2biSeparatedCaps(unittest.TestCase):
+    """M1.8-B2b-i: three named Class C ceilings replace one overloaded max_speed."""
+
+    def test_config_holds_three_caps_at_the_legacy_value(self):
+        legacy = ROOM['fly']['max_speed']
+        k = ROOM['kinematics']
+        for key in ('ecological_cap_units_s', 'legacy_accepted_cap_units_s',
+                    'safety_ceiling_units_s'):
+            self.assertEqual(k[key], legacy)
+
+    def test_caps_default_to_the_legacy_ceiling_when_absent(self):
+        for name in ('game_config.json', 'game_play_config.json'):
+            config = load_config(ROOT/name)
+            legacy = config['fly']['max_speed']
+            caps = KinematicCaps.from_config(config, legacy)
+            self.assertEqual((caps.ecological, caps.legacy_accepted, caps.safety_ceiling),
+                             (legacy, legacy, legacy))
+
+    def test_invalid_caps_are_rejected(self):
+        for bad in ((0., 1., 1.), (1., -1., 1.), (1., 1., math.nan), (1., 1., math.inf)):
+            with self.assertRaises(ValueError):KinematicCaps(*bad)
+
+    def test_effective_cap_is_the_tighter_of_profile_and_ceiling(self):
+        caps = KinematicCaps(900., 1000., 1200.)
+        self.assertEqual(caps.effective(900.), 900.)
+        self.assertEqual(caps.effective(1500.), 1200.)
+        with self.assertRaises(ValueError):
+            KinematicProfile('c', effective_cap=50., profile_cap=10., safety_ceiling=99.)
+
+    def test_each_context_draws_its_own_ceiling(self):
+        body = ROOM['fly']['body_length_px']
+        r = KinematicResolver(216., 1000., body, 3., 1.0, KinematicCaps(700., 1000., 1200.))
+        eco = r.airborne(EcologicalCommand('EXPLORE', 6., 0., 1.), False)
+        self.assertEqual(eco.profile_cap, 700.);self.assertEqual(eco.effective_cap, 700.)
+        for profile in (r.airborne(None, False),
+                        r.airborne(EcologicalCommand('EXPLORE', 6., 0., 1.), True),
+                        r.landing_approach(2., .18, 0.),
+                        r.lifecycle_direct('lifecycle_stationary_contact')):
+            self.assertEqual(profile.profile_cap, 1000.)
+            self.assertEqual(profile.safety_ceiling, 1200.)
+
+    def test_ecological_cap_does_not_reach_the_neural_escape_path(self):
+        # An escape action always sets threat_priority, so the ecological ceiling is
+        # never in scope on an escape tick. This pins the M1.8-B2b-R0 finding.
+        body = ROOM['fly']['body_length_px']
+        r = KinematicResolver(216., 1000., body, 3., 1.0, KinematicCaps(50., 1000., 1200.))
+        self.assertTrue(World._neural_active(Action(escape=True, forward=1., strength=1.)))
+        self.assertEqual(
+            r.airborne(EcologicalCommand('EXPLORE', 6., 0., 1.), True).profile_cap, 1000.)
+
+    def test_lifecycle_targets_use_the_legacy_cap_not_the_ecological_one(self):
+        body = ROOM['fly']['body_length_px']
+        r = KinematicResolver(216., 1000., body, 3., 1.0, KinematicCaps(24., 1000., 1200.))
+        # 2 BL/s * 24 = 48 units/s, above a deliberately tiny ecological cap.
+        self.assertEqual(r.landing_approach(2., .18, 0.).target_speed, 48.)
+
+    def test_world_exposes_legacy_equivalent_caps(self):
+        w = World(ROOM, 101)
+        legacy = ROOM['fly']['max_speed']
+        self.assertEqual(w.kinematic_caps, KinematicCaps(legacy, legacy, legacy))
+        self.assertEqual(w.max_speed, legacy)
+        w.tick(DT, Action())
+        self.assertEqual(w.kinematic_profile.effective_cap, legacy)
 
 
 if __name__ == '__main__':

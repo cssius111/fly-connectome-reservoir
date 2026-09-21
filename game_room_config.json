@@ -1,5 +1,5 @@
 {
-  "config_version": 11,
+  "config_version": 12,
   "_comment": "M1.6 horizontal ROOM slice. Logical units and state speeds are gameplay mappings, not universal biological constants.",
   "sim": {
     "tick_seconds": 0.02,
@@ -136,8 +136,8 @@
     "_comment": "Exact provenance required. Recalibrate with python tools/calibrate_escape.py --config game_room_config.json --trials 28.",
     "escape_threshold": null,
     "calibration_paths": [
-      "artifacts/game/calibration_room_m1_8_b2a.json",
-      "results/game/calibration_room_m1_8_b2a.json"
+      "artifacts/game/calibration_room_m1_8_b2b_i.json",
+      "results/game/calibration_room_m1_8_b2b_i.json"
     ],
     "refractory_seconds": 0.4,
     "turn_gain": 0.8,
@@ -394,7 +394,10 @@
     "voluntary_launch_speed_bl_s": 6.0
   },
   "kinematics": {
-    "_comment": "M1.8-B2a. room_kinematic_scale is a Class C simulator/environment mapping from body-length-normalized ecological speed to ROOM world units. It is NOT a measured biological constant and no literature magnitude has been adopted. 1.0 is the accepted no-op value. It applies only to non-neural ecological locomotion; threat-priority, landing approach and takeoff are excluded.",
-    "room_kinematic_scale": 1.0
+    "_comment": "M1.8-B2a. room_kinematic_scale is a Class C simulator/environment mapping from body-length-normalized ecological speed to ROOM world units. It is NOT a measured biological constant and no literature magnitude has been adopted. 1.0 is the accepted no-op value. It applies only to non-neural ecological locomotion; threat-priority, landing approach and takeoff are excluded. M1.8-B2b-i separates the overloaded fly.max_speed into three Class C engineering ceilings: ecological locomotion, the accepted legacy neural/escape and lifecycle constraint, and a global numerical safety guard. All three are held at the legacy 1000.0 units/s so behavior is unchanged. None is a species flight maximum.",
+    "room_kinematic_scale": 1.0,
+    "ecological_cap_units_s": 1000.0,
+    "legacy_accepted_cap_units_s": 1000.0,
+    "safety_ceiling_units_s": 1000.0
   }
 }

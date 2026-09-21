@@ -29,7 +29,8 @@ from .room import RoomEnvironment
 from .ecology import EcologicalCommand
 from .physical_swatter import PhysicalSwatter
 from .lifecycle import LifecycleController
-from .kinematics import KinematicExecutor, KinematicResolver, KinematicSampler
+from .kinematics import (KinematicCaps, KinematicExecutor, KinematicResolver,
+                         KinematicSampler)
 
 
 class StrikePhase(enum.Enum):
@@ -157,9 +158,13 @@ class World:
         self.flight = FreeFlightController(config["flight"], seed)
         # Behavioral context -> kinematic profile -> executor -> physics. Stateless and
         # RNG-free, so it can be constructed once and survives reset() unchanged.
+        # Three separated Class C ceilings replace the overloaded fly.max_speed. All
+        # default to it, so presets without a kinematics block are unchanged.
+        self.kinematic_caps = KinematicCaps.from_config(config, self.max_speed)
         self.kinematics = KinematicResolver(
             self.baseline_speed, self.max_speed, self.body_length, self.damping,
-            float(config.get("kinematics", {}).get("room_kinematic_scale", 1.0)))
+            float(config.get("kinematics", {}).get("room_kinematic_scale", 1.0)),
+            self.kinematic_caps)
         # The sampler holds the only kinematics random stream, so the resolver stays
         # pure. It is inert in M1.8-B2a: it is seeded and reset but never drawn from.
         self.kinematic_sampler = KinematicSampler(seed)
