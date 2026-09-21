@@ -13,7 +13,7 @@ from .session_recording import HumanSessionRecorder, canonical_hash, dataset_has
 
 def replay_session(directory, write_report=True, strict_source=True):
     manifest=json.loads((Path(directory)/'manifest.json').read_text(encoding='utf-8'))
-    if manifest.get('recording_schema_version')!=3:
+    if manifest.get('recording_schema_version') not in (3,4):
         raise ValueError('recording schema differs; use its archived source and original CPU thread count')
     runtime=manifest['runtime'];threads=int(runtime['numba_threads'])
     previous=numba.get_num_threads()
@@ -34,7 +34,7 @@ def replay_session(directory, write_report=True, strict_source=True):
 def _replay_session(directory, write_report=True, strict_source=True):
     directory=Path(directory).resolve()
     manifest=json.loads((directory/'manifest.json').read_text(encoding='utf-8'))
-    if manifest.get('recording_schema_version')!=3:raise ValueError('recording schema differs; replay historical sessions with their archived source snapshot in an isolated checkout')
+    if manifest.get('recording_schema_version') not in (3,4):raise ValueError('recording schema differs; replay historical sessions with their archived source snapshot in an isolated checkout')
     if not manifest.get('closed_cleanly'):raise ValueError('recording was not closed cleanly; recovery requires explicit partial-log analysis')
     if platform.python_version()!=manifest['python_version']:raise ValueError('replay Python version mismatch')
     config=manifest['config']

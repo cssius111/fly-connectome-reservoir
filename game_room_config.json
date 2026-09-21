@@ -1,5 +1,5 @@
 {
-  "config_version": 9,
+  "config_version": 10,
   "_comment": "M1.6 horizontal ROOM slice. Logical units and state speeds are gameplay mappings, not universal biological constants.",
   "sim": {
     "tick_seconds": 0.02,
@@ -136,8 +136,8 @@
     "_comment": "Exact provenance required. Recalibrate with python tools/calibrate_escape.py --config game_room_config.json --trials 28.",
     "escape_threshold": null,
     "calibration_paths": [
-      "artifacts/game/calibration_room_m1_7_1.json",
-      "results/game/calibration_room_m1_7_1.json"
+      "artifacts/game/calibration_room_m1_8_a.json",
+      "results/game/calibration_room_m1_8_a.json"
     ],
     "refractory_seconds": 0.4,
     "turn_gain": 0.8,
@@ -367,5 +367,30 @@
       "RECOVER": 0.7
     },
     "alert_recover_seconds": 0.2
+  },
+  "lifecycle": {
+    "enabled": true,
+    "affordance_on": 0.075,
+    "orientation_limit_degrees": 65.0,
+    "orientation_dwell_seconds": 0.12,
+    "orientation_gain": 2.0,
+    "orientation_cap_rad_s": 1.5,
+    "commit_extent_degrees": 60.0,
+    "commit_bearing_degrees": 20.0,
+    "commit_speed_bl_s": 6.0,
+    "expansion_braking_seconds": 0.35,
+    "contact_speed_bl_s": 1.5,
+    "touchdown_max_speed_bl_s": 3.0,
+    "approach_velocity_tau_seconds": 0.18,
+    "cue_loss_seconds": 0.16,
+    "approach_timeout_seconds": 10.0,
+    "retry_seconds": 4.0,
+    "minimum_perch_seconds": 2.0,
+    "departure_rate_per_second": 0.12,
+    "dwell_history_seconds": 12.0,
+    "odor_persistence_gain": 0.5,
+    "feeding_odor_on": 0.1,
+    "feeding_departure_fraction": 0.45,
+    "voluntary_launch_speed_bl_s": 6.0
   }
 }

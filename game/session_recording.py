@@ -21,6 +21,7 @@ import uuid
 import zipfile
 from .recording import observation_frame, policy_observation
 from .edge_analysis import edge_diagnostics
+from .lifecycle import LifecycleMetrics
 
 SCHEMA_VERSION = 3
 
@@ -60,6 +61,7 @@ class HumanSessionRecorder:
         self.archive_source=archive_source
         self.files={key:(self.path/(key+'.jsonl')).open('w',encoding='utf-8') for key in
                     ('ticks','inputs','events','policy_observations','episodes')}
+        self.lifecycle_metrics = LifecycleMetrics()
         self.active=False;self.closed=False;self.episode=0;self.global_tick=0;self.input_index=0
         self.started_wall=time.perf_counter();self.history=deque(maxlen=4)
         self.presentation={};self.control_flags=set();self.strikes=[];self.episode_summaries=[]
@@ -106,7 +108,7 @@ class HumanSessionRecorder:
             if session.threshold_source is not None:
                 calibration=json.loads((session.root/session.threshold_source.origin).read_text(encoding='utf-8'))
                 calibration={k:calibration[k] for k in ('provenance','escape_threshold')}
-            self.manifest={'recording_schema_version':SCHEMA_VERSION,'session_id':self.run_id,
+            self.manifest={'recording_schema_version':4 if w.lifecycle_active else SCHEMA_VERSION,'session_id':self.run_id,
                 'created_utc':datetime.now(timezone.utc).isoformat(),'git_commit':git_value(session.root,'rev-parse','HEAD'),
                 'git_branch':git_value(session.root,'branch','--show-current'),
                 'git_dirty':bool(git_value(session.root,'status','--porcelain')),
@@ -214,6 +216,17 @@ class HumanSessionRecorder:
             'room_world':w.room.debug(f,w.time_seconds) if w.room else None,
             'population':session.encoder.population,'edge_analysis':edge,
             'swatter_control':w.physical_swatter.diagnostics() if w.physical_swatter else None}
+        if w.lifecycle_active:
+            life = w.lifecycle
+            snapshot['lifecycle'] = {**life.diagnostics(), 'contact_surface_id': w.contact_surface_id,
+                                     'airborne': not life.stationary, 'attached': w.contact_surface_id is not None}
+            snapshot['ecology']['landing_perching'] = life.mode
+            snapshot['room_world']['contact_pose'] = w.contact_pose
+            self.lifecycle_metrics.capture(life, f.alive, dt)
+            for event in life.events:
+                self.emit('events', {**event, 'episode': self.episode, 'tick': tick,
+                           'global_tick': self.global_tick, 'simulation_time': tick*dt,
+                           'contact_surface_id': event.get('contact_surface_id', w.contact_surface_id)})
         digest=canonical_hash(snapshot)
         self.emit('ticks',{**snapshot,'deterministic_sha256':digest,'presentation':dict(self.presentation)})
         if motor is not None and self.prev_alive:
@@ -263,6 +276,7 @@ class HumanSessionRecorder:
                                'simulation_time':tick*dt,'strike_id':w.stats.strikes,'no_tick_sample':True})
         row={'episode':self.episode,'seed':session.seed,'ticks':session.ticks,'stats':asdict(session.stats),
              'reason':reason,'alive':session.world.fly.alive,'landing_attempts':session.ecology.landing_attempts if session.ecology else 0}
+        if w.lifecycle_active:self.lifecycle_metrics.end_episode()
         self.episode_summaries.append(row);self.emit('episodes',row);self.active=False
         for file in self.files.values():file.flush()
 
@@ -319,6 +333,12 @@ class HumanSessionRecorder:
           'wall_time_seconds':self.wall_ticks*dt,'perimeter_time_seconds':self.perimeter_ticks*dt,'contact_time_seconds':self.contact_ticks*dt,
           'odor_encounters':self.odor_encounters,'landing_attempts':sum(e['landing_attempts'] for e in self.episode_summaries),
           'attack_direction_bins_degrees':dict(sorted(bins.items())),'full_brain_recorded':False,'learning_updates':0}
+        if session.world.lifecycle_active:
+            summary['schema_version'] = 4
+            summary['lifecycle'] = self.lifecycle_metrics.report()
+            summary['landing_attempts_status'] = ('legacy ecology LAND_OR_PERCH counter; the legacy timer is '
+                'disabled while the lifecycle is active, so this is not the M1.8 landing count. '
+                'Use lifecycle.events for authoritative landing behavior.')
         (self.path/'summary.json').write_text(json.dumps(summary,indent=2)+'\n',encoding='utf-8')
         def describe(values):
             if not values['n']:return 'n=0; no eligible samples'
@@ -326,8 +346,24 @@ class HumanSessionRecorder:
         approach=summary['alive_approach']
         near_cap=approach['fraction_at_95pct_cap']
         near_cap_text='unavailable' if near_cap is None else f"{100*near_cap:.2f}%"
+        # The legacy ecology counter is disabled while the lifecycle owns landing, so it
+        # must not be presented as the milestone landing count.
+        headline=[];legacy_landing=f"Odor encounters: {self.odor_encounters}; landing attempts: {summary['landing_attempts']}."
+        if session.world.lifecycle_active:
+            life=summary['lifecycle'];events=life['events'];fractions=life['fractions']
+            percent=lambda v:'n/a' if v is None else f"{100*v:.2f}%"
+            headline=[f"Lifecycle (authoritative for M1.8-A landing behavior): approach onsets {events['approach_onset']};"
+              f" commits {events['approach_commit']}; aborts {events['approach_abort']};"
+              f" touchdowns {events['touchdown']}; voluntary takeoffs {events['voluntary_takeoff']};"
+              f" escape takeoffs {events['escape_takeoff']}."
+              f" Alive airborne {percent(fractions['airborne'])}; perched {percent(fractions['perched'])};"
+              f" feeding {percent(fractions['feeding'])}."]
+            legacy_landing=(f"Odor encounters: {self.odor_encounters}; legacy ecology landing attempts:"
+              f" {summary['landing_attempts']} (LAND_OR_PERCH timer disabled by the lifecycle;"
+              " not the M1.8 landing count).")
         lines=['# Human session summary' ,'',f"Session: `{self.run_id}`",f"Arena: {self.manifest['arena']}; mode: {self.manifest['mode']}; fixed sampling: {1/dt:g} Hz.",'',
           f"Duration: {self.global_tick*dt:.2f} simulation seconds; episodes: {summary['episodes']}; ticks: {self.global_tick}.",
+          *headline,
           f"Strikes: {stats['strikes']}; hits: {stats['hits']}; misses: {stats['misses']}; incomplete: {summary['incomplete_strikes']}.",
           f"Hit rate: {summary['hit_rate']}; first-strike hit rate: {summary['first_strike_hit_rate']}.",
           f"ALERT onsets: {summary['alert_count']}; ESCAPE onsets: {summary['escape_count']}; DNp01 crossings: {summary['dnp01_threshold_crossings']}.",
@@ -341,13 +377,16 @@ class HumanSessionRecorder:
           f"Alive APPROACH at >=95% of speed cap: {near_cap_text}; cap={cap} units/s.",
           f"Alive APPROACH target error (units): {describe(approach['target_error'])}.",
           f"Wall / perimeter / contact time (s): {self.wall_ticks*dt:.2f} / {self.perimeter_ticks*dt:.2f} / {self.contact_ticks*dt:.2f}.",
-          f"Odor encounters: {self.odor_encounters}; landing attempts: {summary['landing_attempts']}.",
+          legacy_landing,
           f"Near-wall outcomes: {summary['edge_outcomes']}.",
           f"Attack direction bins (degrees): {summary['attack_direction_bins_degrees']}.",'',
           'Tick logs contain offline WORLD data. Only policy_observations.jsonl contains the unchanged whitelisted observations.',
           'Statistics are descriptive, not learning or biological validation. All-tick fractions include dead ticks; alive-only fractions exclude them. Neural values are held after death. Legacy speed_bl_s uses pre-step alive ticks; prefer the explicit all/alive fields.',
           'Pause duration is wall time, not additional brain samples. Event windows are inclusive index ranges in strikes.json.',
           'No full-brain recording or policy learning occurred. See manifest.json for source snapshot hashes, configuration and calibration.']
+        if session.world.lifecycle_active:
+            lines += ['', 'Lifecycle simulator metrics (not real activity-budget estimates):',
+                      json.dumps(summary['lifecycle'], indent=2)]
         (self.path/'REPORT.md').write_text('\n'.join(lines)+'\n',encoding='utf-8')
         profile_path=self.root/'profile.json'
         profile=json.loads(profile_path.read_text(encoding='utf-8')) if profile_path.exists() else {

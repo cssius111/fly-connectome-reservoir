@@ -7,6 +7,7 @@ import copy
 import math
 import numpy as np
 from .ecological_sense import EcologicalSense
+from .lifecycle import LandingSense
 
 
 class RoomEnvironment:
@@ -54,6 +55,56 @@ class RoomEnvironment:
     def valid_spawn(self, x, y, radius):
         return all(not o['solid'] or math.hypot(x-o['x'],y-o['y']) > radius+o['radius']+24
                    for o in self.objects)
+
+    def landing_sense(self, fly, t, contact_id=None):
+        """Strongest visible patch; no identity, coordinates or range leave WORLD.
+
+        Extent is 2 asin(r/d), with analytic retinal expansion from relative
+        translation. Legacy surface_expansion remains an affordance derivative.
+        """
+        best = (0.0, 0.0, 0.0, 0.0)
+        for o in self.surfaces():
+            if not o['landing_surface']:
+                continue
+            dx, dy = o['x']-fly.x, o['y']-fly.y
+            d, r = math.hypot(dx, dy), o['radius']
+            bearing = (math.atan2(dy, dx)-fly.heading+math.pi) % (2*math.pi)-math.pi
+            extent = 2*math.asin(min(1.0, r/max(d, 1e-9)))
+            radial = (dx*fly.vx+dy*fly.vy)/max(d, 1e-9)
+            expansion = 2*r*radial/(d*math.sqrt(d*d-r*r)) if d > r+1e-6 else 0.0
+            visible = o['contrast']*math.exp(-d/self.config['sensing']['visual_range'])
+            affordance = extent/math.pi*visible*max(0.0, math.cos(bearing))**2
+            if affordance > best[0]:
+                best = (affordance, bearing, extent, expansion)
+        return LandingSense(*best, self.concentration(fly.x, fly.y, t),
+                            contact_id is not None, contact_id == 'surface-0')
+
+    def landing_contact(self, fly, previous, radius):
+        """Earliest swept contact with a landable disk; WORLD only.
+
+        Already-overlapping passes cannot attach by snapping back to an edge.
+        """
+        x, y = previous
+        dx, dy = fly.x-x, fly.y-y
+        a = dx*dx+dy*dy
+        first, selected = 1.0, None
+        if a <= 1e-18:
+            return None
+        for index, o in enumerate(self.surfaces()):
+            if not o['landing_surface']:
+                continue
+            qx, qy = x-o['x'], y-o['y']
+            r = radius+o['radius']
+            b, c = 2*(qx*dx+qy*dy), qx*qx+qy*qy-r*r
+            disc = b*b-4*a*c
+            if c < -1e-7 or b >= 0 or disc < 0:
+                continue
+            hit = (-b-math.sqrt(disc))/(2*a)
+            if -1e-9 <= hit <= first:
+                first, selected = max(0.0, hit), 'surface-'+str(index)
+        if selected is not None:
+            fly.x, fly.y = x+first*dx, y+first*dy
+        return selected
 
     def constrain_motion(self, fly, previous, radius):
         """Swept disk contact stops at first impact, with no snap to a target.

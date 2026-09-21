@@ -54,6 +54,16 @@ PHASE_COLOR.update({StrikePhase.APPROACH:(110,118,132), StrikePhase.COMMIT:(198,
 LOOM_COLOR = (74, 134, 196)
 THREAT_COLOR = (196, 112, 58)
 ESCAPE_COLOR = (108, 190, 120)
+PERCH_COLOR = (105, 200, 146)
+FEEDING_COLOR = (222, 176, 78)
+NEURAL_PANEL_WIDTH = 380
+# Why the ecological command is an intent only, keyed by the profile WORLD actually
+# applied. An absent key means ordinary flight executed the ecological command.
+SUPPRESSED_INTENT = {'stationary_contact': 'not executed: suppressed while perched',
+                     'touchdown_constraint': 'not executed: suppressed at touchdown',
+                     'visual_approach': 'not executed: suppressed during landing',
+                     'takeoff_voluntary': 'not executed: suppressed during launch',
+                     'takeoff_escape': 'not executed: overridden by neural escape'}
 
 # Two lookups for one control set. `scancode` is the physical key and survives
 # IME composition, remapped layouts and non-Latin keyboards; `key` is the
@@ -363,6 +373,33 @@ class App:
         pygame.draw.line(c, (60, 66, 78), (int(pos[0]), int(pos[1])),
                          (rect.centerx, rect.centery), 1)
 
+    def behavior_lines(self) -> list[str]:
+        """HUD behavior rows, effective physical state first.
+
+        While the lifecycle owns the actuator the ecological command is an unexecuted
+        intent, so it is labelled rather than shown as the current physical behavior.
+        """
+        w = self.session.world
+        eco = self.session.ecology
+        if eco is None:
+            return []
+        applied = w.applied_target_speed/w.body_length
+        if not w.lifecycle_active:
+            return [f"ecology {eco.state}  requested {eco.speed:.1f} BL/s",
+                    f"applied drive {applied:.1f} BL/s",
+                    f"landing attempts {eco.landing_attempts} (legacy approach)"]
+        life = w.lifecycle
+        state = f"{life.mode} / {life.phase}" + (" / FEEDING" if life.feeding else "")
+        rows = [f"LIFECYCLE  {state}",
+                f"MOTION     {w.body_lengths_per_second:.1f} BL/s  applied drive {applied:.1f} BL/s",
+                f"ECO INTENT {eco.state}  requested {eco.speed:.1f} BL/s"]
+        # A continuation row, so a long ecology state name cannot push the
+        # explanation past the fixed-width neural panel.
+        override = SUPPRESSED_INTENT.get(life.applied_profile.get('name'))
+        if override is not None:
+            rows.append(f"           {override}")
+        return rows
+
     def _draw_fly(self, c, pos, heading) -> None:
         w = self.session.world
         x, y = pos
@@ -383,7 +420,21 @@ class App:
             ex, ey = self.escape_vector
             pygame.draw.line(c, ESCAPE_COLOR, (int(x), int(y)),
                              (int(x + ex * 46), int(y + ey * 46)), 2)
-        wing = 1.5 * r
+        perched = w.lifecycle_active and w.lifecycle.stationary
+        feeding = perched and w.lifecycle.feeding
+        if perched:
+            pygame.draw.circle(c, PERCH_COLOR, (int(x), int(y)), max(4, int(r*2.5)), 1)
+        if feeding:
+            # State visualization only; no proboscis or ingestion mechanics are modelled.
+            # Sized clear of the perch ring so the two states stay distinguishable.
+            ring = max(13, int(r*5.0))
+            pygame.draw.circle(c, FEEDING_COLOR, (int(x), int(y)), ring, 1)
+            label = self.font_small.render("FEEDING", True, FEEDING_COLOR)
+            rect = label.get_rect(midbottom=(int(x), int(y - ring - 3)))
+            # Backing plate: the food surface is drawn in a similar warm tone.
+            pygame.draw.rect(c, (10, 12, 16), rect.inflate(6, 4))
+            c.blit(label, rect)
+        wing = (0.65 if perched else 1.5) * r
         for s in (1, -1):
             pts = [(x + rx * s * wing * 0.2 + hx * r * 0.2, y + ry * s * wing * 0.2 + hy * r * 0.2),
                    (x + rx * s * wing - hx * r * 0.9, y + ry * s * wing - hy * r * 0.9),
@@ -456,12 +507,10 @@ class App:
         eco = self.session.ecology
         sense = self.session.last_ecological_sense
         if eco is not None:
-            lines.append(f"ecology {eco.state}  requested {eco.speed:.1f} BL/s")
-            lines.append(f"applied drive {w.applied_target_speed/w.body_length:.1f} BL/s")
+            lines.extend(self.behavior_lines())
             if sense is not None:
                 lines.append(f"odor {sense.odor:.3f}  d/dt {sense.odor_rate:+.2f}")
                 lines.append(f"wind body F/R {sense.wind_forward:+.0f}/{sense.wind_lateral:+.0f}")
-            lines.append(f"landing attempts {eco.landing_attempts} (approach only)")
         steer_left = 0.0 if motor is None else motor.dna02_left
         steer_right = 0.0 if motor is None else motor.dna02_right
         lines.append(f"DNa02 L/R {steer_left:.2f}/{steer_right:.2f}  turn {self.session.fly_loop.last_action.turn:+.2f}")
@@ -479,7 +528,7 @@ class App:
         # Reserve a right-aligned numeric column and derive height from all rows.
         # The threshold refers to summed DNp01, not either individual side.
         bar_count = 6 + int(threshold is not None)
-        panel_w = 380
+        panel_w = NEURAL_PANEL_WIDTH
         panel_h = 34 + bar_count * 26 + 10 + len(lines) * 17 + 12
         px = c.get_width() - panel_w - 14
         py = 12

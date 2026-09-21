@@ -1,3 +1,6 @@
+> Current ROOM includes M1.8-A lifecycle. The original M1.6 parameter/control
+> descriptions below remain historical unless superseded by [LIFECYCLE.md](LIFECYCLE.md).
+
 # M1.6 ecological ROOM foundation
 
 M1.7 preserves this ecology and adds the [session recorder and physical paddle](SESSIONS.md).
@@ -123,7 +126,7 @@ and clipping to +/-20 per second; the first sample after reset has zero rate.
 ## Local objects and landing foundation
 
 The source is a non-solid eligible surface. A solid column is at (2480,780),
-radius 95; a non-solid future perch is at (2850,1610), radius 75. These are world
+radius 95; a non-solid landable perch is at (2850,1610), radius 75. These are world
 objects, with schematic circles and labels. The fly receives no identifiers.
 
 For each surface, apparent angular fraction is `2*atan2(radius,range)/pi`;
@@ -138,12 +141,13 @@ and remove inward velocity. It never places the fly on a food/perch target.
 Seeded spawning rejects solid-object overlap. Existing wall sensing and hard
 containment are retained. Odor is not occluded by the column.
 
-LAND_OR_PERCH means a **decelerating approach attempt only**. Full touchdown,
-stationary perching, feeding and takeoff are deferred. Entry requires detected
-odor plus forward eligible-surface affordance >=0.14 and positive expansion
-for 0.16 s. A 0.9 s attempt, or odor loss, leads to relocation and an 8 s attempt
-cooldown. This is not a successful-landing detector. Ground-plane source overlap
-is a world analysis event, never proof of feeding or a policy feature.
+With M1.8-A enabled, the separate [local lifecycle](LIFECYCLE.md) implements
+actual swept touchdown, stationary support, a phenomenological feeding overlay
+and distinct voluntary/neural escape launches. The legacy LAND_OR_PERCH timer
+is disabled. Its old approach-only behavior remains available for historical
+configs without lifecycle. New landing cues use true angular extent/expansion;
+the legacy aggregate projection above remains unchanged. Ground-plane overlap
+alone is never proof of a landing or feeding event.
 
 ## Behavioral state and speed mappings
 

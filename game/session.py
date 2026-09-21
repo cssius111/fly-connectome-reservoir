@@ -28,7 +28,7 @@ from pathlib import Path
 
 import numpy as np
 
-from .action import Action, FixedEscapePolicy, Policy
+from .action import Action, FixedEscapePolicy, Policy, MotionState
 from .fly import ROOT, FlyLoop, build_brain
 from .perception import LOOM_TYPES, THREAT_TYPES, Retina, RetinaProjector, RetinalEncoder
 from .world import TickEvents, World
@@ -142,7 +142,7 @@ class Session:
         self.projector = RetinaProjector(self.tick_seconds)
         self.world = World(config, self.seed)
         enabled = config.get("ecology", {}).get("enabled", False) if ecology_enabled is None else ecology_enabled
-        self.ecology = EcologicalController(config["ecology"],self.seed) if enabled and self.world.room is not None else None
+        self.ecology = EcologicalController(config["ecology"],self.seed, landing_enabled=self.world.lifecycle is None) if enabled and self.world.room is not None else None
         self.ecological_projector = EcologicalProjector(config["room"]["sensing"]) if self.ecology is not None else None
         self.last_ecological_sense = None
         self.last_retina: Retina | None = None
@@ -155,6 +155,7 @@ class Session:
         if seed is not None:
             self.seed = int(seed)
         self.world.reset(self.seed)
+        self.world.lifecycle_active = self.ecology is not None and self.world.lifecycle is not None
         self.projector.reset()
         self.last_ecological_sense = None
         if self.ecology is not None:
@@ -184,6 +185,8 @@ class Session:
         return accepted
 
     def tick(self, pointer: tuple[float, float] | None = None, strike: bool = False) -> TickEvents:
+        if self.world.lifecycle is not None:
+            self.world.lifecycle.events = []
         if pointer is not None:
             self.world.set_pointer(pointer[0], pointer[1])
         callback = getattr(self.recorder, "input", None)
@@ -201,6 +204,15 @@ class Session:
                       else ThreatState.ALERT if neural_state=="ALERT" or action.saccade or self.world.saccades.kind=="ALERT"
                       else ThreatState.CALM)
             self.world.ecological_command = self.ecology.step(self.last_ecological_sense,threat,self.tick_seconds)
+            if self.world.lifecycle is not None:
+                sense = self.world.room.landing_sense(self.world.fly, self.world.time_seconds, self.world.contact_surface_id)
+                motion = self.world.motion_state()
+                body_motion = MotionState(motion.forward_speed/self.world.body_length,
+                                          motion.lateral_speed/self.world.body_length,
+                                          motion.yaw_rate, motion.saccade_remaining)
+                authorized = action.escape and action.strength > 0 and math.hypot(action.forward, action.lateral) > 0
+                self.world.lifecycle.step(sense, body_motion, threat, self.tick_seconds, authorized)
+        self.world.lifecycle_active = self.ecology is not None and self.world.lifecycle is not None
         events = self.world.tick(self.tick_seconds, action)
         self.ticks += 1
         result = TickEvents(started, events.strike_resolved, events.hit, events.escaped)

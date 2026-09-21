@@ -45,8 +45,9 @@ class EcologicalController:
         'landing_affordance_threshold','landing_dwell_seconds','landing_attempt_seconds','landing_cooldown_seconds',
         'spontaneous_clock_rate'}
 
-    def __init__(self, config, seed):
+    def __init__(self, config, seed, landing_enabled=True):
         if set(config)-self.CONFIG_KEYS: raise ValueError('only ecological controller parameters are allowed')
+        self.landing_enabled = landing_enabled
         self.config = copy.deepcopy(config)
         if not 0 <= config['odor_off'] < config['odor_on']: raise ValueError('odor hysteresis must be ordered')
         if not 0 < config['steering_cap_rad_s'] <= 2: raise ValueError('invalid ecological steering cap')
@@ -88,7 +89,7 @@ class EcologicalController:
         self.off_time=self.off_time+dt if sense.odor<=c['odor_off'] else 0.0
         if self.on_time>=c['encounter_dwell_seconds']:self.has_odor=True
         if self.off_time>=c['loss_dwell_seconds']:self.has_odor=False
-        eligible=(sense.landing_affordance>=c['landing_affordance_threshold'] and sense.surface_expansion>0 and self.has_odor)
+        eligible=(self.landing_enabled and sense.landing_affordance>=c['landing_affordance_threshold'] and sense.surface_expansion>0 and self.has_odor)
         self.surface_time=self.surface_time+dt if eligible else 0.0
         attempt=False
         if threat is not ThreatState.CALM:
@@ -153,4 +154,4 @@ class EcologicalController:
         return {'state':self.state,'state_seconds':self.elapsed,'target_speed_bl_s':self.speed,
                 'steering_rad_s':self.steering,'odor_detected':self.has_odor,'transitions':self.transitions,
                 'landing_attempts':self.landing_attempts,'neural_threat_state':self.last_threat.value,
-                'landing_mechanics':'approach_only; perching deferred'}
+                'landing_mechanics':'legacy_approach_only' if self.landing_enabled else 'external_local_lifecycle'}

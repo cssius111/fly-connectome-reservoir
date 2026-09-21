@@ -28,6 +28,7 @@ from .saccade import SaccadeActuator
 from .room import RoomEnvironment
 from .ecology import EcologicalCommand
 from .physical_swatter import PhysicalSwatter
+from .lifecycle import LifecycleController
 
 
 class StrikePhase(enum.Enum):
@@ -168,6 +169,11 @@ class World:
     def reset(self, seed: int) -> None:
         self.room = RoomEnvironment(self.config["room"], seed) if "room" in self.config else None
         self.ecological_command = None
+        self.lifecycle = (LifecycleController(self.config['lifecycle'], seed)
+                          if self.room is not None and self.config.get('lifecycle', {}).get('enabled') else None)
+        self.lifecycle_active = self.lifecycle is not None
+        self.contact_surface_id = None
+        self.contact_pose = None
         self.object_contact = False
         self.applied_target_speed = self.baseline_speed
         self.rng = np.random.default_rng(seed)
@@ -342,6 +348,11 @@ class World:
         # successful strike would be counted as a hit AND a miss.
         escaped = False
         if hit:
+            if self.lifecycle_active and self.lifecycle.stationary:
+                if self.lifecycle.feeding:
+                    self.lifecycle.event('feed_end', 'death')
+                    self.lifecycle.feeding = False
+                self.lifecycle.event('perch_end', 'death')
             self.fly.alive = False
             self.fly.vx = self.fly.vy = 0.0
             self.stats.hits += 1
@@ -434,6 +445,10 @@ class World:
 
     def _move_fly(self, dt: float, action: Action) -> None:
         fly = self.fly
+        life = self.lifecycle if self.lifecycle_active else None
+        if life is not None:
+            if self._move_lifecycle(dt, action):
+                return
         previous = (fly.x,fly.y)
         command = self.ecological_command
         if command is not None and type(command) is not EcologicalCommand:
@@ -513,6 +528,73 @@ class World:
                 slip = min(bound, max(-bound, slip))
                 fly.vx = speed*math.cos(fly.heading+slip)
                 fly.vy = speed*math.sin(fly.heading+slip)
+
+    def _move_lifecycle(self, dt, action):
+        """Execute local commands; all attachment geometry stays in WORLD.
+
+        Return True when contact/approach replaces ordinary flight. Escape
+        launch continues through the unchanged Action impulse path exactly once.
+        """
+        life, f = self.lifecycle, self.fly
+        c = life.config
+        if life.stationary:
+            f.x, f.y, f.heading = self.contact_pose
+            f.vx = f.vy = self.yaw_rate = self.applied_target_speed = 0.0
+            self.saccades.reset()
+            life.applied_profile = {'name': 'stationary_contact', 'speed_bl_s': 0.0}
+            return True
+        if life.mode.startswith('TAKEOFF_'):
+            for event in life.events:
+                if event['type'] in ('perch_end', 'feed_end', 'voluntary_takeoff', 'escape_takeoff'):
+                    event['contact_surface_id'] = self.contact_surface_id
+            self.contact_surface_id = self.contact_pose = None
+            self.saccades.reset()
+            self._wander_turn = self._wander_target = 0.0
+            if life.mode == 'TAKEOFF_VOLUNTARY':
+                speed = min(self.max_speed, c['voluntary_launch_speed_bl_s']*self.body_length)
+                f.vx, f.vy = speed*math.cos(f.heading), speed*math.sin(f.heading)
+                # A coarse initial condition, not a 2-ms biomechanical jump.
+                previous = (f.x, f.y)
+                f.x += f.vx*dt
+                f.y += f.vy*dt
+                self.object_contact = self.room.constrain_motion(f, previous, self.fly_radius)
+                self.wall_contact = self.enclosure.contain(f)
+                self.yaw_rate = 0.0
+                self.applied_target_speed = speed
+                life.applied_profile = {'name': 'takeoff_voluntary', 'initial_speed_bl_s': speed/self.body_length}
+                return True
+            life.applied_profile = {'name': 'takeoff_escape', 'impulse_bl_s': self.escape_impulse*action.strength/self.body_length,
+                                    'lateral': action.lateral, 'forward': action.forward}
+            return False
+        if life.mode != 'LAND_APPROACH':
+            life.applied_profile = {'name': 'ordinary_flight'}
+            return False
+        self.saccades.reset()
+        previous = (f.x, f.y)
+        target = min(self.max_speed, life.target_speed*self.body_length)
+        self.applied_target_speed = target
+        self.yaw_rate = life.turn
+        f.heading = (f.heading+self.yaw_rate*dt) % (2*math.pi)
+        alpha = 1-math.exp(-dt/c['approach_velocity_tau_seconds'])
+        f.vx += alpha*(target*math.cos(f.heading)-f.vx)
+        f.vy += alpha*(target*math.sin(f.heading)-f.vy)
+        f.x += f.vx*dt
+        f.y += f.vy*dt
+        self.object_contact = self.room.constrain_motion(f, previous, self.fly_radius)
+        self.wall_contact = self.enclosure.contain(f)
+        life.applied_profile = {'name': 'visual_approach', 'target_speed_bl_s': target/self.body_length,
+                                'yaw_rate': self.yaw_rate, 'speed_before_contact_bl_s': self.body_lengths_per_second}
+        if life.committed and self.body_lengths_per_second <= c['touchdown_max_speed_bl_s']:
+            contact = self.room.landing_contact(f, previous, self.fly_radius)
+            if contact is not None:
+                self.contact_surface_id = contact
+                self.contact_pose = (f.x, f.y, f.heading)
+                f.vx = f.vy = self.yaw_rate = self.applied_target_speed = 0.0
+                life.touchdown()
+                life.applied_profile['name'] = 'touchdown_constraint'
+                life.applied_profile['speed_after_contact_bl_s'] = 0.0
+        self.wall_cue = self.enclosure.sense(f.x, f.y, f.vx, f.vy, f.heading)
+        return True
 
     @staticmethod
     def _neural_active(action: Action) -> bool:

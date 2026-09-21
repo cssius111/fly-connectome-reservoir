@@ -7,6 +7,36 @@ A reproducible Windows CPU computational neuroscience experiment and an untraine
 The frozen experiment is specified in [PROTOCOL.md](PROTOCOL.md), with historical results in [results/REPORT.md](results/REPORT.md). These protected artifacts retain their original language and bytes for reproducibility. Editable project content is English.
 
 
+## M1.8-A: accepted landing, perching and takeoff lifecycle
+
+ROOM now supports local visual approach, physical touchdown, stationary perching,
+a minimal food-contact feeding overlay, motivated voluntary departure and neural
+escape takeoff. The reference organism is adult male Drosophila melanogaster
+(MaleCNS). Ecological behaviors are phenomenological; no landing/feeding neural
+circuit, learning or natural activity budget is claimed. Sub-timestep takeoff
+dynamics are not explicitly resolved.
+
+Both human acceptance playtests passed: a passive session landed, fed and departed
+voluntarily, and a threat session launched a perched fly roughly 14 s before the first
+click. See [control architecture and complete parameter evidence table](game/LIFECYCLE.md)
+and [validation, human acceptance and playtest procedure](results/game/M1_8_A.md).
+The lifecycle pipeline, contact mechanics, takeoff paths, recorder schema and
+lifecycle/policy isolation are frozen unless recorded evidence exposes a defect.
+A reproducible ordinary spawn for observing a quiet landing is:
+
+```powershell
+Set-Location D:\Projects\flybrain-lab
+& .\.venv\Scripts\python.exe -m game.app --arena room --seed 255 --record --windowed
+```
+
+Keep the pointer away until perched, then approach with the paddle without
+clicking to test pre-contact neural launch. Folded wings and a green ring mark
+living contact; an amber ring and a FEEDING label mark food contact. Press H for
+a HUD that shows effective lifecycle state and motion above the unexecuted
+ecological intent. LAB/GAME and the accepted
+physical swatter remain unchanged. ROOM schema 4 adds lifecycle events and
+alive-only simulator metrics; existing observation whitelists remain unchanged.
+
 ## M1.7.1: accepted physical swatter baseline
 
 M1.6 is preserved locally as `58ffd60fb60239a911c1ca0baea458ec743774b7`.
@@ -40,16 +70,17 @@ See [recording, replay, physics and playtest guide](game/SESSIONS.md),
 M1.6 evidence remains unchanged in [its historical report](results/game/M1_6.md).
 The edge repair allows partially offscreen paddle heads without changing fly bounds
 or motor limits. See the [edge audit and validation](results/game/M1_7_EDGE.md).
-The active ROOM calibration is `calibration_room_m1_7_1.json`, threshold **1.45**.
+M1.7.1 measured ROOM threshold **1.45**. The active `calibration_room_m1_8_a.json`
+explicitly reuses that unchanged fixed-fly measurement with exact current provenance.
 See the [pre-tuning human diagnosis](results/game/HUMAN_M1_7_DIAGNOSIS.md) and
 [M1.7.1 validation and acceptance checklist](results/game/M1_7_1.md).
 Reports separate all-tick and alive-only threat/ecology/speed statistics.
 Manifests retain the actual CPU thread count for exact replay.
 See [final human acceptance and regression](results/game/M1_7_1_ACCEPTANCE.md).
-The swatter, swept collision, offscreen geometry, recorder/replay interface and
-WORLD/policy boundary are frozen unless recorded evidence demonstrates a defect.
-[M1.8 activity-budget and flight-kinematics proposal](game/M1_8_PROPOSAL.md) is
-planning only; no next-milestone implementation is included.
+The swatter, swept collision, offscreen geometry and WORLD/policy boundary remain
+frozen. The explicitly authorized M1.8-A recorder extension is described above.
+The broader [M1.8 proposal](game/M1_8_PROPOSAL.md) remains a future plan beyond
+this lifecycle implementation; M1.8-B and RL are not implemented.
 
 Validation commands:
 
