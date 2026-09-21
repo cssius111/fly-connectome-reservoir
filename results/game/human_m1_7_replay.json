@@ -1,0 +1,10 @@
+{
+  "exact": true,
+  "ticks_verified": 15039,
+  "input_operations": 15146,
+  "episodes": 65,
+  "scope": "all deterministic tick fields including compact neural readouts; presentation/wall time excluded",
+  "source_verified": true,
+  "full_brain_snapshots_compared": false,
+  "verified_numba_threads": 8
+}

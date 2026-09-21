@@ -29,6 +29,61 @@ class PhysicalSwatter:
             if not math.isfinite(config[key]) or config[key]<=0:raise ValueError('invalid physical swatter '+key)
         if any(config['phases_seconds'][name]<=0 for name in PHASES):raise ValueError('strike durations must be positive')
         self.segments=[]
+        self.reset()
+
+    def reset(self):
+        self.previous_target = None
+        self.previous_pointer_velocity = None
+        self.pointer_velocity = (0.0, 0.0)
+        self.pointer_acceleration = None
+        self.pointer_sample_valid = False
+        self.approach_command = (0.0, 0.0)
+        self.target_error = 0.0
+
+    @staticmethod
+    def _limit_vector(x, y, cap):
+        length = math.hypot(x, y)
+        scale = min(1.0, cap/length) if length else 1.0
+        return x*scale, y*scale
+
+    def _observe_pointer(self, sw, dt):
+        target = (sw.target_x, sw.target_y)
+        self.target_error = math.dist(target, (sw.x, sw.y))
+        self.pointer_sample_valid = self.previous_target is not None
+        if self.pointer_sample_valid:
+            velocity = tuple((target[i]-self.previous_target[i])/dt for i in (0,1))
+            self.pointer_acceleration = (math.dist(velocity, self.previous_pointer_velocity)/dt
+                                         if self.previous_pointer_velocity is not None else None)
+            self.pointer_velocity = velocity
+            self.previous_pointer_velocity = velocity
+        else:
+            # Initial placement is not an observed movement or a hand burst.
+            self.pointer_velocity = (0.0, 0.0)
+            self.pointer_acceleration = None
+        self.previous_target = target
+
+    def _update_approach_command(self, sw, h):
+        tracking = self.config.get('approach_tracking')
+        if tracking is None:
+            return
+        tx = max(self.padding, min(self.width-self.padding, sw.target_x))
+        ty = max(self.padding, min(self.height-self.padding, sw.target_y))
+        cx,cy = self._limit_vector((tx-sw.x)*tracking['position_gain'],
+                                  (ty-sw.y)*tracking['position_gain'],
+                                  tracking['correction_speed_limit'])
+        vx,vy = self._limit_vector(*self.pointer_velocity, self.config['approach_speed_limit'])
+        desired = self._limit_vector(vx+cx, vy+cy, self.config['approach_speed_limit'])
+        alpha = -math.expm1(-h/tracking['command_tau_seconds'])
+        self.approach_command = tuple(old+alpha*(new-old) for old,new in zip(self.approach_command,desired))
+
+    def diagnostics(self):
+        return {'pointer_sample_valid':self.pointer_sample_valid,
+                'pointer_vx':self.pointer_velocity[0], 'pointer_vy':self.pointer_velocity[1],
+                'pointer_speed':math.hypot(*self.pointer_velocity),
+                'pointer_acceleration':self.pointer_acceleration,
+                'target_error_before_step':self.target_error,
+                'approach_command_vx':self.approach_command[0],
+                'approach_command_vy':self.approach_command[1]}
 
     def commit(self, sw, history):
         samples=np.asarray(history,dtype=float)
@@ -60,6 +115,8 @@ class PhysicalSwatter:
         vx,vy=(tx-sw.x)*c['position_gain'],(ty-sw.y)*c['position_gain']
         m=math.hypot(vx,vy)
         if m>c['approach_speed_limit']:vx*=c['approach_speed_limit']/m;vy*=c['approach_speed_limit']/m
+        if c.get('approach_tracking') is not None:
+            vx,vy=self.approach_command
         sx,sy=math.cos(sw.attack_orientation)*sw.swing_speed,math.sin(sw.attack_orientation)*sw.swing_speed
         if phase=='commit':return .7*sw.vx,.7*sw.vy
         if phase in ('fast_swing','active_contact'):return sx,sy
@@ -80,6 +137,7 @@ class PhysicalSwatter:
 
     def advance(self, sw, dt):
         """Substeps resolve geometry/contact windows; brain stays on its 20 ms tick."""
+        self._observe_pointer(sw, dt)
         c=self.config;self.segments=[];remaining=dt;elapsed=0.0;resolved=False
         while remaining>1e-12:
             phase=sw.phase.value
@@ -91,6 +149,7 @@ class PhysicalSwatter:
                 sw.phase=type(sw.phase)('approach' if i==len(PHASES)-1 else PHASES[i+1]);sw.phase_elapsed=0.0
                 self._geometry(sw);continue
             start=(sw.x,sw.y);old_v=(sw.vx,sw.vy)
+            self._update_approach_command(sw, h)
             target=self._desired_velocity(sw)
             # Bound the physical CENTER, not the rendered head extent. Partial
             # offscreen heads retain their complete collision geometry. The

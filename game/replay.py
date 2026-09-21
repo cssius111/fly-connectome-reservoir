@@ -2,6 +2,7 @@
 import importlib.metadata
 import itertools
 import json
+import numba
 import platform
 from pathlib import Path
 import tempfile
@@ -11,9 +12,29 @@ from .session_recording import HumanSessionRecorder, canonical_hash, dataset_has
 
 
 def replay_session(directory, write_report=True, strict_source=True):
+    manifest=json.loads((Path(directory)/'manifest.json').read_text(encoding='utf-8'))
+    if manifest.get('recording_schema_version')!=3:
+        raise ValueError('recording schema differs; use its archived source and original CPU thread count')
+    runtime=manifest['runtime'];threads=int(runtime['numba_threads'])
+    previous=numba.get_num_threads()
+    try:
+        # The active pool is authoritative. Numba's mutable config can be
+        # reloaded after pool initialization by a late environment default.
+        try:
+            numba.set_num_threads(threads)
+        except ValueError as exc:
+            raise ValueError(f"Recorded CPU thread count is {threads}; relaunch with NUMBA_NUM_THREADS={threads} before importing numba") from exc
+        if numba.threading_layer()!=runtime['numba_threading_layer']:
+            raise ValueError('recorded numba threading layer differs')
+        return _replay_session(directory,write_report,strict_source)
+    finally:
+        numba.set_num_threads(previous)
+
+
+def _replay_session(directory, write_report=True, strict_source=True):
     directory=Path(directory).resolve()
     manifest=json.loads((directory/'manifest.json').read_text(encoding='utf-8'))
-    if manifest.get('recording_schema_version')!=2:raise ValueError('recording schema differs; replay historical sessions with their archived source snapshot in an isolated checkout')
+    if manifest.get('recording_schema_version')!=3:raise ValueError('recording schema differs; replay historical sessions with their archived source snapshot in an isolated checkout')
     if not manifest.get('closed_cleanly'):raise ValueError('recording was not closed cleanly; recovery requires explicit partial-log analysis')
     if platform.python_version()!=manifest['python_version']:raise ValueError('replay Python version mismatch')
     config=manifest['config']
@@ -79,7 +100,7 @@ def replay_session(directory, write_report=True, strict_source=True):
         if count!=manifest['tick_count']:raise AssertionError('manifest tick count differs')
         result={'exact':True,'ticks_verified':count,'input_operations':commands,
                 'episodes':recorder.episode,'scope':'all deterministic tick fields including compact neural readouts; presentation/wall time excluded',
-                'source_verified':strict_source,'full_brain_snapshots_compared':False}
+                'source_verified':strict_source,'runtime_verified':manifest['runtime'],'full_brain_snapshots_compared':False}
     if write_report:
         out=directory/'replays';out.mkdir(exist_ok=True)
         path=out/(uuid.uuid4().hex[:12]+'.json');path.write_text(json.dumps(result,indent=2)+'\n',encoding='utf-8')

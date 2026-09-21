@@ -182,6 +182,7 @@ class World:
         if self.physical_swatter is not None:
             self.swatter.phase = StrikePhase.APPROACH
             self.physical_swatter.segments = []
+            self.physical_swatter.reset()
         self._fly_before = (0.0,0.0)
         # Airborne from the first frame: a fly does not accelerate from rest,
         # and starting at cruise removes a visible start-up lurch.

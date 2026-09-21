@@ -78,6 +78,10 @@ def _trial(session: Session, policy: RecordingPolicy, seed: int, offset: tuple[f
     settle_ticks = max(40, round(session.config["swatter"].get("physical", {}).get("calibration_settle_seconds", 0.8)/session.tick_seconds))
     for _ in range(settle_ticks):
         session.tick(pointer=pointer, strike=False)
+    if session.world.physical_swatter is not None:
+        sw=session.world.swatter
+        if np.hypot(sw.vx,sw.vy)>.1 or np.hypot(sw.x-pointer[0],sw.y-pointer[1])>.1:
+            raise RuntimeError("Paddle did not settle; increase swatter.physical.calibration_settle_seconds before measuring")
     settle = len(policy.history)
     phases = []
     for t in range(ticks):

@@ -1,5 +1,5 @@
 {
-  "config_version": 8,
+  "config_version": 9,
   "_comment": "M1.6 horizontal ROOM slice. Logical units and state speeds are gameplay mappings, not universal biological constants.",
   "sim": {
     "tick_seconds": 0.02,
@@ -69,8 +69,14 @@
         0.0
       ],
       "integration_step_seconds": 0.002,
-      "calibration_settle_seconds": 2.0,
-      "center_inset": 0.0
+      "calibration_settle_seconds": 6.0,
+      "center_inset": 0.0,
+      "approach_tracking": {
+        "_comment": "World-side velocity matching plus bounded positional correction. No fly coordinates or threat-state inputs. Filter command continuously at paddle substeps.",
+        "position_gain": 6.0,
+        "correction_speed_limit": 900.0,
+        "command_tau_seconds": 0.06
+      }
     }
   },
   "fly": {
@@ -130,8 +136,8 @@
     "_comment": "Exact provenance required. Recalibrate with python tools/calibrate_escape.py --config game_room_config.json --trials 28.",
     "escape_threshold": null,
     "calibration_paths": [
-      "artifacts/game/calibration_room_m1_7_edge.json",
-      "results/game/calibration_room_m1_7_edge.json"
+      "artifacts/game/calibration_room_m1_7_1.json",
+      "results/game/calibration_room_m1_7_1.json"
     ],
     "refractory_seconds": 0.4,
     "turn_gain": 0.8,

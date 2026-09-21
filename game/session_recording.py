@@ -11,6 +11,7 @@ import hashlib
 import importlib.metadata
 import json
 import math
+import numba
 import platform
 from pathlib import Path
 import statistics
@@ -21,7 +22,7 @@ import zipfile
 from .recording import observation_frame, policy_observation
 from .edge_analysis import edge_diagnostics
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 
 def canonical_hash(value):
@@ -63,6 +64,9 @@ class HumanSessionRecorder:
         self.started_wall=time.perf_counter();self.history=deque(maxlen=4)
         self.presentation={};self.control_flags=set();self.strikes=[];self.episode_summaries=[]
         self.threat_counts=Counter();self.ecology_counts=Counter();self.event_counts=Counter();self.speeds=[]
+        self.alive_threat_counts=Counter();self.alive_ecology_counts=Counter()
+        self.alive_tick_count=0;self.all_speeds=[];self.alive_speeds=[]
+        self.approach_speeds=[];self.approach_pointer_speeds=[];self.approach_errors=[]
         self.wall_ticks=self.perimeter_ticks=self.contact_ticks=self.odor_encounters=0
         self.episode_ranges={};self.current_strike=None;self.paused=False;self.closed_manifest=None
 
@@ -107,6 +111,7 @@ class HumanSessionRecorder:
                 'git_branch':git_value(session.root,'branch','--show-current'),
                 'git_dirty':bool(git_value(session.root,'status','--porcelain')),
                 'source_sha256':source,'versions':versions,'python_version':platform.python_version(),
+                'runtime':{'numba_threads':numba.get_num_threads(),'numba_threading_layer':numba.threading_layer()},
                 'platform':platform.platform(),'config_file':str(self.config_file) if self.config_file else None,
                 'config_file_sha256':hashlib.sha256(self.config_file.read_bytes()).hexdigest() if self.config_file and self.config_file.exists() else None,
                 'config':config,'config_sha256':calibration_provenance(config)['game_config_sha256'],
@@ -207,7 +212,8 @@ class HumanSessionRecorder:
             'swatter':{**asdict(sw),'phase':sw.phase.value,'vx':swvx,'vy':swvy,'speed':math.hypot(swvx,swvy),'strike_id':w.stats.strikes},
             'stats':asdict(w.stats),'event_flags':flags,'paused':self.paused,
             'room_world':w.room.debug(f,w.time_seconds) if w.room else None,
-            'population':session.encoder.population,'edge_analysis':edge}
+            'population':session.encoder.population,'edge_analysis':edge,
+            'swatter_control':w.physical_swatter.diagnostics() if w.physical_swatter else None}
         digest=canonical_hash(snapshot)
         self.emit('ticks',{**snapshot,'deterministic_sha256':digest,'presentation':dict(self.presentation)})
         if motor is not None and self.prev_alive:
@@ -218,6 +224,18 @@ class HumanSessionRecorder:
         self.threat_counts[neural_state]+=1
         if session.ecology:self.ecology_counts[session.ecology.state]+=1
         if self.prev_alive:self.speeds.append(speed/w.body_length)
+        self.all_speeds.append(speed/w.body_length)
+        if f.alive:
+            self.alive_tick_count+=1
+            self.alive_speeds.append(speed/w.body_length)
+            self.alive_threat_counts[neural_state]+=1
+            if session.ecology:self.alive_ecology_counts[session.ecology.state]+=1
+            if sw.phase.value=='approach':
+                self.approach_speeds.append(math.hypot(swvx,swvy))
+                control=snapshot['swatter_control']
+                if control and control['pointer_sample_valid']:
+                    self.approach_pointer_speeds.append(control['pointer_speed'])
+                    self.approach_errors.append(control['target_error_before_step'])
         self.wall_ticks+=w.wall_cue.proximity>=.45
         self.perimeter_ticks+=w.flight.near_wall;self.contact_ticks+=w.wall_contact or w.object_contact
         self.odor_encounters+=flags['odor_encounter']
@@ -266,6 +284,14 @@ class HumanSessionRecorder:
                    if not st.get('escape_preexisting',False) and st['escape_tick'] is not None and st['threat_onset_tick'] is not None and st['escape_tick']>=st['threat_onset_tick']]
         bins=Counter(int((math.degrees(st['attack_direction'])%360)//45)*45 for st in self.strikes)
         n=max(1,self.global_tick)
+        def fractions(counts, count):
+            return {k:v/count for k,v in sorted(counts.items())} if count else {}
+        def distribution(values):
+            import numpy as np
+            return {'n':len(values),'mean':statistics.mean(values) if values else None,
+                    **{name:float(np.percentile(values,q)) if values else None
+                       for name,q in (('p50',50),('p75',75),('p90',90),('p95',95),('max',100))}}
+        cap=session.config['swatter'].get('physical',{}).get('approach_speed_limit')
         summary={'schema_version':SCHEMA_VERSION,'session_id':self.run_id,'duration_simulation_seconds':self.global_tick*dt,
           'duration_wall_seconds':time.perf_counter()-self.started_wall,'episodes':len(self.episode_summaries),'ticks':self.global_tick,
           **stats,'hit_rate':stats['hits']/stats['strikes'] if stats['strikes'] else None,
@@ -277,25 +303,49 @@ class HumanSessionRecorder:
           'escape_latency_seconds':{'n':len(latencies),'mean':statistics.mean(latencies) if latencies else None,
                                     'median':statistics.median(latencies) if latencies else None,
                                     'definition':'first new ESCAPE within 2 s after strike start minus neural threat onset in the indexed window (1 s before to 2 s after); unavailable/preexisting escapes excluded'},
+          'tick_populations':{'all':self.global_tick,'alive_post_step':self.alive_tick_count,
+                              'definition':'alive means post-step fly.alive; fatal ticks excluded from alive-only statistics'},
+          'threat_state_fraction_all':fractions(self.threat_counts,self.global_tick),
+          'threat_state_fraction_alive':fractions(self.alive_threat_counts,self.alive_tick_count),
+          'ecological_state_fraction_all':fractions(self.ecology_counts,self.global_tick),
+          'ecological_state_fraction_alive':fractions(self.alive_ecology_counts,self.alive_tick_count),
+          'speed_bl_s_all':distribution(self.all_speeds),'speed_bl_s_alive':distribution(self.alive_speeds),
+          'alive_approach':{'physical_speed':distribution(self.approach_speeds),
+              'pointer_speed':distribution(self.approach_pointer_speeds),
+              'target_error':distribution(self.approach_errors),
+              'speed_cap':cap,'fraction_at_95pct_cap':sum(v>=.95*cap for v in self.approach_speeds)/len(self.approach_speeds) if cap and self.approach_speeds else None},
           'speed_bl_s':{'mean':statistics.mean(self.speeds) if self.speeds else None,'peak':max(self.speeds) if self.speeds else None},
           'threat_state_fraction':{k:v/n for k,v in self.threat_counts.items()},'ecological_state_fraction':{k:v/n for k,v in self.ecology_counts.items()},
           'wall_time_seconds':self.wall_ticks*dt,'perimeter_time_seconds':self.perimeter_ticks*dt,'contact_time_seconds':self.contact_ticks*dt,
           'odor_encounters':self.odor_encounters,'landing_attempts':sum(e['landing_attempts'] for e in self.episode_summaries),
           'attack_direction_bins_degrees':dict(sorted(bins.items())),'full_brain_recorded':False,'learning_updates':0}
         (self.path/'summary.json').write_text(json.dumps(summary,indent=2)+'\n',encoding='utf-8')
-        lines=['# Human session summary','',f"Session: `{self.run_id}`",f"Arena: {self.manifest['arena']}; mode: {self.manifest['mode']}; fixed sampling: {1/dt:g} Hz.",'',
+        def describe(values):
+            if not values['n']:return 'n=0; no eligible samples'
+            return ', '.join([f"n={values['n']}"]+[f"{key}={values[key]:.3f}" for key in ('mean','p50','p75','p90','max')])
+        approach=summary['alive_approach']
+        near_cap=approach['fraction_at_95pct_cap']
+        near_cap_text='unavailable' if near_cap is None else f"{100*near_cap:.2f}%"
+        lines=['# Human session summary' ,'',f"Session: `{self.run_id}`",f"Arena: {self.manifest['arena']}; mode: {self.manifest['mode']}; fixed sampling: {1/dt:g} Hz.",'',
           f"Duration: {self.global_tick*dt:.2f} simulation seconds; episodes: {summary['episodes']}; ticks: {self.global_tick}.",
           f"Strikes: {stats['strikes']}; hits: {stats['hits']}; misses: {stats['misses']}; incomplete: {summary['incomplete_strikes']}.",
           f"Hit rate: {summary['hit_rate']}; first-strike hit rate: {summary['first_strike_hit_rate']}.",
           f"ALERT onsets: {summary['alert_count']}; ESCAPE onsets: {summary['escape_count']}; DNp01 crossings: {summary['dnp01_threshold_crossings']}.",
-          f"Escape latency (s): {summary['escape_latency_seconds']}.",f"Speed (BL/s): {summary['speed_bl_s']}.",
-          f"Threat-state fractions: {summary['threat_state_fraction']}.",f"Ecological-state fractions: {summary['ecological_state_fraction']}.",
+          f"Escape latency (s): {summary['escape_latency_seconds']}.",f"Speed all ticks (BL/s): {describe(summary['speed_bl_s_all'])}.",
+          f"Speed alive ticks (BL/s): {describe(summary['speed_bl_s_alive'])}.",
+          f"Tick populations: {summary['tick_populations']}.",
+          f"Threat-state fractions all / alive: {summary['threat_state_fraction_all']} / {summary['threat_state_fraction_alive']}.",
+          f"Ecological-state fractions all / alive: {summary['ecological_state_fraction_all']} / {summary['ecological_state_fraction_alive']}.",
+          f"Alive APPROACH head speed (units/s): {describe(approach['physical_speed'])}.",
+          f"Alive APPROACH pointer speed (units/s): {describe(approach['pointer_speed'])}; first episode samples excluded.",
+          f"Alive APPROACH at >=95% of speed cap: {near_cap_text}; cap={cap} units/s.",
+          f"Alive APPROACH target error (units): {describe(approach['target_error'])}.",
           f"Wall / perimeter / contact time (s): {self.wall_ticks*dt:.2f} / {self.perimeter_ticks*dt:.2f} / {self.contact_ticks*dt:.2f}.",
           f"Odor encounters: {self.odor_encounters}; landing attempts: {summary['landing_attempts']}.",
           f"Near-wall outcomes: {summary['edge_outcomes']}.",
           f"Attack direction bins (degrees): {summary['attack_direction_bins_degrees']}.",'',
           'Tick logs contain offline WORLD data. Only policy_observations.jsonl contains the unchanged whitelisted observations.',
-          'Statistics are descriptive, not learning or biological validation. State fractions include recorded dead ticks; neural values are held after death.',
+          'Statistics are descriptive, not learning or biological validation. All-tick fractions include dead ticks; alive-only fractions exclude them. Neural values are held after death. Legacy speed_bl_s uses pre-step alive ticks; prefer the explicit all/alive fields.',
           'Pause duration is wall time, not additional brain samples. Event windows are inclusive index ranges in strikes.json.',
           'No full-brain recording or policy learning occurred. See manifest.json for source snapshot hashes, configuration and calibration.']
         (self.path/'REPORT.md').write_text('\n'.join(lines)+'\n',encoding='utf-8')

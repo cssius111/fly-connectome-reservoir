@@ -7,10 +7,12 @@ A reproducible Windows CPU computational neuroscience experiment and an untraine
 The frozen experiment is specified in [PROTOCOL.md](PROTOCOL.md), with historical results in [results/REPORT.md](results/REPORT.md). These protected artifacts retain their original language and bytes for reproducibility. Editable project content is English.
 
 
-## M1.7: recorded human playtests and physical ROOM swatter
+## M1.7.1: accepted physical swatter baseline
 
 M1.6 is preserved locally as `58ffd60fb60239a911c1ca0baea458ec743774b7`.
-M1.7 includes an uncommitted edge-reachability repair for renewed human playtesting. No reinforcement learning,
+M1.7 and the edge repair are committed at `e0f08ebe55ecefcab69cc7927668c0f2cef7f69c`.
+M1.7.1 has passed human acceptance and final regression: ordinary approach follows
+pointer velocity with bounded catch-up; fast strikes and edge reachability remain intact. No reinforcement learning,
 personalization or M1.5.1 universal-speed calibration is implemented.
 
 ```powershell
@@ -38,7 +40,18 @@ See [recording, replay, physics and playtest guide](game/SESSIONS.md),
 M1.6 evidence remains unchanged in [its historical report](results/game/M1_6.md).
 The edge repair allows partially offscreen paddle heads without changing fly bounds
 or motor limits. See the [edge audit and validation](results/game/M1_7_EDGE.md).
-The active ROOM calibration is `calibration_room_m1_7_edge.json`, threshold **1.70**:
+The active ROOM calibration is `calibration_room_m1_7_1.json`, threshold **1.45**.
+See the [pre-tuning human diagnosis](results/game/HUMAN_M1_7_DIAGNOSIS.md) and
+[M1.7.1 validation and acceptance checklist](results/game/M1_7_1.md).
+Reports separate all-tick and alive-only threat/ecology/speed statistics.
+Manifests retain the actual CPU thread count for exact replay.
+See [final human acceptance and regression](results/game/M1_7_1_ACCEPTANCE.md).
+The swatter, swept collision, offscreen geometry, recorder/replay interface and
+WORLD/policy boundary are frozen unless recorded evidence demonstrates a defect.
+[M1.8 activity-budget and flight-kinematics proposal](game/M1_8_PROPOSAL.md) is
+planning only; no next-milestone implementation is included.
+
+Validation commands:
 
 ```text
 python tools/calibrate_escape.py --config game_room_config.json --trials 28
@@ -153,7 +166,7 @@ python tools/calibrate_escape.py --trials 28
 
 The threshold is the smallest predefined grid value with zero crossings across all no-loom samples. Runtime requires exact provenance: canonical full-config SHA256, protocol, FlyBrain version, encoder seed/types/population rule, sensory flag and tick duration. Stale local artifacts cannot override matching committed records. Missing matches fail clearly with the calibration command. Custom configs require matching `--config PATH` in both tools and game.
 
-The LAB fixed-fly result is threshold 1.45; GAME and ROOM have separate measured thresholds of 1.35. All three detect 28/28 with median latency 0.06 s and zero crossings in 2,520 no-loom ticks. These are calibration-sample results, not a guarantee of zero false triggers in arbitrary free flight.
+The LAB fixed-fly threshold is 1.45 and GAME is 1.35; both detect 28/28 with median latency 0.06 s. The current M1.7.1 ROOM threshold is freshly measured at 1.45, detecting 28/28 with median latency 0.08 s after click. Each has zero crossings in its 2,520 no-loom ticks. ROOM uses a 6-second paddle settling interval and verifies that the head is stationary before measurement. These are calibration-sample results, not a guarantee of zero false triggers in arbitrary free flight.
 
 ## M1.4 flight and enclosure baseline
 

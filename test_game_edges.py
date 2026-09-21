@@ -125,7 +125,7 @@ class TestEdgeReachability(unittest.TestCase):
             observation=json.loads((rec.path/'policy_observations.jsonl').read_text())['observation']
             self.assertEqual(set(observation),{'neural','motion','behavior_state','history'})
             for key in edge:self.assertNotIn(key,json.dumps(observation))
-            self.assertEqual(json.loads((rec.path/'manifest.json').read_text())['recording_schema_version'],2)
+            self.assertEqual(json.loads((rec.path/'manifest.json').read_text())['recording_schema_version'],3)
 
 
 if __name__=='__main__':unittest.main()
