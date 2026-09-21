@@ -29,6 +29,7 @@ from .room import RoomEnvironment
 from .ecology import EcologicalCommand
 from .physical_swatter import PhysicalSwatter
 from .lifecycle import LifecycleController
+from .kinematics import KinematicExecutor, KinematicResolver
 
 
 class StrikePhase(enum.Enum):
@@ -154,6 +155,11 @@ class World:
         self.enclosure = Enclosure(self.width, self.height, self.margin, self.fly_radius,
                                    float(config["flight"]["boundary"]["sense_range"]))
         self.flight = FreeFlightController(config["flight"], seed)
+        # Behavioral context -> kinematic profile -> executor -> physics. Stateless and
+        # RNG-free, so it can be constructed once and survives reset() unchanged.
+        self.kinematics = KinematicResolver(self.baseline_speed, self.max_speed,
+                                            self.body_length, self.damping)
+        self.kinematic_profile = self.kinematics.airborne(None, False)
         # Measurement escape hatch: tools/calibrate_escape.py turns this off so
         # a full strike can be observed without the fly dying part-way through.
         # Always True during play.
@@ -454,9 +460,9 @@ class World:
         if command is not None and type(command) is not EcologicalCommand:
             raise TypeError("world accepts only EcologicalCommand for ecological modulation")
         threat_priority = self._neural_active(action) or self.saccades.kind in ("ALERT","ESCAPE")
-        target_speed = self.baseline_speed if command is None or threat_priority else min(self.max_speed, command.target_speed_bl_s*self.body_length)
-        eco_turn = 0.0 if command is None or threat_priority else command.steering_rad_s
-        self.applied_target_speed = target_speed
+        profile = self.kinematics.airborne(command, threat_priority)
+        self.kinematic_profile = profile
+        self.applied_target_speed = profile.target_speed
         self._flight_time += dt
         self._wander_timer += dt
         if self._wander_timer >= self.wander_interval:
@@ -481,16 +487,7 @@ class World:
                 fly.vy += self.escape_impulse * action.strength * iy / mag
 
         # Tonic locomotion is game physics, NOT a connectome threat response.
-        # Damping relaxes velocity toward forward cruise, retaining inertia and
-        # lateral escape momentum. Threat steering arrives only via Action.
-        ax = self.damping * (target_speed * math.cos(fly.heading) - fly.vx)
-        ay = self.damping * (target_speed * math.sin(fly.heading) - fly.vy)
-        fly.vx += ax * dt
-        fly.vy += ay * dt
-        speed = math.hypot(fly.vx, fly.vy)
-        if speed > self.max_speed:
-            fly.vx *= self.max_speed / speed
-            fly.vy *= self.max_speed / speed
+        KinematicExecutor.translate(profile, fly, dt)
         fly.x += fly.vx * dt
         fly.y += fly.vy * dt
         if self.room is not None and self.collisions_enabled:
@@ -507,7 +504,7 @@ class World:
         # (B) Free flight and boundary behaviour, driven by the local cue.
         self.flight.update(dt, self.wall_cue, self.saccades,
                            neural_active=self._neural_active(action),
-                           spontaneous_clock_rate=1.0 if command is None or threat_priority else command.spontaneous_clock_rate)
+                           spontaneous_clock_rate=profile.spontaneous_clock_rate)
 
         # Do not overwrite heading from velocity: that used to erase steering
         # at cruise speed and abruptly swivel the body after a lateral impulse.
@@ -515,9 +512,9 @@ class World:
         # rate plus normal steering/drift under the shipped configuration.
         # Custom excessive steering is clipped as a final safety constraint.
         pulse = self.saccades.step(dt)
-        self.yaw_rate = float(np.clip(action.turn * self.turn_rate + self._wander_turn + eco_turn
-                                      + pulse / dt,
-                                      -self.max_yaw_rate, self.max_yaw_rate))
+        self.yaw_rate = KinematicExecutor.yaw_rate(profile, action.turn * self.turn_rate,
+                                                   self._wander_turn, pulse, dt,
+                                                   self.max_yaw_rate)
         fly.heading = (fly.heading + self.yaw_rate * dt) % (2.0 * math.pi)
         if self.sideslip:
             speed = math.hypot(fly.vx, fly.vy)
@@ -541,6 +538,7 @@ class World:
             f.x, f.y, f.heading = self.contact_pose
             f.vx = f.vy = self.yaw_rate = self.applied_target_speed = 0.0
             self.saccades.reset()
+            self.kinematic_profile = self.kinematics.lifecycle_direct('lifecycle_stationary_contact')
             life.applied_profile = {'name': 'stationary_contact', 'speed_bl_s': 0.0}
             return True
         if life.mode.startswith('TAKEOFF_'):
@@ -561,8 +559,10 @@ class World:
                 self.wall_contact = self.enclosure.contain(f)
                 self.yaw_rate = 0.0
                 self.applied_target_speed = speed
+                self.kinematic_profile = self.kinematics.lifecycle_direct('lifecycle_takeoff_voluntary', speed)
                 life.applied_profile = {'name': 'takeoff_voluntary', 'initial_speed_bl_s': speed/self.body_length}
                 return True
+            self.kinematic_profile = self.kinematics.lifecycle_direct('lifecycle_takeoff_escape')
             life.applied_profile = {'name': 'takeoff_escape', 'impulse_bl_s': self.escape_impulse*action.strength/self.body_length,
                                     'lateral': action.lateral, 'forward': action.forward}
             return False
@@ -571,13 +571,14 @@ class World:
             return False
         self.saccades.reset()
         previous = (f.x, f.y)
-        target = min(self.max_speed, life.target_speed*self.body_length)
+        profile = self.kinematics.landing_approach(life.target_speed,
+                                                   c['approach_velocity_tau_seconds'], life.turn)
+        self.kinematic_profile = profile
+        target = profile.target_speed
         self.applied_target_speed = target
         self.yaw_rate = life.turn
         f.heading = (f.heading+self.yaw_rate*dt) % (2*math.pi)
-        alpha = 1-math.exp(-dt/c['approach_velocity_tau_seconds'])
-        f.vx += alpha*(target*math.cos(f.heading)-f.vx)
-        f.vy += alpha*(target*math.sin(f.heading)-f.vy)
+        KinematicExecutor.translate(profile, f, dt)
         f.x += f.vx*dt
         f.y += f.vy*dt
         self.object_contact = self.room.constrain_motion(f, previous, self.fly_radius)
