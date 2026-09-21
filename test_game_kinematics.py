@@ -13,7 +13,9 @@ os.environ.setdefault('SDL_VIDEODRIVER', 'dummy')
 from game.action import Action
 from game.ecology import EcologicalCommand
 from game.kinematics import (DAMPED_CRUISE, DIRECT, EXPONENTIAL_APPROACH,
-                             KinematicExecutor, KinematicProfile, KinematicResolver)
+                             LIFECYCLE_OWNED_CONTEXTS, NEURAL_OVERRIDE_CONTEXTS,
+                             SAMPLED_CONTEXTS, KinematicExecutor, KinematicProfile,
+                             KinematicResolver, KinematicSampler)
 from game.session import load_config
 from game.world import Fly, World
 
@@ -169,6 +171,101 @@ class TestWorldIntegration(unittest.TestCase):
             w.tick(DT, Action())
             self.assertEqual(w.kinematic_profile.context, 'baseline_cruise')
             self.assertIsNone(w.lifecycle)
+
+
+class TestB2aSamplerAndScale(unittest.TestCase):
+    """M1.8-B2a: an isolated, seeded, still-inert sampler and a no-op ROOM mapping."""
+
+    def test_seed_offsets_are_pairwise_unique(self):
+        from game.ecology import EcologicalController
+        from game.flight import FreeFlightController
+        # Offsets are literals in their own modules; assert they cannot collide.
+        offsets = {'flight': 3907, 'ecology': 7013, 'spawn': 8191, 'lifecycle': 18001,
+                   'kinematics': KinematicSampler.SEED_OFFSET}
+        self.assertEqual(len(set(offsets.values())), len(offsets))
+        seed = 255
+        streams = {name: np.random.default_rng(seed+off).random() for name, off in offsets.items()}
+        self.assertEqual(len(set(streams.values())), len(streams))
+
+    def test_sampler_is_inert_and_takes_no_draw(self):
+        sampler = KinematicSampler(255)
+        self.assertTrue(sampler.untouched)
+        command = EcologicalCommand('EXPLORE', 6.0, .1, 1.0)
+        for threat in (False, True):
+            self.assertIsNone(sampler.target_speed_bl_s(command, threat))
+            self.assertIsNone(sampler.target_speed_bl_s(None, threat))
+        self.assertTrue(sampler.untouched);self.assertEqual(sampler.draws, 0)
+
+    def test_sampler_reseeds_deterministically_from_the_world_seed(self):
+        a, b = KinematicSampler(255), KinematicSampler(255)
+        self.assertEqual(a.rng.bit_generator.state, b.rng.bit_generator.state)
+        self.assertNotEqual(a.rng.bit_generator.state, KinematicSampler(256).rng.bit_generator.state)
+        a.rng.random();self.assertNotEqual(a.rng.bit_generator.state, b.rng.bit_generator.state)
+        a.reset(255);self.assertEqual(a.rng.bit_generator.state, b.rng.bit_generator.state)
+
+    def test_world_reset_reseeds_the_sampler_and_leaves_it_untouched(self):
+        w = World(ROOM, 101)
+        for _ in range(60):w.tick(DT, Action())
+        self.assertTrue(w.kinematic_sampler.untouched)
+        before = w.kinematic_sampler.rng.bit_generator.state
+        w.reset(101)
+        self.assertEqual(w.kinematic_sampler.rng.bit_generator.state, before)
+        w.reset(102)
+        self.assertNotEqual(w.kinematic_sampler.rng.bit_generator.state, before)
+
+    def test_resolver_remains_pure_and_rng_free(self):
+        r = resolver()
+        self.assertFalse(any('rng' in name or 'sampler' in name for name in vars(r)))
+
+    def test_room_kinematic_scale_is_one_and_maps_exactly(self):
+        self.assertEqual(ROOM['kinematics']['room_kinematic_scale'], 1.0)
+        r = resolver()
+        self.assertEqual(r.room_kinematic_scale, 1.0)
+        body = ROOM['fly']['body_length_px']
+        for bl in (0.0, 1.5, 6.0, 9.0, 13.0, 1e6):
+            self.assertEqual(r.ecological_units(bl), bl*body)
+
+    def test_scale_is_wired_even_though_its_value_is_one(self):
+        body = ROOM['fly']['body_length_px']
+        scaled = KinematicResolver(216., 1e9, body, 3., 2.5)
+        self.assertEqual(scaled.ecological_units(6.0), 6.0*body*2.5)
+        command = EcologicalCommand('EXPLORE', 6.0, 0., 1.0)
+        self.assertEqual(scaled.airborne(command, False).target_speed, 6.0*body*2.5)
+
+    def test_invalid_scale_is_rejected(self):
+        for bad in (0.0, -1.0, math.nan, math.inf):
+            with self.assertRaises(ValueError):
+                KinematicResolver(216., 1000., 24., 3., bad)
+
+    def test_sampled_speed_hook_overrides_only_when_supplied(self):
+        r, body = resolver(), ROOM['fly']['body_length_px']
+        command = EcologicalCommand('EXPLORE', 6.0, 0., 1.0)
+        self.assertEqual(r.airborne(command, False, None).target_speed, 6.0*body)
+        self.assertEqual(r.airborne(command, False, 11.0).target_speed, 11.0*body)
+
+    def test_threat_contexts_are_excluded_from_future_sampling(self):
+        self.assertEqual(SAMPLED_CONTEXTS,
+                         {'EXPLORE', 'TRANSIT', 'ODOR_TRACK', 'ODOR_SEARCH', 'RECOVER'})
+        self.assertEqual(NEURAL_OVERRIDE_CONTEXTS, {'ALERT', 'ESCAPE'})
+        self.assertEqual(LIFECYCLE_OWNED_CONTEXTS, {'LAND_OR_PERCH'})
+        self.assertFalse(SAMPLED_CONTEXTS & NEURAL_OVERRIDE_CONTEXTS)
+        self.assertFalse(SAMPLED_CONTEXTS & LIFECYCLE_OWNED_CONTEXTS)
+
+    def test_threat_priority_still_bypasses_the_ecological_envelope(self):
+        # Documents the currently non-authoritative ALERT/ESCAPE speed envelopes.
+        r = resolver()
+        for state in ('ALERT', 'ESCAPE'):
+            command = EcologicalCommand(state, 18.0, .5, 0.0)
+            p = r.airborne(command, True)
+            self.assertEqual(p.context, 'neural_priority')
+            self.assertEqual(p.target_speed, ROOM['fly']['baseline_speed'])
+            self.assertNotEqual(p.target_speed, 18.0*ROOM['fly']['body_length_px'])
+
+    def test_legacy_presets_default_to_unit_scale(self):
+        for name in ('game_config.json', 'game_play_config.json'):
+            config = load_config(ROOT/name)
+            self.assertNotIn('kinematics', config)
+            self.assertEqual(World(config, 5).kinematics.room_kinematic_scale, 1.0)
 
 
 if __name__ == '__main__':

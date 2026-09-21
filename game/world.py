@@ -29,7 +29,7 @@ from .room import RoomEnvironment
 from .ecology import EcologicalCommand
 from .physical_swatter import PhysicalSwatter
 from .lifecycle import LifecycleController
-from .kinematics import KinematicExecutor, KinematicResolver
+from .kinematics import KinematicExecutor, KinematicResolver, KinematicSampler
 
 
 class StrikePhase(enum.Enum):
@@ -157,8 +157,12 @@ class World:
         self.flight = FreeFlightController(config["flight"], seed)
         # Behavioral context -> kinematic profile -> executor -> physics. Stateless and
         # RNG-free, so it can be constructed once and survives reset() unchanged.
-        self.kinematics = KinematicResolver(self.baseline_speed, self.max_speed,
-                                            self.body_length, self.damping)
+        self.kinematics = KinematicResolver(
+            self.baseline_speed, self.max_speed, self.body_length, self.damping,
+            float(config.get("kinematics", {}).get("room_kinematic_scale", 1.0)))
+        # The sampler holds the only kinematics random stream, so the resolver stays
+        # pure. It is inert in M1.8-B2a: it is seeded and reset but never drawn from.
+        self.kinematic_sampler = KinematicSampler(seed)
         self.kinematic_profile = self.kinematics.airborne(None, False)
         # Measurement escape hatch: tools/calibrate_escape.py turns this off so
         # a full strike can be observed without the fly dying part-way through.
@@ -185,6 +189,7 @@ class World:
         self.rng = np.random.default_rng(seed)
         self.saccades.reset()
         self.flight.reset(seed)
+        self.kinematic_sampler.reset(seed)
         self.yaw_rate = 0.0
         self.wall_cue = WallCue()
         self.wall_contact = False
@@ -460,7 +465,8 @@ class World:
         if command is not None and type(command) is not EcologicalCommand:
             raise TypeError("world accepts only EcologicalCommand for ecological modulation")
         threat_priority = self._neural_active(action) or self.saccades.kind in ("ALERT","ESCAPE")
-        profile = self.kinematics.airborne(command, threat_priority)
+        sampled = self.kinematic_sampler.target_speed_bl_s(command, threat_priority)
+        profile = self.kinematics.airborne(command, threat_priority, sampled)
         self.kinematic_profile = profile
         self.applied_target_speed = profile.target_speed
         self._flight_time += dt

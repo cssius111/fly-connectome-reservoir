@@ -1,5 +1,5 @@
 {
-  "config_version": 10,
+  "config_version": 11,
   "_comment": "M1.6 horizontal ROOM slice. Logical units and state speeds are gameplay mappings, not universal biological constants.",
   "sim": {
     "tick_seconds": 0.02,
@@ -136,8 +136,8 @@
     "_comment": "Exact provenance required. Recalibrate with python tools/calibrate_escape.py --config game_room_config.json --trials 28.",
     "escape_threshold": null,
     "calibration_paths": [
-      "artifacts/game/calibration_room_m1_8_a.json",
-      "results/game/calibration_room_m1_8_a.json"
+      "artifacts/game/calibration_room_m1_8_b2a.json",
+      "results/game/calibration_room_m1_8_b2a.json"
     ],
     "refractory_seconds": 0.4,
     "turn_gain": 0.8,
@@ -392,5 +392,9 @@
     "feeding_odor_on": 0.1,
     "feeding_departure_fraction": 0.45,
     "voluntary_launch_speed_bl_s": 6.0
+  },
+  "kinematics": {
+    "_comment": "M1.8-B2a. room_kinematic_scale is a Class C simulator/environment mapping from body-length-normalized ecological speed to ROOM world units. It is NOT a measured biological constant and no literature magnitude has been adopted. 1.0 is the accepted no-op value. It applies only to non-neural ecological locomotion; threat-priority, landing approach and takeoff are excluded.",
+    "room_kinematic_scale": 1.0
   }
 }

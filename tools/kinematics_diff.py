@@ -11,8 +11,9 @@ from pathlib import Path
 import sys
 
 
-def compare(before, after):
+def compare(before, after, notes=None):
     findings = []
+    notes = [] if notes is None else notes
     names = [s['scenario'] for s in before['scenarios']]
     if names != [s['scenario'] for s in after['scenarios']]:
         return [{'scenario': '*', 'kind': 'scenario_set_differs'}]
@@ -32,11 +33,19 @@ def compare(before, after):
                 findings.append({'scenario': name, 'kind': 'first_divergence', 'tick': tick,
                                  'column': label, 'before': a[column], 'after': b[column]})
                 break
-        if old['rng_final_states'] != new['rng_final_states']:
-            changed = [k for k in old['rng_final_states']
-                       if old['rng_final_states'][k] != new['rng_final_states'].get(k)]
+        # A stream that exists in both captures and differs is a real failure. A stream
+        # present only in the newer capture is an addition, reported but not a failure.
+        shared = set(old['rng_final_states']) & set(new['rng_final_states'])
+        changed = sorted(k for k in shared
+                         if old['rng_final_states'][k] != new['rng_final_states'][k])
+        if changed:
             findings.append({'scenario': name, 'kind': 'rng_call_order_changed',
                              'streams': changed})
+        added = sorted(set(new['rng_final_states']) - set(old['rng_final_states']))
+        if added:
+            notes.append({'scenario': name, 'kind': 'rng_stream_added', 'streams': added})
+        if new.get('kinematics_sampler_untouched') is False:
+            findings.append({'scenario': name, 'kind': 'kinematics_sampler_drew'})
     return findings
 
 
@@ -48,16 +57,21 @@ def main():
     args = parser.parse_args()
     before = json.loads(args.before.read_text(encoding='utf-8'))
     after = json.loads(args.after.read_text(encoding='utf-8'))
-    findings = compare(before, after)
+    notes = []
+    findings = compare(before, after, notes)
     ticks = sum(s['ticks'] for s in before['scenarios'])
     result = {'before': str(args.before), 'after': str(args.after),
               'scenarios': len(before['scenarios']), 'total_ticks': ticks,
               'before_combined_sha256': before['combined_sha256'],
               'after_combined_sha256': after['combined_sha256'],
               'bit_identical': not findings and before['combined_sha256'] == after['combined_sha256'],
-              'rng_call_order_unchanged': all(
-                  a['rng_final_states'] == b['rng_final_states']
-                  for a, b in zip(before['scenarios'], after['scenarios'])),
+              'existing_rng_streams_unchanged': not any(
+                  f['kind'] == 'rng_call_order_changed' for f in findings),
+              'new_rng_streams': sorted({s for n in notes
+                                         if n['kind'] == 'rng_stream_added'
+                                         for s in n['streams']}),
+              'kinematics_sampler_untouched': all(
+                  s.get('kinematics_sampler_untouched', True) for s in after['scenarios']),
               'per_scenario': [{'scenario': a['scenario'], 'ticks': a['ticks'],
                                 'identical': a['trace_sha256'] == b['trace_sha256'],
                                 'sha256': a['trace_sha256']}

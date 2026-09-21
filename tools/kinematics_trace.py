@@ -34,7 +34,10 @@ def _rng_states(world, session):
     """Final bit-generator states for every seeded stream the tick path touches."""
     states = {'world': world.rng.bit_generator.state,
               'spawn': world._spawn_rng.bit_generator.state,
-              'flight': world.flight.rng.bit_generator.state}
+              'flight': world.flight.rng.bit_generator.state,
+              # M1.8-B2a: seeded but never drawn from, so this must stay at its
+              # initial state. `kinematics_untouched` asserts that independently.
+              'kinematics': world.kinematic_sampler.rng.bit_generator.state}
     if session.ecology is not None:
         states['ecology'] = session.ecology.rng.bit_generator.state
     if world.lifecycle is not None:
@@ -68,12 +71,14 @@ def scenario(name, config, seed, ticks, chase_from=None, ecology=None, brain=Non
                 entry.append(session.ecology.state)
             rows.append(entry)
         states = _rng_states(session.world, session)
+        sampler_untouched = session.world.kinematic_sampler.untouched
     finally:
         session.close()
     payload = json.dumps(rows, sort_keys=True, separators=(',', ':'))
     return {'scenario': name, 'seed': seed, 'ticks': ticks, 'chase_from': chase_from,
             'ecology_enabled': ecology, 'fields': list(FIELDS),
             'rows': rows, 'rng_final_states': states,
+            'kinematics_sampler_untouched': sampler_untouched,
             'trace_sha256': hashlib.sha256(payload.encode('ascii')).hexdigest()}, session.brain
 
 

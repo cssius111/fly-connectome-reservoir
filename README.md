@@ -70,8 +70,10 @@ See [recording, replay, physics and playtest guide](game/SESSIONS.md),
 M1.6 evidence remains unchanged in [its historical report](results/game/M1_6.md).
 The edge repair allows partially offscreen paddle heads without changing fly bounds
 or motor limits. See the [edge audit and validation](results/game/M1_7_EDGE.md).
-M1.7.1 measured ROOM threshold **1.45**. The active `calibration_room_m1_8_a.json`
-explicitly reuses that unchanged fixed-fly measurement with exact current provenance.
+M1.7.1 measured ROOM threshold **1.45**. The active `calibration_room_m1_8_b2a.json`
+reuses that one unchanged fixed-fly measurement with exact current provenance, via a
+recorded transfer chain through `calibration_room_m1_8_a.json`. No threshold has been
+re-measured since M1.7.1.
 See the [pre-tuning human diagnosis](results/game/HUMAN_M1_7_DIAGNOSIS.md) and
 [M1.7.1 validation and acceptance checklist](results/game/M1_7_1.md).
 Reports separate all-tick and alive-only threat/ecology/speed statistics.

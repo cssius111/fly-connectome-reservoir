@@ -151,7 +151,7 @@ class TestLocalLifecycle(unittest.TestCase):
     def test_stale_ignored_calibration_cannot_override_matching_record(self):
         with tempfile.TemporaryDirectory() as folder:
             root=Path(folder)
-            valid=load_config(ROOT/'results/game/calibration_room_m1_8_a.json')
+            valid=load_config(ROOT/'results/game/calibration_room_m1_8_b2a.json')
             stale=copy.deepcopy(valid);stale['provenance']['encoder_seed']+=1
             stale['escape_threshold']=99
             for path,record in zip(ROOM['policy']['calibration_paths'],(stale,valid)):
@@ -221,14 +221,30 @@ class TestLocalLifecycle(unittest.TestCase):
         import subprocess
         before=json.loads(subprocess.check_output(['git','show','f8f440b:game_room_config.json'],cwd=ROOT,text=True))
         after=copy.deepcopy(ROOM)
-        after.pop('lifecycle');after['config_version']=before['config_version']
+        after.pop('lifecycle');after.pop('kinematics');after['config_version']=before['config_version']
         after['policy']['calibration_paths']=before['policy']['calibration_paths']
         self.assertEqual(after,before)
-        source=ROOT/'results/game/calibration_room_m1_7_1.json'
-        record=load_config(ROOT/'results/game/calibration_room_m1_8_a.json')
-        self.assertEqual(record['measurement_reuse']['source_sha256'],hashlib.sha256(source.read_bytes()).hexdigest())
+        # The active record chains M1.8-B2a -> M1.8-A -> the M1.7.1 measurement, and every
+        # link must name the exact bytes it transfers from.
+        original=ROOT/'results/game/calibration_room_m1_7_1.json'
+        previous=ROOT/'results/game/calibration_room_m1_8_a.json'
+        self.assertEqual(load_config(previous)['measurement_reuse']['source_sha256'],
+                         hashlib.sha256(original.read_bytes()).hexdigest())
+        record=load_config(ROOT/'results/game/calibration_room_m1_8_b2a.json')
+        reuse=record['measurement_reuse']
+        self.assertEqual(reuse['source_record'],'results/game/calibration_room_m1_8_a.json')
+        self.assertEqual(reuse['source_sha256'],hashlib.sha256(previous.read_bytes()).hexdigest())
+        self.assertEqual(reuse['original_measurement'],'results/game/calibration_room_m1_7_1.json')
+        self.assertEqual(reuse['original_measurement_sha256'],
+                         hashlib.sha256(original.read_bytes()).hexdigest())
+        self.assertEqual(sorted(reuse['changed_config_paths']),
+                         ['config_version','kinematics','policy.calibration_paths'])
         self.assertEqual(resolve_escape_threshold(ROOM).threshold,1.45)
-        for section,key in (('brain','gain'),('encoder','encoder_seed'),('lifecycle','contact_speed_bl_s')):
+        self.assertEqual(resolve_escape_threshold(ROOM).origin,
+                         'results/game/calibration_room_m1_8_b2a.json')
+        for section,key in (('brain','gain'),('encoder','encoder_seed'),
+                            ('lifecycle','contact_speed_bl_s'),
+                            ('kinematics','room_kinematic_scale')):
             changed=copy.deepcopy(ROOM);changed[section][key]+=1
             with self.assertRaisesRegex(ValueError,'No matching'):resolve_escape_threshold(changed)
 
