@@ -137,12 +137,25 @@ class TestWorldIntegration(unittest.TestCase):
         self.assertEqual(w.kinematic_profile.context, 'baseline_cruise')
         self.assertEqual(w.applied_target_speed, w.kinematic_profile.target_speed)
 
-    def test_applied_target_speed_still_follows_the_profile(self):
+    def test_applied_target_speed_follows_the_profile_for_unsampled_contexts(self):
+        # TRANSIT is not sampled in B2b-ii, so the ecological command is used verbatim.
+        w = World(ROOM, 101)
+        w.ecological_command = EcologicalCommand('TRANSIT', 11.0, .1, .45)
+        w.tick(DT, Action())
+        self.assertEqual(w.kinematic_profile.context, 'ecology_transit')
+        self.assertEqual(w.applied_target_speed, 11.0*w.body_length)
+
+    def test_explore_target_comes_from_the_sampler_not_the_command(self):
+        # B2b-ii intended semantics: the EXPLORE command magnitude is replaced by one
+        # sampled target per episode, within the accepted support.
         w = World(ROOM, 101)
         w.ecological_command = EcologicalCommand('EXPLORE', 7.0, .1, 1.0)
         w.tick(DT, Action())
         self.assertEqual(w.kinematic_profile.context, 'ecology_explore')
-        self.assertEqual(w.applied_target_speed, 7.0*w.body_length)
+        low, high = ROOM['ecology']['speed_bl_s']['EXPLORE']
+        sampled = w.applied_target_speed/w.body_length
+        self.assertGreaterEqual(sampled, low);self.assertLessEqual(sampled, high)
+        self.assertEqual(w.kinematic_sampler.draws, 1)
 
     def test_lifecycle_contexts_are_labelled_without_changing_recorded_profiles(self):
         w = World(ROOM, 101)
@@ -332,6 +345,108 @@ class TestB2biSeparatedCaps(unittest.TestCase):
         self.assertEqual(w.max_speed, legacy)
         w.tick(DT, Action())
         self.assertEqual(w.kinematic_profile.effective_cap, legacy)
+
+
+class TestB2biiExploreSampling(unittest.TestCase):
+    """M1.8-B2b-ii: the first intentionally non-bit-identical kinematic stage."""
+
+    def sampler(self, seed=255):
+        return KinematicSampler(seed, ROOM['kinematics']['explore_speed_bl_s'])
+
+    @staticmethod
+    def explore(speed=6.0):
+        return EcologicalCommand('EXPLORE', speed, 0., 1.)
+
+    def test_support_and_mean_match_the_accepted_envelope(self):
+        spec = ROOM['kinematics']['explore_speed_bl_s']
+        low, high = ROOM['ecology']['speed_bl_s']['EXPLORE']
+        self.assertEqual(spec['distribution'], 'triangular_symmetric')
+        self.assertEqual((spec['min_bl_s'], spec['max_bl_s']), (low, high))
+        # Symmetric: the mode equals the midpoint, so the mean equals the accepted
+        # sinusoid mean of 6.5 BL/s. Magnitude is preserved; only the model changed.
+        self.assertEqual(spec['mode_bl_s'], (low+high)/2)
+
+    def test_invalid_distribution_specifications_are_rejected(self):
+        base = dict(ROOM['kinematics']['explore_speed_bl_s'])
+        for bad in ({'distribution': 'lognormal'}, {'min_bl_s': 9.0},
+                    {'mode_bl_s': 7.0}, {'min_bl_s': 0.0}):
+            with self.assertRaises(ValueError):KinematicSampler(1, {**base, **bad})
+
+    def test_one_draw_per_explore_episode_and_persistence_between(self):
+        s = self.sampler()
+        first = [s.target_speed_bl_s(self.explore(), False) for _ in range(50)]
+        self.assertEqual(s.draws, 1)
+        self.assertEqual(len(set(first)), 1)
+        for _ in range(10):s.target_speed_bl_s(EcologicalCommand('TRANSIT', 11., 0., .45), False)
+        self.assertEqual(s.draws, 1)
+        second = s.target_speed_bl_s(self.explore(), False)
+        self.assertEqual(s.draws, 2);self.assertNotEqual(second, first[0])
+
+    def test_samples_lie_inside_the_accepted_support(self):
+        s = self.sampler()
+        low, high = ROOM['ecology']['speed_bl_s']['EXPLORE']
+        values = []
+        for i in range(400):
+            command = self.explore() if i % 2 == 0 else EcologicalCommand('RECOVER', 6., 0., .7)
+            v = s.target_speed_bl_s(command, False)
+            if v is not None:values.append(v)
+        self.assertEqual(s.draws, 200)
+        self.assertTrue(all(low <= v <= high for v in values))
+
+    def test_sampling_is_seed_reproducible(self):
+        a = [self.sampler(7).target_speed_bl_s(self.explore(), False) for _ in range(1)]
+        b = [self.sampler(7).target_speed_bl_s(self.explore(), False) for _ in range(1)]
+        c = [self.sampler(8).target_speed_bl_s(self.explore(), False) for _ in range(1)]
+        self.assertEqual(a, b);self.assertNotEqual(a, c)
+
+    def test_no_sample_for_excluded_contexts_or_threat_ticks(self):
+        s = self.sampler()
+        for state in ('TRANSIT', 'ODOR_TRACK', 'ODOR_SEARCH', 'RECOVER', 'ALERT', 'ESCAPE'):
+            self.assertIsNone(s.target_speed_bl_s(EcologicalCommand(state, 9., 0., .5), False))
+        self.assertIsNone(s.target_speed_bl_s(self.explore(), True))
+        self.assertIsNone(s.target_speed_bl_s(None, False))
+        self.assertTrue(s.untouched)
+
+    def test_sampler_consumes_no_other_random_stream(self):
+        # The closed-loop ecology stream does diverge, but only as downstream feedback
+        # from a changed trajectory. The sampler itself touches nothing else.
+        from game.ecology import EcologicalController
+        from game.flight import FreeFlightController
+        eco = EcologicalController(ROOM['ecology'], 255, landing_enabled=False)
+        flight = FreeFlightController(ROOM['flight'], 255)
+        world_rng = np.random.default_rng(255)
+        before = (eco.rng.bit_generator.state, flight.rng.bit_generator.state,
+                  world_rng.bit_generator.state)
+        s = self.sampler()
+        for i in range(2000):
+            s.target_speed_bl_s(self.explore() if (i//50) % 2 == 0
+                                else EcologicalCommand('TRANSIT', 11., 0., .45), False)
+        self.assertGreater(s.draws, 0)
+        self.assertEqual(before, (eco.rng.bit_generator.state, flight.rng.bit_generator.state,
+                                  world_rng.bit_generator.state))
+
+    def test_reset_restores_the_stream_and_clears_the_episode(self):
+        s = self.sampler()
+        first = s.target_speed_bl_s(self.explore(), False)
+        s.reset(255)
+        self.assertTrue(s.untouched);self.assertEqual(s.draws, 0)
+        self.assertEqual(s.target_speed_bl_s(self.explore(), False), first)
+
+    def test_legacy_presets_have_no_explore_sampling(self):
+        for name in ('game_config.json', 'game_play_config.json'):
+            config = load_config(ROOT/name)
+            self.assertNotIn('explore_speed_bl_s', config.get('kinematics', {}))
+            w = World(config, 5)
+            self.assertFalse(w.kinematic_sampler.enabled)
+            w.tick(DT, Action())
+            self.assertTrue(w.kinematic_sampler.untouched)
+
+    def test_room_sampler_is_enabled_and_draws_in_closed_loop(self):
+        w = World(ROOM, 255)
+        w.ecological_command = self.explore()
+        self.assertTrue(w.kinematic_sampler.enabled)
+        w.tick(DT, Action())
+        self.assertGreater(w.kinematic_sampler.draws, 0)
 
 
 if __name__ == '__main__':

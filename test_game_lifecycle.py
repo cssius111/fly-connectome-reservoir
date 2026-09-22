@@ -151,7 +151,7 @@ class TestLocalLifecycle(unittest.TestCase):
     def test_stale_ignored_calibration_cannot_override_matching_record(self):
         with tempfile.TemporaryDirectory() as folder:
             root=Path(folder)
-            valid=load_config(ROOT/'results/game/calibration_room_m1_8_b2b_i.json')
+            valid=load_config(ROOT/'results/game/calibration_room_m1_8_b2b_ii.json')
             stale=copy.deepcopy(valid);stale['provenance']['encoder_seed']+=1
             stale['escape_threshold']=99
             for path,record in zip(ROOM['policy']['calibration_paths'],(stale,valid)):
@@ -233,17 +233,20 @@ class TestLocalLifecycle(unittest.TestCase):
         b2a=ROOT/'results/game/calibration_room_m1_8_b2a.json'
         self.assertEqual(load_config(b2a)['measurement_reuse']['source_sha256'],
                          hashlib.sha256(previous.read_bytes()).hexdigest())
-        record=load_config(ROOT/'results/game/calibration_room_m1_8_b2b_i.json')
+        b2bi=ROOT/'results/game/calibration_room_m1_8_b2b_i.json'
+        self.assertEqual(load_config(b2bi)['measurement_reuse']['source_sha256'],
+                         hashlib.sha256(b2a.read_bytes()).hexdigest())
+        record=load_config(ROOT/'results/game/calibration_room_m1_8_b2b_ii.json')
         reuse=record['measurement_reuse']
-        self.assertEqual(reuse['source_record'],'results/game/calibration_room_m1_8_b2a.json')
-        self.assertEqual(reuse['source_sha256'],hashlib.sha256(b2a.read_bytes()).hexdigest())
+        self.assertEqual(reuse['source_record'],'results/game/calibration_room_m1_8_b2b_i.json')
+        self.assertEqual(reuse['source_sha256'],hashlib.sha256(b2bi.read_bytes()).hexdigest())
         self.assertEqual(reuse['original_measurement'],'results/game/calibration_room_m1_7_1.json')
         self.assertEqual(reuse['original_measurement_sha256'],
                          hashlib.sha256(original.read_bytes()).hexdigest())
-        self.assertIn('kinematics.safety_ceiling_units_s',reuse['changed_config_paths'])
+        self.assertIn('kinematics.explore_speed_bl_s',reuse['changed_config_paths'])
         self.assertEqual(resolve_escape_threshold(ROOM).threshold,1.45)
         self.assertEqual(resolve_escape_threshold(ROOM).origin,
-                         'results/game/calibration_room_m1_8_b2b_i.json')
+                         'results/game/calibration_room_m1_8_b2b_ii.json')
         for section,key in (('brain','gain'),('encoder','encoder_seed'),
                             ('lifecycle','contact_speed_bl_s'),
                             ('kinematics','room_kinematic_scale')):

@@ -167,7 +167,8 @@ class World:
             self.kinematic_caps)
         # The sampler holds the only kinematics random stream, so the resolver stays
         # pure. It is inert in M1.8-B2a: it is seeded and reset but never drawn from.
-        self.kinematic_sampler = KinematicSampler(seed)
+        self.kinematic_sampler = KinematicSampler(
+            seed, config.get("kinematics", {}).get("explore_speed_bl_s"))
         self.kinematic_profile = self.kinematics.airborne(None, False)
         # Measurement escape hatch: tools/calibrate_escape.py turns this off so
         # a full strike can be observed without the fly dying part-way through.

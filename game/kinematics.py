@@ -280,7 +280,18 @@ class KinematicSampler:
     # lifecycle +18001. Asserted pairwise-unique by test_game_kinematics.
     SEED_OFFSET = 24593
 
-    def __init__(self, seed: int):
+    def __init__(self, seed: int, explore: dict | None = None):
+        self.explore = dict(explore) if explore else None
+        if self.explore is not None:
+            shape = self.explore.get('distribution')
+            if shape != 'triangular_symmetric':
+                raise ValueError('unsupported explore speed distribution: ' + str(shape))
+            low, mode, high = (float(self.explore[k]) for k in ('min_bl_s', 'mode_bl_s', 'max_bl_s'))
+            if not 0.0 < low <= mode <= high:
+                raise ValueError('explore speed support must be positive and ordered')
+            if abs((low + high)/2.0 - mode) > 1e-9:
+                raise ValueError('triangular_symmetric requires the mode at the midpoint')
+            self._support = (low, mode, high)
         self.reset(seed)
 
     def reset(self, seed: int) -> None:
@@ -288,12 +299,44 @@ class KinematicSampler:
         self.rng = np.random.default_rng(self.seed + self.SEED_OFFSET)
         self.initial_state = copy.deepcopy(self.rng.bit_generator.state)
         self.draws = 0
+        self._episode_state = None
+        self._episode_sample = None
 
     @property
     def untouched(self) -> bool:
-        """True while no draw has been taken, so B2a inertness is machine-checkable."""
+        """True while no draw has been taken. Remains checkable after B2b-ii."""
         return self.draws == 0 and self.rng.bit_generator.state == self.initial_state
 
+    @property
+    def enabled(self) -> bool:
+        return self.explore is not None
+
+    def _draw_explore(self) -> float:
+        low, mode, high = self._support
+        self.draws += 1
+        return float(self.rng.triangular(low, mode, high))
+
     def target_speed_bl_s(self, command, threat_priority: bool) -> float | None:
-        """B2a: never samples. B2b will draw here for SAMPLED_CONTEXTS only."""
-        return None
+        """One sampled EXPLORE target per ecological EXPLORE episode.
+
+        `None` means "no sample; use the ecological command unchanged", which is still
+        the answer for every context other than EXPLORE, for threat-priority ticks, and
+        whenever sampling is not configured.
+
+        The resample boundary is the existing ecological state transition into EXPLORE,
+        so persistence equals the accepted `ecology.explore_duration_seconds` dwell and
+        no new persistence parameter is invented. No ecology, flight, world, spawn or
+        lifecycle random stream is consumed here.
+        """
+        if command is None or threat_priority or not self.enabled:
+            return None
+        state = getattr(command, 'state', None)
+        if state != 'EXPLORE':
+            # Track the transition without drawing, so re-entry resamples exactly once.
+            self._episode_state = state
+            self._episode_sample = None
+            return None
+        if self._episode_state != 'EXPLORE' or self._episode_sample is None:
+            self._episode_sample = self._draw_explore()
+            self._episode_state = 'EXPLORE'
+        return self._episode_sample

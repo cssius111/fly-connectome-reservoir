@@ -1,5 +1,5 @@
 {
-  "config_version": 12,
+  "config_version": 13,
   "_comment": "M1.6 horizontal ROOM slice. Logical units and state speeds are gameplay mappings, not universal biological constants.",
   "sim": {
     "tick_seconds": 0.02,
@@ -136,8 +136,8 @@
     "_comment": "Exact provenance required. Recalibrate with python tools/calibrate_escape.py --config game_room_config.json --trials 28.",
     "escape_threshold": null,
     "calibration_paths": [
-      "artifacts/game/calibration_room_m1_8_b2b_i.json",
-      "results/game/calibration_room_m1_8_b2b_i.json"
+      "artifacts/game/calibration_room_m1_8_b2b_ii.json",
+      "results/game/calibration_room_m1_8_b2b_ii.json"
     ],
     "refractory_seconds": 0.4,
     "turn_gain": 0.8,
@@ -398,6 +398,13 @@
     "room_kinematic_scale": 1.0,
     "ecological_cap_units_s": 1000.0,
     "legacy_accepted_cap_units_s": 1000.0,
-    "safety_ceiling_units_s": 1000.0
+    "safety_ceiling_units_s": 1000.0,
+    "explore_speed_bl_s": {
+      "_comment": "M1.8-B2b-ii. One sampled EXPLORE target per ecological EXPLORE episode, replacing the shared deterministic 8 s speed sinusoid for this context only. The shape is PHENOMENOLOGICAL: no reviewed source measures a free-flight speed distribution shape, and E02/E03 do not supply a usable central tendency, spread or support for ROOM. Support and mean are held at the accepted EXPLORE envelope so this stage changes the sampling model, not the magnitude. Persistence is the existing ecology.explore_duration_seconds dwell; no new persistence parameter is added.",
+      "distribution": "triangular_symmetric",
+      "min_bl_s": 5.0,
+      "mode_bl_s": 6.5,
+      "max_bl_s": 8.0
+    }
   }
 }
