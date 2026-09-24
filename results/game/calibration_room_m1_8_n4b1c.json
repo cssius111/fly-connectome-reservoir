@@ -1,0 +1,299 @@
+{
+  "record_kind": "lateral-dual-path-decoder-provenance-v1",
+  "not_a_scalar_calibration": true,
+  "rule": "M1.8-N4B1C combined DNp01 decoder. Escape when EITHER path qualifies outside the shared refractory period. LATERAL: the same DNp01 side produces two inferred spikes at most lateral_same_side_window_ms apart. Summed N2b path: FAST when left + right >= summed_fast_threshold; SUSTAINED when the current summed sample is >= sustained_threshold AND at least sustained_required_samples of the most recent sustained_window_samples summed samples are >= sustained_threshold. No new measurement was made; see parameter_basis.",
+  "escape_threshold": 1.45,
+  "escape_decoder": {
+    "kind": "lateral_dual_path_v1",
+    "sustained_threshold": 1.45,
+    "summed_fast_threshold": 2.1,
+    "sustained_window_samples": 5,
+    "sustained_required_samples": 3,
+    "require_current_qualifying": true,
+    "lateral_same_side_window_ms": 60.0,
+    "lateral_required_spikes": 2,
+    "lateral_window_samples": 3,
+    "spike_inference_rule": "per side: spike_t = trace_t - decay * trace_{t-1} >= 0.5, with decay = float32(exp(-tick_seconds / trace_tau_seconds)); no spike is inferred on the first sample after reset",
+    "lateral_rule": "left and right tracked independently; the qualifying spike must be on the current sample; the previous spike of the SAME side must be at most lateral_window_samples samples earlier; a left spike followed by a right spike never qualifies",
+    "window_rule": "one summed qualification flag per sample, refractory samples included; cleared when an escape fires and on reset",
+    "escape_clears": [
+      "summed window and streak",
+      "lateral last-spike memory, both sides"
+    ],
+    "reset_clears": [
+      "summed window and streak",
+      "lateral spike history and previous trace values",
+      "trigger channel and paths"
+    ],
+    "channel_precedence": [
+      "LATERAL",
+      "FAST",
+      "SUSTAINED"
+    ],
+    "motor_semantics": "unchanged: strength, side, steering, saccade, forward bias and refractory do not depend on the path that fired",
+    "parameter_class": "C"
+  },
+  "parameter_basis": {
+    "sustained_threshold": {
+      "value": 1.45,
+      "basis": "inherited unchanged from the scalar single-sample calibration, used here only as the summed qualification level",
+      "source_record": "results/game/calibration_room_m1_8_b2b_ii.json",
+      "source_sha256": "8c5456520b0b02063377c93670970aefecc8fd22540b012cb176ca25511fc098",
+      "original_measurement": "results/game/calibration_room_m1_7_1.json",
+      "original_measurement_sha256": "1df05b3f85885f6074253fccc407b451f998cd8302cc318baa86f832316f1a44"
+    },
+    "summed_path": {
+      "summed_fast_threshold": 2.1,
+      "sustained_window_samples": 5,
+      "sustained_required_samples": 3,
+      "require_current_qualifying": true,
+      "class": "C",
+      "basis": "the M1.8-N2b summed criterion, unchanged; N2b itself failed its second human re-acceptance and is retained here only as the path that keeps alternating-side hover evidence"
+    },
+    "lateral_path": {
+      "lateral_same_side_window_ms": 60.0,
+      "lateral_required_spikes": 2,
+      "class": "C",
+      "basis": "M1.8-N4A: spontaneous DNp01 spikes are noise driven and independent per side, and the summed trace turns bilateral coincidences into apparent multi-spike evidence; M1.8-N4B1: a same-side 60 ms rule (frozen Rule A) restores legacy-level committed-strike timing with 0 false events on a fresh 280-minute N0; M1.8-N4B1C: combined with the N2b path it restores alternating-side hover coverage and passes a new pre-registered 280-minute N0 holdout. The window is a simulator property (LIF reset to 0 plus independent noise), not a biological refractory constant."
+    },
+    "not_biological_constants": true
+  },
+  "evidence": {
+    "n0_extended_no_loom": {
+      "commit": "3d41113",
+      "files": {
+        "game/M1_8_NO_LOOM_CALIBRATION.md": "ffd8095082c3c97c0ddad4ddb3c7d981a7f29498bd2590b2743aec98ec74c00a",
+        "tools/no_loom_calibration_study.py": "ac83406014ebf015d542102003420f7d8fbe179a4ac218a7496d29496814f68f",
+        "tools/no_loom_continuous_arm.py": "10755d51eccf28ed4c91ccceff2cba6b25f44eabb0a80d7eefd5787e5770c3a4",
+        "tools/no_loom_criterion_analysis.py": "89feedf0ca9f425ac71bca66803b1bc096c8587da2a254833e5437bce4c46c6b",
+        "tools/no_loom_statistics.py": "6e7c191a0c2d4da676f6e26eba0f980297beda4e81a5aa434905c5d4f0e90267",
+        "tools/no_loom_tail_model.py": "c09aabbef6dc0f7df7e4dc12fef7ada908be8721ee3b2e48390d53407ce1ca10",
+        "artifacts/m1_8_no_loom_calibration/raw.npz": "8477668bf8a2180319f49604098044832ffd1c750e504c2fdd3b2094e05c96c7",
+        "artifacts/m1_8_no_loom_calibration/study.json": "4c3383a9451e0123f70f38dcc75ec85e63fdd4c5fb47d284c8d5b2adeac7476e",
+        "artifacts/m1_8_no_loom_calibration/continuous.npz": "06714e982296553ae438be8f250c080ff87b54cf15b1f68dc0b6b01b22cc2fe0",
+        "artifacts/m1_8_no_loom_calibration/statistics.json": "8b921c5a3e0da2f89d3c43096fe36c2fa08a74742eb484e90d7de9309088d00d"
+      }
+    },
+    "n1_loom_robustness": {
+      "commit": "76806f0",
+      "files": {
+        "game/M1_8_LOOM_ROBUSTNESS.md": "d3325ccaebbbf0a1139a66f7847f3d5aaf959632f0e19d615c8746cfd819e153",
+        "tools/loom_robustness_study.py": "48233f1b8a1393b5449bb9d58237bd69a446af05ee7080045e244c8fb64deabe",
+        "tools/loom_robustness_analysis.py": "b641ac726b2ee6818e2d6cd688ddb49f938c4af3c54a1367ef445c515065a44e",
+        "artifacts/m1_8_loom_robustness/trials.npz": "70640b7246154d7966e060c08b001ef96a0ee17dcdc86a48dcad4d0f9b0a5a6a",
+        "artifacts/m1_8_loom_robustness/trials_meta.json": "8f4f748535b515fd9660aaf551ce31f11dd51b1410bf24a60f0c0d0f923177d5",
+        "artifacts/m1_8_loom_robustness/analysis.json": "0d75c7124a67156fc0a6c9c641a34886c80461eedc45b4c5801a11c2ef9df8f4",
+        "artifacts/m1_8_loom_robustness/hybrid_no_loom.json": "1b8185f48b5a0e00008864dfe616b8fea20f042386f7b8ccdf9e5328717c0163"
+      }
+    },
+    "n3_neural_evidence_integration": {
+      "commit": "6fb0cc5",
+      "files": {
+        "game/M1_8_N3_NEURAL_EVIDENCE_INTEGRATION.md": "ccc2646eb8377ae1279e5574f8411c0b94a7fba3e5023399f61b73f02eca0a74",
+        "tools/n3_evidence_integration.py": "391ffe90387fd0862bddffeb60126e23533f63f1163937c748dbcf57a5624152",
+        "artifacts/m1_8_n3/evidence_integration.json": "2445e85d2c53164bb7fb66d7eec21385bfedc958bfa05bb81d915c7e27fae597"
+      }
+    },
+    "n4a_sensory_descending_diagnosis": {
+      "commit": "6fb0cc5",
+      "files": {
+        "game/M1_8_N4_SENSORY_DESCENDING_DIAGNOSIS.md": "cc5d8444d1b80acbe7bfa4ec2abf9193ce376911d80a8747901cc15f82d47eb5",
+        "tools/n4_resimulate.py": "4f4c8f57cf6dc46e2df9bb0cfe584ed73bc53a677ad48145db5b936b81a658a5",
+        "tools/n4_diagnosis.py": "1ddc350e1d1f74965482ede9ca1cd418cb39ce99a494bb2bdd635dc6b51df619",
+        "artifacts/m1_8_n4/diagnosis.json": "f354bdc0e1afb24cb56c155f9f26ee1566f5a537823fc4eb95d5ce06abde7de2"
+      }
+    },
+    "n4b1_lateralized_dnp01": {
+      "commit": "6fb0cc5",
+      "files": {
+        "game/M1_8_N4B1_LATERALIZED_DNP01.md": "2d05b94183ecda78bc9e8ffb5173c9ed909f5def93bd9bba453ad814ee44c418",
+        "tools/n4b1_lateral.py": "a4836cb2e2a9ec16902cf898435c440fd6cfc2468df6df1e4b8750ccc353a9a9",
+        "tools/n4b1_analysis.py": "33e92503bd79573618a45b57024f180a7849017713209fc37a99ea6373ca6f9a",
+        "artifacts/m1_8_n4b1/frozen_candidates.json": "fafc218c3c0402bba358eb4659f1eeea4ec60d89ffcce41e94bb1e430b133491",
+        "artifacts/m1_8_n4b1/mechanism.json": "a769abf2995184425209a175c162f6111380c5e1ecedd6ff4a429917f5728fdf",
+        "artifacts/m1_8_n4b1/evaluation.json": "fb1e8cb226f4667af5477f6e34047f779d685d0c7da364da111f395d0ff09f08",
+        "artifacts/m1_8_n4b1/closed_loop.json": "04db9ba415ab5cb51f1620742a8dc2641ec4e22e6bf3f858b0963f3594c7ed08"
+      }
+    },
+    "n4b1c_combined_dnp01": {
+      "commit": "07f4670",
+      "files": {
+        "game/M1_8_N4B1C_COMBINED_DNP01.md": "38eeb14804782cac79c2ae414aab5cc1855a27615e2602b3f69f257e84deba8b",
+        "tools/n4b1c_candidates.py": "30fc1663c5875e5f5d68026286488e879ed13c30a9a836c41de5ab5a5127fdee",
+        "tools/n4b1c_combined.py": "f24faf5aace4536e0f2025e963a69f7bb65ac175673120b2c9ca046636cb4cff",
+        "artifacts/m1_8_n4b1c/frozen_candidates.json": "2a7386d653f04bcf30cc11490cda192ccc1be48e452630ae82085147d97968c0",
+        "artifacts/m1_8_n4b1c/evaluation.json": "e11020046109f8de27807928cc395dbff6d432c33c27e247e1a7c73318eddbd2",
+        "artifacts/m1_8_n4b1c/closed_loop.json": "29e5f331776f409dc1291bfdcf1f8536edb8f9a7192e5409397fced55f998808"
+      }
+    }
+  },
+  "hash_convention": "evidence and preserved_records: SHA256 of the committed content (text files with CRLF normalised to LF); measurement_reuse and parameter_basis source hashes: raw working-file bytes, as in the earlier record chain",
+  "evidence_summary_research": {
+    "candidate": "A OR N2b",
+    "frozen_candidates_sha256": "8eb273f7bd752e1a1e9731db25696e2683977f2ee785a2ed519d76ae59788487",
+    "candidates_module_sha256": "30fc1663c5875e5f5d68026286488e879ed13c30a9a836c41de5ab5a5127fdee",
+    "n0_new_holdout": {
+      "minutes": 280.0,
+      "false_events": 1,
+      "upper95_per_minute": 0.016942373279966345,
+      "paths": {
+        "N2b FAST": 1
+      }
+    },
+    "n0_all_minutes": {
+      "minutes": 630.0,
+      "false_events": 3,
+      "upper95_per_minute": 0.01230739131417893
+    },
+    "n1_per_class": {
+      "strong_direct": {
+        "fired": 60,
+        "trials": 60,
+        "median_s": 0.08,
+        "p95_s": 0.08
+      },
+      "medium_committed": {
+        "fired": 60,
+        "trials": 60,
+        "median_s": 0.1,
+        "p95_s": 0.1
+      },
+      "weak_approach": {
+        "fired": 33,
+        "trials": 60,
+        "median_s": null,
+        "p95_s": null
+      },
+      "glancing_pass": {
+        "fired": 28,
+        "trials": 60,
+        "median_s": null,
+        "p95_s": null
+      },
+      "aborted_approach": {
+        "fired": 49,
+        "trials": 60,
+        "median_s": null,
+        "p95_s": null
+      }
+    },
+    "human_hover_escapes_met": {
+      "strict_n2": [
+        13,
+        13
+      ],
+      "n2b": [
+        20,
+        20
+      ]
+    },
+    "note": "research-subclass results on the archived N2b runtime; the exact runtime replay is produced separately by tools/n4b1c_runtime_validation.py"
+  },
+  "preserved_records": {
+    "strict_n2": {
+      "record": "results/game/calibration_room_m1_8_n2.json",
+      "sha256": "95d09955908c0d374623579b8aafb473c175cef377b109d866c280e0603c6adf",
+      "decoder": "dual_path_v1, FAST 2.20, 3 consecutive samples",
+      "status": "superseded; human re-acceptance failed",
+      "modified": false
+    },
+    "n2b": {
+      "record": "results/game/calibration_room_m1_8_n2b.json",
+      "sha256": "2b550c73da3f5a6be3d76b8f613407d36d70ff4036e22be072947bb85b3b1085",
+      "decoder": "dual_path_window_v1, FAST 2.10, current-H + 3 of 5",
+      "status": "rejected at the second human re-acceptance",
+      "runtime_archive": "archive/m1-8-n2b-rejected @ 2c306174d7bdb4e74b6c5517519ae695bd90cf44",
+      "modified": false
+    }
+  },
+  "tick_seconds": 0.02,
+  "config_sha256": "663d785e8422a2b8670f3c8301e26430be7eadd9d1cb80a1cdd0c034c6760616",
+  "provenance": {
+    "schema_version": 2,
+    "measurement_protocol": "fixed-fly-v2",
+    "config_hash_format": "canonical-json-sort-keys-ascii-compact",
+    "game_config_sha256": "99e84c2dbc7995a19cd4b3b2f870a58f24ed667c887095e6c56385519cb2d033",
+    "flybrain_version": "0.1.0",
+    "encoder_population_rule": "min-per-type-per-side-v1",
+    "encoder_seed": 20260917,
+    "encoder_types": {
+      "loom": [
+        "LPLC2"
+      ],
+      "threat": [
+        "LC4"
+      ]
+    },
+    "sensory_input": false,
+    "tick_seconds": 0.02,
+    "brain_dt_seconds": 0.02
+  },
+  "measurement_conditions": {
+    "collisions_enabled": false,
+    "escape_disabled": true,
+    "fly_motion_enabled": false,
+    "swatter_settle_ticks": 300,
+    "note": "fly position and heading are fixed; velocity stays zero, wander is disabled, and collisions/escape actions are disabled"
+  },
+  "measurement_reuse": {
+    "kind": "lateral dual-path decoder transfer; not a new measurement",
+    "source_record": "results/game/calibration_room_m1_8_b2b_ii.json",
+    "source_sha256": "8c5456520b0b02063377c93670970aefecc8fd22540b012cb176ca25511fc098",
+    "source_provenance": {
+      "schema_version": 2,
+      "measurement_protocol": "fixed-fly-v2",
+      "config_hash_format": "canonical-json-sort-keys-ascii-compact",
+      "game_config_sha256": "bb7a3e1537907125c17803fd2fa6507e653f4a5e7fc2bca096cbf1be6f16b67d",
+      "flybrain_version": "0.1.0",
+      "encoder_population_rule": "min-per-type-per-side-v1",
+      "encoder_seed": 20260917,
+      "encoder_types": {
+        "loom": [
+          "LPLC2"
+        ],
+        "threat": [
+          "LC4"
+        ]
+      },
+      "sensory_input": false,
+      "tick_seconds": 0.02,
+      "brain_dt_seconds": 0.02
+    },
+    "original_measurement": "results/game/calibration_room_m1_7_1.json",
+    "original_measurement_sha256": "1df05b3f85885f6074253fccc407b451f998cd8302cc318baa86f832316f1a44",
+    "baseline_commit": "76806f0",
+    "reason": "Only the escape criterion changes. Retina, encoder, brain, ecology, lifecycle, swatter and kinematics configuration are identical to the N1 baseline, so the recorded DNp01 distributions still apply.",
+    "changed_config_paths": [
+      "config_version",
+      "policy._comment",
+      "policy.calibration_paths",
+      "policy.escape_decoder"
+    ]
+  },
+  "neurons": 166700,
+  "connections": 25088107,
+  "input_populations": {
+    "loom": {
+      "types": [
+        "LPLC2"
+      ],
+      "available_L": 94,
+      "available_R": 91,
+      "used_per_side": 91
+    },
+    "threat": {
+      "types": [
+        "LC4"
+      ],
+      "available_L": 71,
+      "available_R": 55,
+      "used_per_side": 55
+    }
+  },
+  "versions": {
+    "flybrain": "0.1.0",
+    "numpy": "2.4.6",
+    "scipy": "1.17.1",
+    "numba": "0.67.0"
+  }
+}

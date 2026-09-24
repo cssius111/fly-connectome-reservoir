@@ -68,14 +68,112 @@ def calibration_provenance(config: dict) -> dict:
 class ThresholdSource:
     threshold: float
     origin: str
+    # M1.8-N2 dual-path decoder parameters, verified against the record; None
+    # for the single-sample decoder.
+    decoder: dict | None = None
+
+
+DUAL_PATH_DECODER = "dual_path_v1"
+WINDOW_DECODER = "dual_path_window_v1"
+LATERAL_DECODER = "lateral_dual_path_v1"
+# Exact key set of each explicitly versioned decoder kind.
+DECODER_KINDS = {
+    # M1.8-N2: FAST OR N consecutive samples.
+    DUAL_PATH_DECODER: ("kind", "sustained_threshold", "fast_threshold", "persistence_samples"),
+    # M1.8-N2b: FAST OR (current sample qualifies AND k of the last n qualify).
+    WINDOW_DECODER: ("kind", "sustained_threshold", "fast_threshold",
+                     "sustained_window_samples", "sustained_required_samples",
+                     "require_current_qualifying"),
+    # M1.8-N4B1C: LATERAL (same DNp01 side twice within the lateral window) OR
+    # the M1.8-N2b summed criterion. Class C engineering decoder parameters.
+    LATERAL_DECODER: ("kind", "sustained_threshold", "summed_fast_threshold",
+                      "sustained_window_samples", "sustained_required_samples",
+                      "require_current_qualifying", "lateral_same_side_window_ms",
+                      "lateral_required_spikes"),
+}
+# The summed FAST threshold key of each dual-path kind.
+FAST_KEY = {DUAL_PATH_DECODER: "fast_threshold", WINDOW_DECODER: "fast_threshold",
+            LATERAL_DECODER: "summed_fast_threshold"}
+DECODER_KEYS = DECODER_KINDS[DUAL_PATH_DECODER]
+
+
+def _integer(value, name, minimum):
+    if isinstance(value, bool) or not isinstance(value, int) or value < minimum:
+        raise ValueError(f"policy.escape_decoder.{name} must be an integer >= {minimum}")
+    return value
+
+
+def escape_decoder_spec(config: dict) -> dict | None:
+    """Validated `policy.escape_decoder`, or None for the single-sample decoder.
+
+    Only DNp01 criterion parameters of an explicitly versioned kind are
+    accepted. An unknown key is an error, so no geometry, contact or world gate
+    can be configured here.
+    """
+    block = config["policy"].get("escape_decoder")
+    if block is None:
+        return None
+    if not isinstance(block, dict):
+        raise ValueError("policy.escape_decoder must be an object")
+    kind = block.get("kind")
+    if kind not in DECODER_KINDS:
+        raise ValueError(f"Unsupported policy.escape_decoder kind {kind!r}")
+    keys = DECODER_KINDS[kind]
+    unknown = sorted(set(block) - set(keys) - {"_comment"})
+    if unknown:
+        raise ValueError("Unsupported policy.escape_decoder keys: " + ", ".join(unknown))
+    missing = sorted(set(keys) - set(block))
+    if missing:
+        raise ValueError("Missing policy.escape_decoder keys: " + ", ".join(missing))
+    spec = {key: block[key] for key in keys}
+    if kind == DUAL_PATH_DECODER:
+        _integer(spec["persistence_samples"], "persistence_samples", 2)
+    else:
+        window = _integer(spec["sustained_window_samples"], "sustained_window_samples", 2)
+        required = _integer(spec["sustained_required_samples"], "sustained_required_samples", 2)
+        if required > window:
+            raise ValueError("policy.escape_decoder.sustained_required_samples must not exceed "
+                             "sustained_window_samples")
+        if spec["require_current_qualifying"] is not True:
+            raise ValueError("policy.escape_decoder.require_current_qualifying must be true")
+    if kind == LATERAL_DECODER:
+        ms = spec["lateral_same_side_window_ms"]
+        if isinstance(ms, bool) or not isinstance(ms, (int, float)) or not math.isfinite(ms) or ms <= 0:
+            raise ValueError("policy.escape_decoder.lateral_same_side_window_ms must be a positive number")
+        spec["lateral_same_side_window_ms"] = float(ms)
+        spikes = _integer(spec["lateral_required_spikes"], "lateral_required_spikes", 2)
+        if spikes != 2:
+            raise ValueError("policy.escape_decoder.lateral_required_spikes: only 2 is supported")
+    fast_key = FAST_KEY[kind]
+    for key in ("sustained_threshold", fast_key):
+        value = spec[key]
+        if isinstance(value, bool) or not isinstance(value, (int, float)) \
+                or not math.isfinite(value) or value <= 0.0:
+            raise ValueError(f"policy.escape_decoder.{key} must be a positive number")
+        spec[key] = float(value)
+    if spec[fast_key] <= spec["sustained_threshold"]:
+        raise ValueError(f"policy.escape_decoder.{fast_key} must exceed sustained_threshold")
+    return spec
 
 
 def resolve_escape_threshold(config: dict, root: Path = ROOT) -> ThresholdSource:
-    """Use the first matching record, never merely the first existing file."""
+    """Use the first matching record, never merely the first existing file.
+
+    With a dual-path `policy.escape_decoder`, a record matches only if it
+    carries the identical decoder block and its escape_threshold equals the
+    sustained threshold. A scalar single-sample record cannot load a
+    dual-path configuration, and a dual-path record cannot load a
+    single-sample configuration.
+    """
     policy = config["policy"]
     command = "python tools/calibrate_escape.py --trials 28"
     if policy.get("escape_threshold") is not None:
         raise ValueError("Manual escape_threshold is unsupported; set it to null. Run: " + command)
+    decoder = escape_decoder_spec(config)
+    if decoder is not None:
+        command = {WINDOW_DECODER: "python tools/n2b_decoder_record.py",
+                   LATERAL_DECODER: "python tools/n4b1c_decoder_record.py"}.get(
+                       decoder["kind"], "python tools/n2_decoder_record.py")
     expected = calibration_provenance(config)
     tried = []
     for rel in policy["calibration_paths"]:
@@ -91,7 +189,20 @@ def resolve_escape_threshold(config: dict, root: Path = ROOT) -> ThresholdSource
             if not math.isfinite(threshold) or threshold <= 0.0:
                 tried.append(f"{rel}: invalid threshold")
                 continue
-            return ThresholdSource(threshold, str(rel))
+            recorded = data.get("escape_decoder")
+            if decoder is None:
+                if recorded is not None:
+                    tried.append(f"{rel}: dual-path record for a single-sample decoder")
+                    continue
+            else:
+                if not isinstance(recorded, dict) or \
+                        {k: recorded.get(k) for k in DECODER_KINDS[decoder["kind"]]} != decoder:
+                    tried.append(f"{rel}: escape_decoder mismatch")
+                    continue
+                if threshold != decoder["sustained_threshold"]:
+                    tried.append(f"{rel}: escape_threshold differs from sustained_threshold")
+                    continue
+            return ThresholdSource(threshold, str(rel), decoder)
         except (OSError, ValueError, KeyError, TypeError) as exc:
             tried.append(f"{rel}: {type(exc).__name__}")
     raise ValueError("No matching escape-threshold calibration. " + "; ".join(tried)
@@ -99,9 +210,45 @@ def resolve_escape_threshold(config: dict, root: Path = ROOT) -> ThresholdSource
                      + " (add --config PATH when using a custom game config).")
 
 
+def lateral_window_samples(decoder: dict, config: dict) -> int:
+    """The lateral window in samples; it must be a whole number of ticks."""
+    samples = decoder["lateral_same_side_window_ms"] / 1000.0 / float(config["sim"]["tick_seconds"])
+    if abs(samples - round(samples)) > 1e-9 or round(samples) < 1:
+        raise ValueError("policy.escape_decoder.lateral_same_side_window_ms must be a whole, "
+                         "positive number of ticks")
+    return int(round(samples))
+
+
+def dnp01_trace_decay(config: dict) -> float:
+    """Per-sample decay of the DNp01 readout trace, exactly as flybrain.Trace stores it
+    (float32), used only to infer per-side spikes from the observed trace."""
+    import numpy as np
+    return float(np.float32(np.exp(-float(config["sim"]["tick_seconds"])
+                                   / float(config["brain"]["trace_tau_seconds"]))))
+
+
 def build_policy(config: dict, root: Path = ROOT) -> tuple[FixedEscapePolicy, ThresholdSource]:
     source = resolve_escape_threshold(config, root)
     p = config["policy"]
+    d = source.decoder
+    if d is None:
+        decoder = {}
+    elif d["kind"] == WINDOW_DECODER:
+        decoder = {"fast_threshold": d["fast_threshold"],
+                   "persistence_samples": d["sustained_required_samples"],
+                   "sustained_window_samples": d["sustained_window_samples"],
+                   "require_current_qualifying": d["require_current_qualifying"]}
+    elif d["kind"] == LATERAL_DECODER:
+        decoder = {"fast_threshold": d["summed_fast_threshold"],
+                   "persistence_samples": d["sustained_required_samples"],
+                   "sustained_window_samples": d["sustained_window_samples"],
+                   "require_current_qualifying": d["require_current_qualifying"],
+                   "lateral_window_samples": lateral_window_samples(d, config),
+                   "lateral_required_spikes": d["lateral_required_spikes"],
+                   "trace_decay": dnp01_trace_decay(config)}
+    else:
+        decoder = {"fast_threshold": d["fast_threshold"],
+                   "persistence_samples": d["persistence_samples"]}
     policy = FixedEscapePolicy(threshold=source.threshold,
                                refractory_seconds=float(p["refractory_seconds"]),
                                tick_seconds=float(config["sim"]["tick_seconds"]),
@@ -111,7 +258,8 @@ def build_policy(config: dict, root: Path = ROOT) -> tuple[FixedEscapePolicy, Th
                                steering_tau_seconds=float(p["steering_tau_seconds"]),
                                alert_saccade_strength=float(p["alert_saccade_strength"]),
                                saccade_interval_seconds=float(p["saccade_interval_seconds"]),
-                               alert_saccade_dwell_seconds=float(p["alert_saccade_dwell_seconds"]))
+                               alert_saccade_dwell_seconds=float(p["alert_saccade_dwell_seconds"]),
+                               **decoder)
     return policy, source
 
 
