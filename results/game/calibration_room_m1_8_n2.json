@@ -1,0 +1,201 @@
+{
+  "record_kind": "dual-path-decoder-provenance-v1",
+  "not_a_scalar_calibration": true,
+  "rule": "M1.8-N2 dual-path DNp01 decoder. FAST: one sample >= fast_threshold. SUSTAINED: persistence_samples consecutive samples >= sustained_threshold, counting the first qualifying sample. No new measurement was made; see parameter_basis.",
+  "escape_threshold": 1.45,
+  "escape_decoder": {
+    "kind": "dual_path_v1",
+    "sustained_threshold": 1.45,
+    "fast_threshold": 2.2,
+    "persistence_samples": 3,
+    "persistence_definition": "N consecutive samples at or above sustained_threshold INCLUDING the first qualifying sample; satisfied on sample t + (N - 1) * tick_seconds",
+    "structural_persistence_delay_seconds": 0.04,
+    "streak_rule": "counted on every sample including refractory samples; cleared by any sample below sustained_threshold and when an escape fires",
+    "tie_rule": "FAST is reported when both paths are satisfied",
+    "parameter_class": "C"
+  },
+  "parameter_basis": {
+    "sustained_threshold": {
+      "value": 1.45,
+      "basis": "inherited unchanged: the scalar single-sample calibration value, selected as the smallest grid value with zero false triggers over 2520 no-loom ticks; N0 showed that this exposure was too short to bound the single-sample false-trigger rate, which is why the N2 criterion adds persistence rather than relying on it alone",
+      "source_record": "results/game/calibration_room_m1_8_b2b_ii.json",
+      "source_sha256": "8c5456520b0b02063377c93670970aefecc8fd22540b012cb176ca25511fc098",
+      "original_measurement": "results/game/calibration_room_m1_7_1.json",
+      "original_measurement_sha256": "1df05b3f85885f6074253fccc407b451f998cd8302cc318baa86f832316f1a44"
+    },
+    "fast_threshold": {
+      "value": 2.2,
+      "class": "C",
+      "basis": "selected in M1.8-N1 above the N0 no-loom worst case of 2.0045 over 70 simulated minutes and below the weakest committed-strike peak of 2.899 in N0"
+    },
+    "persistence_samples": {
+      "value": 3,
+      "class": "C",
+      "basis": "selected in M1.8-N1: the N0 spontaneous worst case stays above 1.45 for at most 2 consecutive samples, committed strikes for a median of 14-17"
+    },
+    "not_biological_constants": true
+  },
+  "evidence": {
+    "n0_extended_no_loom": {
+      "commit": "3d41113",
+      "files": {
+        "game/M1_8_NO_LOOM_CALIBRATION.md": "c38fcbc039416c3bd67f842140a2ebec81b50391b147b6038e0b7e868afee0c1",
+        "tools/no_loom_calibration_study.py": "c0497b9d0e004ccc3ad15992715598371cba6be584c4b7da235fe2c23384b840",
+        "tools/no_loom_continuous_arm.py": "f6d4d57071ba837070ab4235d14875e6875a0b6724155268ea15e40eb8635f48",
+        "tools/no_loom_criterion_analysis.py": "9eba8bd7b7ce2356ce49a62e2a29b42c7fb46135cd5e5fac45daebc59ef6228e",
+        "tools/no_loom_statistics.py": "e088395d7d60988ef7729e76e0207d79d434c050f859d1f5f4eab6130ee37e0b",
+        "tools/no_loom_tail_model.py": "157109aa51a18119ea7677d1450a068b6f71836217ea12929be2725bf29682b2",
+        "artifacts/m1_8_no_loom_calibration/raw.npz": "8477668bf8a2180319f49604098044832ffd1c750e504c2fdd3b2094e05c96c7",
+        "artifacts/m1_8_no_loom_calibration/study.json": "dd688d8e4ea79b265b29544c90f847c91d6012e4f53768bc618b4f8dd269ebe2",
+        "artifacts/m1_8_no_loom_calibration/continuous.npz": "06714e982296553ae438be8f250c080ff87b54cf15b1f68dc0b6b01b22cc2fe0",
+        "artifacts/m1_8_no_loom_calibration/statistics.json": "c4ea1e05cf3b25b0a60471d6c9cc362789319cb872bca2d6101c0a068c41cfc4"
+      }
+    },
+    "n1_loom_robustness": {
+      "commit": "76806f0",
+      "files": {
+        "game/M1_8_LOOM_ROBUSTNESS.md": "d3325ccaebbbf0a1139a66f7847f3d5aaf959632f0e19d615c8746cfd819e153",
+        "tools/loom_robustness_study.py": "e91ff865a6748dff08afe752ed69978fab000fa9520ff7fd44d35a1528d4d51a",
+        "tools/loom_robustness_analysis.py": "e7fd51b7161e2622792280fcc33e3111a7bb3b2efbc61233ba93839a53a65bcc",
+        "artifacts/m1_8_loom_robustness/trials.npz": "70640b7246154d7966e060c08b001ef96a0ee17dcdc86a48dcad4d0f9b0a5a6a",
+        "artifacts/m1_8_loom_robustness/trials_meta.json": "94ea48ffed2b14590a8e06c275cbf95f294c101e74c0d81790385a8362c8df26",
+        "artifacts/m1_8_loom_robustness/analysis.json": "276d004f626c84ab868f4bd2f2b99b029af53d765f5358b0c7734f69387d21dc",
+        "artifacts/m1_8_loom_robustness/hybrid_no_loom.json": "05c75c6c42935849dbe40e5d95d00c7299258749fdf6e8fdbdeb799888171b23"
+      }
+    }
+  },
+  "evidence_summary_offline": {
+    "criterion": "fast 2.20 OR 1.45 x N3",
+    "n0_no_loom_minutes": 70.0,
+    "n0_no_loom_events": 0,
+    "n0_upper95_two_sided_per_minute": 0.05269827791591336,
+    "n1_per_class": {
+      "strong_direct": {
+        "fired": 60,
+        "trials": 60,
+        "firing_rate": 1.0,
+        "has_positive_label": true,
+        "median_latency_from_click_s": 0.1
+      },
+      "medium_committed": {
+        "fired": 60,
+        "trials": 60,
+        "firing_rate": 1.0,
+        "has_positive_label": true,
+        "median_latency_from_click_s": 0.16
+      },
+      "weak_approach": {
+        "fired": 16,
+        "trials": 60,
+        "firing_rate": 0.26666666666666666,
+        "has_positive_label": false,
+        "median_latency_from_click_s": null
+      },
+      "glancing_pass": {
+        "fired": 9,
+        "trials": 60,
+        "firing_rate": 0.15,
+        "has_positive_label": false,
+        "median_latency_from_click_s": null
+      },
+      "aborted_approach": {
+        "fired": 19,
+        "trials": 60,
+        "firing_rate": 0.31666666666666665,
+        "has_positive_label": false,
+        "median_latency_from_click_s": null
+      }
+    },
+    "note": "offline criterion evaluation from M1.8-N1; the exact runtime replay is produced separately by tools/n2_decoder_replay.py"
+  },
+  "tick_seconds": 0.02,
+  "config_sha256": "81bbc65fba8c2484d8decdbec9cddc225508d7ff2ea836b7e787b362b04b8d5c",
+  "provenance": {
+    "schema_version": 2,
+    "measurement_protocol": "fixed-fly-v2",
+    "config_hash_format": "canonical-json-sort-keys-ascii-compact",
+    "game_config_sha256": "8273b9fb4071b44f1d22482c1f0b9e0c43a06182e2398f3fd2cd1179db7fee9a",
+    "flybrain_version": "0.1.0",
+    "encoder_population_rule": "min-per-type-per-side-v1",
+    "encoder_seed": 20260917,
+    "encoder_types": {
+      "loom": [
+        "LPLC2"
+      ],
+      "threat": [
+        "LC4"
+      ]
+    },
+    "sensory_input": false,
+    "tick_seconds": 0.02,
+    "brain_dt_seconds": 0.02
+  },
+  "measurement_conditions": {
+    "collisions_enabled": false,
+    "escape_disabled": true,
+    "fly_motion_enabled": false,
+    "swatter_settle_ticks": 300,
+    "note": "fly position and heading are fixed; velocity stays zero, wander is disabled, and collisions/escape actions are disabled"
+  },
+  "measurement_reuse": {
+    "kind": "dual-path decoder transfer; not a new measurement",
+    "source_record": "results/game/calibration_room_m1_8_b2b_ii.json",
+    "source_sha256": "8c5456520b0b02063377c93670970aefecc8fd22540b012cb176ca25511fc098",
+    "source_provenance": {
+      "schema_version": 2,
+      "measurement_protocol": "fixed-fly-v2",
+      "config_hash_format": "canonical-json-sort-keys-ascii-compact",
+      "game_config_sha256": "bb7a3e1537907125c17803fd2fa6507e653f4a5e7fc2bca096cbf1be6f16b67d",
+      "flybrain_version": "0.1.0",
+      "encoder_population_rule": "min-per-type-per-side-v1",
+      "encoder_seed": 20260917,
+      "encoder_types": {
+        "loom": [
+          "LPLC2"
+        ],
+        "threat": [
+          "LC4"
+        ]
+      },
+      "sensory_input": false,
+      "tick_seconds": 0.02,
+      "brain_dt_seconds": 0.02
+    },
+    "original_measurement": "results/game/calibration_room_m1_7_1.json",
+    "original_measurement_sha256": "1df05b3f85885f6074253fccc407b451f998cd8302cc318baa86f832316f1a44",
+    "baseline_commit": "76806f0",
+    "reason": "Only the escape criterion changes. Retina, encoder, brain, ecology, lifecycle, swatter and kinematics configuration are identical to the N1 baseline, so the recorded DNp01 distributions still apply.",
+    "changed_config_paths": [
+      "config_version",
+      "policy._comment",
+      "policy.calibration_paths",
+      "policy.escape_decoder"
+    ]
+  },
+  "neurons": 166700,
+  "connections": 25088107,
+  "input_populations": {
+    "loom": {
+      "types": [
+        "LPLC2"
+      ],
+      "available_L": 94,
+      "available_R": 91,
+      "used_per_side": 91
+    },
+    "threat": {
+      "types": [
+        "LC4"
+      ],
+      "available_L": 71,
+      "available_R": 55,
+      "used_per_side": 55
+    }
+  },
+  "versions": {
+    "flybrain": "0.1.0",
+    "numpy": "2.4.6",
+    "scipy": "1.17.1",
+    "numba": "0.67.0"
+  }
+}
