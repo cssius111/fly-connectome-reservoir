@@ -7,7 +7,7 @@ import platform
 from pathlib import Path
 import tempfile
 import uuid
-from .session import Session, ROOT, build_policy, calibration_provenance
+from .session import Session, ROOT, build_policy, calibration_provenance, escape_decoder_spec
 from .session_recording import HumanSessionRecorder, canonical_hash, dataset_hashes
 
 
@@ -57,6 +57,12 @@ def _replay_session(directory, write_report=True, strict_source=True):
         root=Path(tmp)
         record=manifest['calibration']
         if record['provenance']!=manifest['provenance']:raise ValueError('archived calibration mismatch')
+        # The recorder archives only provenance and escape_threshold. For the
+        # dual-path decoder, the decoder block comes from the recorded config,
+        # which the provenance hash above already binds; the resolver still
+        # requires the archived threshold to equal its sustained threshold.
+        decoder=escape_decoder_spec(config)
+        if decoder is not None:record={**record,'escape_decoder':decoder}
         for rel in config['policy']['calibration_paths']:
             path=(root/rel).resolve()
             if not path.is_relative_to(root.resolve()):raise ValueError('calibration paths must be relative and remain inside the replay sandbox')

@@ -1,5 +1,5 @@
 {
-  "config_version": 13,
+  "config_version": 15,
   "_comment": "M1.6 horizontal ROOM slice. Logical units and state speeds are gameplay mappings, not universal biological constants.",
   "sim": {
     "tick_seconds": 0.02,
@@ -133,12 +133,21 @@
     "virtual_distance": 100.0
   },
   "policy": {
-    "_comment": "Exact provenance required. Recalibrate with python tools/calibrate_escape.py --config game_room_config.json --trials 28.",
+    "_comment": "Exact provenance required. The gap-tolerant dual-path decoder loads only an N2b decoder record: rebuild it with python tools/n2b_decoder_record.py. tools/calibrate_escape.py measures the scalar single-sample criterion only and does not calibrate this decoder.",
     "escape_threshold": null,
     "calibration_paths": [
-      "artifacts/game/calibration_room_m1_8_b2b_ii.json",
-      "results/game/calibration_room_m1_8_b2b_ii.json"
+      "artifacts/game/calibration_room_m1_8_n2b.json",
+      "results/game/calibration_room_m1_8_n2b.json"
     ],
+    "escape_decoder": {
+      "_comment": "M1.8-N2b gap-tolerant dual-path DNp01 criterion. FAST: one sample >= fast_threshold. SUSTAINED: the current sample is >= sustained_threshold AND at least sustained_required_samples of the most recent sustained_window_samples samples, including the current one, are >= sustained_threshold. The window updates on every sample including refractory samples, and is cleared when an escape fires. Class C decoder parameters that separate the simulator's spontaneous DNp01 coincidences from sustained threat evidence; not biological constants. sustained_threshold must equal the record's escape_threshold.",
+      "kind": "dual_path_window_v1",
+      "sustained_threshold": 1.45,
+      "fast_threshold": 2.1,
+      "sustained_window_samples": 5,
+      "sustained_required_samples": 3,
+      "require_current_qualifying": true
+    },
     "refractory_seconds": 0.4,
     "turn_gain": 0.8,
     "alert_threshold_fraction": 0.55,
