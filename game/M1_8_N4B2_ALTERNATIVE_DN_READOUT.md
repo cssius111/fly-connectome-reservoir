@@ -245,8 +245,12 @@ the 3D distance then falls from 318 to 199 by tick 678.
 All with a clean start at tick 610:
 
 - **DNp04 pair 60 ms fires at 613: 55 samples (1.10 s) before N4B1C, 10 samples before the
-  closest horizontal approach, and 56 samples before the click.** It fires while the
-  paddle is still hovering and approaching, not after a reversal.
+  closest horizontal approach, and 56 samples before the click.** *Correction (M1.8-N4B3):*
+  the paddle is hovering overhead. At 610-613 its 3D range is increasing (324 to 330
+  units). The expansion comes from foreshortening of the tilted paddle
+  (`World.visual_half_size`), not from closing distance, so "approaching" is not accurate
+  for this moment. The range does not close until the strike at 669
+  (`game/M1_8_N4B3_SELECTIVE_DNP04.md`, section 5).
 - The DNp04 triple 200 ms does not help: 669, one sample after N4B1C.
 - The pooled 4-in-200-ms form fires at 669, and 3 same-side spikes in 500 ms at 634.
 - The 613 detection comes from one moderate transient: theta_dot +0.40, one 85-cell volley.
@@ -482,7 +486,8 @@ clean start (sections 5-7). Background numbers are from sections 8-9.
 
 1. **DNp04 is the only candidate that gives earlier neural evidence of slow approach.** It
    marks the episode-5 slow-close case at tick 613, 55 samples (1.1 s) before N4B1C and
-   while the paddle is still approaching. It also detects the weak N1 approach class
+   before the strike (the paddle is hovering overhead, not closing range; see the
+   correction in section 6). It also detects the weak N1 approach class
    60 / 60, against 33 / 60 for N4B1C.
    - The eight other wiring-qualified types (DNp02, DNg40, DNp11, DNp03, DNp05, DNpe056,
      DNp103, DNpe025) do not help and are rejected.

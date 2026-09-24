@@ -4,7 +4,7 @@ This file is an operational handoff for future sessions. It is not a scientific 
 a runtime artifact. Evidence lives in the milestone reports listed below. Update it at the
 end of every substantial milestone.
 
-Last updated: 2026-09-24, at the end of M1.8-N4B2 (research complete; decision pending).
+Last updated: 2026-09-24, at the end of M1.8-N4B3 (research complete; decision pending).
 
 ## Start of a new session
 
@@ -35,7 +35,7 @@ Earlier frozen milestones (see `AGENTS.md`): M1.7.1 swatter dynamics and M1.8-A 
 
 | Branch | HEAD | Role |
 |---|---|---|
-| `wip/m1-4-enclosure` | the N4B2 research commit (see `git log -1`); based on `07f4670` | research branch; research-only commits |
+| `wip/m1-4-enclosure` | the N4B3 research commit (see `git log -1`); N4B2 at `5be0aea` | research branch; research-only commits |
 | `feature/m1-8-n4b1c-runtime` | `e3c55b3` | accepted runtime; **do not modify** |
 | `archive/m1-8-n2b-rejected` | `2c306174d7bdb4e74b6c5517519ae695bd90cf44` | rejected N2b runtime snapshot; **never merge** |
 | `main` | `309abd9` | untouched |
@@ -43,20 +43,25 @@ Earlier frozen milestones (see `AGENTS.md`): M1.7.1 swatter dynamics and M1.8-A 
 
 Research worktrees (git-ignored, under `artifacts/worktrees/`): `n2b-rejected` (detached at
 the archive commit), `n4b1c-runtime` (the feature branch), and `n4b1c-runtime-detached`
-(detached at `e3c55b3`; used read-only by N4B2 tools). Each has a `data` junction to
+(detached at `e3c55b3`; used read-only by N4B2 and N4B3 tools). Each has a `data` junction to
 `data/`.
 
 ## Current research milestone
 
-**M1.8-N4B2: alternative descending-neuron readout research** (research only): **complete.
-A user decision is pending** (see "Next permitted actions").
+**M1.8-N4B3: selective DNp04 threat readout** (research only): **complete. A user decision
+is pending** (see "Next permitted actions").
 
-- Report: `game/M1_8_N4B2_ALTERNATIVE_DN_READOUT.md` (read sections 8, 9, 10 and 12 first).
-- Tools: `tools/n4b2_record.py`, `tools/n4b2_connectome.py`, `tools/n4b2_criteria.py`
-  (frozen criteria), `tools/n4b2_analysis.py`.
-- Artifacts: `artifacts/m1_8_n4b2/` (git-ignored). `frozen_criteria.json` has sha256
-  `50720084...`. The new N0 holdout uses seeds 310000-340149, and the ROOM holdout uses
-  seeds 7201-7212. **Both are now used and must not be reused to design new criteria.**
+- Report: `game/M1_8_N4B3_SELECTIVE_DNP04.md` (read the short answer, then sections 8 and 10).
+- Tools: `tools/n4b3_record.py`, `tools/n4b3_criteria.py` (frozen), `tools/n4b3_analysis.py`,
+  `tools/n4b3_approach_bouts.py`.
+- Artifacts: `artifacts/m1_8_n4b3/` (git-ignored). `frozen_criteria.json` has sha256
+  `1bed08c2...`.
+- **Used data; never reuse for design:**
+  - N4B3 holdout: N0 seeds 410000-440149, ROOM seeds 7401-7440;
+  - N4B3 development ROOM: seeds 7301-7324;
+  - N4B2 holdouts: N0 seeds 310000-340149, ROOM seeds 7201-7212.
+- Previous milestone: M1.8-N4B2, `game/M1_8_N4B2_ALTERNATIVE_DN_READOUT.md`. Its
+  slow-close "approaching" wording is corrected in section 6.
 
 ## Major conclusions so far
 
@@ -79,13 +84,31 @@ A user decision is pending** (see "Next permitted actions").
     phenotype.
   - DNp02, DNg40, DNp11, DNp03, DNp05, DNpe056, DNp103 and DNpe025 do not help and are
     rejected. 500 ms integration windows fail on N0.
+- N4B3: **no policy-observable gate makes DNp04 selective in flight.**
+  - DNp01 coincidence removes almost nothing, because of the shared LC4/LPLC2 volley.
+  - MotionState overlaps between self-motion and real attacks.
+  - The best slow-close-preserving combination, N4B1C OR [DNp04 pair + DNp01 60 ms +
+    abs(yaw) <= 1 over 0.5 s], gives 0.158 free-flight escapes/min on the holdout, against
+    0.100 for N4B1C.
+  - Classification: outcome 3 (in flight, the policy-observable information cannot
+    separate self-generated from external looming), and therefore outcome 2 for in-flight
+    DNp04.
+  - **The only clean form is a stationary-fly DNp04 path** (forward_speed <= 100): 0
+    events in 192 free-flight min and 1190 fixed-fly min. It helps perched / stationary
+    detection only, not the airborne slow-close case.
+  - The slow-close case (tick 613) is a hovering overhead paddle whose foreshortening
+    transient DNp04 catches. The range is not closing.
+- N4B3 side finding: **the accepted N4B1C itself gives 0.083 free-flight escapes/min over
+  240 no-player min (95 % upper 0.121)**. It passes fixed-fly N0 (upper 0.017). Reported
+  only; not retuned.
 
 ## Known unresolved limitation
 
 Slow or gradual approach is still detected too late: the N4B1C decoder fires at tick 668 in
-the episode-5 slow-close case (N2b session), 45 samples after the closest approach. N4B2
-showed that a DNp04 readout fixes this only at a measured free-flight specificity cost. It is
-unresolved until the user chooses option A, B or C below.
+the episode-5 slow-close case (N2b session), 45 samples after the closest approach. N4B2 and
+N4B3 showed that DNp04 detects it earlier (613), but no policy-observable gate removes
+DNp04's free-flight self-motion triggers. The case stays unresolved as a simulator
+information limit unless the user chooses a different direction (below).
 
 ## Do not reopen
 
@@ -94,19 +117,25 @@ unresolved until the user chooses option A, B or C below.
   defect.
 - M1.7.1 swatter dynamics and M1.8-A lifecycle (see `AGENTS.md`).
 - Frozen experiment artifacts in `artifacts/m1-2/protected-before.json`.
-- The N4B2 frozen criteria, and the design of new criteria on the used N4B2 holdouts.
+- The N4B2 and N4B3 frozen criteria, and the design of new criteria on any used holdout
+  listed above.
 
 ## Next permitted actions (decision pending)
 
-N4B2 recommends **A**, with **C** if slow-approach sensitivity remains a priority. The user
-has not yet chosen.
+N4B3 recommends **keeping N4B1C unchanged**. The user has not yet chosen. Options, each
+needing explicit approval:
 
-- **A.** Keep N4B1C unchanged; no action needed.
-- **B.** A runtime candidate "N4B1C OR DNp04 pair 60 ms". This **expands the policy
-  whitelist** and must not start without explicit approval.
-- **C.** Research-only N4B3: a more selective DNp04-based signal, for example with
-  concurrent DNp01 evidence or a MotionState self-motion discount. Design it on development
-  data only, and validate it on NEW N0 and ROOM seeds, not those used above.
+1. **Keep N4B1C unchanged** (recommended default). No action needed.
+2. **Narrow runtime milestone "N4B1C OR stationary-fly DNp04 pair"** (forward_speed <= 100).
+   This expands the policy whitelist by DNp04 L/R, and improves perched / stationary
+   detection only.
+3. **Modelling milestone:** add self-motion information upstream, for example in the
+   Retina/encoder representation. This changes the Retina/encoder.
+4. **Research-only characterization of N4B1C's own free-flight escapes** (0.083/min, upper
+   0.121).
+
+The earlier N4B2 options B and C are superseded by N4B3: C was done, and B is not
+recommended.
 
 ## Permitted without asking
 
