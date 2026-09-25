@@ -32,6 +32,11 @@ ROOM = load_config(ROOT/'game_room_config.json')
 DT = 0.02
 DECAY = dnp01_trace_decay(ROOM)
 BASELINE = '76806f0'
+# The accepted N4B1C ROOM configuration. From M1.8-N4B5R on, game_room_config.json also
+# carries the elevation-aware tilt geometry and loads the N4B5R record (identical decoder);
+# the N4B1C record itself stays bound to this configuration.
+ACCEPTED_N4B1C = json.loads(subprocess.check_output(
+    ['git', 'show', 'e3c55b36084cd1d05e5f38d0b178aed0b9a59ddf:game_room_config.json'], cwd=ROOT, text=True))
 RECORD = 'results/game/calibration_room_m1_8_n4b1c.json'
 N2_RECORD = 'results/game/calibration_room_m1_8_n2.json'
 N2B_RECORD = 'results/game/calibration_room_m1_8_n2b.json'
@@ -245,7 +250,7 @@ class TestRecordedStateAndInputs(unittest.TestCase):
 
 class TestConfigAndProvenance(unittest.TestCase):
     def test_room_resolves_the_n4b1c_record(self):
-        source = resolve_escape_threshold(ROOM)
+        source = resolve_escape_threshold(ACCEPTED_N4B1C)
         self.assertEqual(source.origin, RECORD)
         self.assertEqual(source.threshold, 1.45)
         self.assertEqual(source.decoder, DECODER)
@@ -301,7 +306,7 @@ class TestConfigAndProvenance(unittest.TestCase):
         record = load_config(ROOT/RECORD)
         self.assertEqual(record['record_kind'], 'lateral-dual-path-decoder-provenance-v1')
         self.assertTrue(record['not_a_scalar_calibration'])
-        self.assertEqual(record['provenance'], calibration_provenance(ROOM))
+        self.assertEqual(record['provenance'], calibration_provenance(ACCEPTED_N4B1C))
         self.assertEqual({k: record['escape_decoder'][k] for k in DECODER}, DECODER)
         self.assertEqual(record['escape_decoder']['lateral_window_samples'], 3)
         self.assertEqual(record['escape_decoder']['channel_precedence'], ['LATERAL', 'FAST', 'SUSTAINED'])
@@ -340,8 +345,9 @@ class TestConfigAndProvenance(unittest.TestCase):
     def test_room_config_differs_from_the_baseline_only_in_the_decoder(self):
         before = json.loads(subprocess.check_output(['git', 'show', BASELINE + ':game_room_config.json'],
                                                     cwd=ROOT, text=True))
-        after = copy.deepcopy(ROOM)
-        # 13 at the N1 baseline; 14 strict N2; 15 rejected N2b; 16 this candidate.
+        after = copy.deepcopy(ACCEPTED_N4B1C)
+        # 13 at the N1 baseline; 14 strict N2; 15 rejected N2b; 16 the accepted N4B1C
+        # (17, the N4B5R geometry candidate, is versioned in test_game_n4b5r_geometry).
         self.assertEqual(after['config_version'], before['config_version'] + 3)
         after['config_version'] = before['config_version']
         after['policy'].pop('escape_decoder')

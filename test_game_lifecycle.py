@@ -152,7 +152,8 @@ class TestLocalLifecycle(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             root=Path(folder)
             # M1.8-N4B1C: ROOM loads the lateral dual-path decoder record.
-            valid=load_config(ROOT/'results/game/calibration_room_m1_8_n4b1c.json')
+            # M1.8-N4B5R: ROOM loads the geometry-candidate record (identical N4B1C decoder).
+            valid=load_config(ROOT/ROOM['policy']['calibration_paths'][1])
             stale=copy.deepcopy(valid);stale['provenance']['encoder_seed']+=1
             stale['escape_threshold']=99
             for path,record in zip(ROOM['policy']['calibration_paths'],(stale,valid)):
@@ -227,6 +228,8 @@ class TestLocalLifecycle(unittest.TestCase):
         # M1.8-N2/N2b/N4B1C change only the escape criterion (versioned in
         # test_game_n2_decoder and test_game_n4b1c_decoder).
         after['policy'].pop('escape_decoder');after['policy']['_comment']=before['policy']['_comment']
+        # M1.8-N4B5R changes only the paddle tilt geometry (versioned in test_game_n4b5r_geometry).
+        for key in ('tilt_geometry','_tilt_geometry_comment'):after['swatter']['directional'].pop(key)
         self.assertEqual(after,before)
         # The active record chains M1.8-B2a -> M1.8-A -> the M1.7.1 measurement, and every
         # link must name the exact bytes it transfers from.
@@ -255,7 +258,12 @@ class TestLocalLifecycle(unittest.TestCase):
         self.assertEqual(active['original_measurement'],'results/game/calibration_room_m1_7_1.json')
         self.assertEqual(resolve_escape_threshold(ROOM).threshold,1.45)
         self.assertEqual(resolve_escape_threshold(ROOM).origin,
-                         'results/game/calibration_room_m1_8_n4b1c.json')
+                         'results/game/calibration_room_m1_8_n4b5r.json')
+        # The N4B5R record transfers the N4B1C decoder record byte-for-byte by content hash.
+        n4b5r=load_config(ROOT/'results/game/calibration_room_m1_8_n4b5r.json')['measurement_reuse']
+        self.assertEqual(n4b5r['decoder_source_record'],'results/game/calibration_room_m1_8_n4b1c.json')
+        self.assertEqual(n4b5r['decoder_source_sha256'],hashlib.sha256(
+            (ROOT/'results/game/calibration_room_m1_8_n4b1c.json').read_bytes().replace(b'\r\n',b'\n')).hexdigest())
         for section,key in (('brain','gain'),('encoder','encoder_seed'),
                             ('lifecycle','contact_speed_bl_s'),
                             ('kinematics','room_kinematic_scale')):
@@ -372,8 +380,12 @@ class TestNeuralLifecycle(unittest.TestCase):
         import subprocess
         from tools.calibrate_escape import RecordingPolicy, _trial
         before=json.loads(subprocess.check_output(['git','show','f8f440b:game_room_config.json'],cwd=ROOT,text=True))
+        # The lifecycle must not change fixed-fly neural outputs. The M1.8-N4B5R tilt geometry
+        # does change the Retina for this nearly overhead strike, so the lifecycle comparison
+        # uses the accepted bearing-only geometry.
+        room=copy.deepcopy(ROOM);room['swatter']['directional']['tilt_geometry']='bearing_only_v0'
         outputs=[]
-        for config in (before,ROOM):
+        for config in (before,room):
             p=RecordingPolicy();s=Session(config,brain=shared_brain(),policy=p)
             s.world.fly_motion_enabled=False;s.world.collisions_enabled=False
             a=_trial(s,p,5000,(15,10),90,20)

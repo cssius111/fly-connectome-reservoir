@@ -1,5 +1,5 @@
 {
-  "config_version": 16,
+  "config_version": 17,
   "_comment": "M1.6 horizontal ROOM slice. Logical units and state speeds are gameplay mappings, not universal biological constants.",
   "sim": {
     "tick_seconds": 0.02,
@@ -29,7 +29,9 @@
       "sweep_fraction": 0.45,
       "max_sweep_speed": 1000.0,
       "min_speed": 20.0,
-      "tilt_anisotropy": 0.25
+      "tilt_anisotropy": 0.25,
+      "tilt_geometry": "elevation_aware_tilt_v1",
+      "_tilt_geometry_comment": "M1.8-N4B5R runtime candidate (ROOM only). The tilt foreshortening term is weighted by cos(elevation) = horizontal / 3-D fly-paddle distance, so the horizontal bearing no longer turns into apparent looming when the paddle is nearly overhead. bearing_only_v0 (the default when absent) is the accepted M1.5/M1.7 formula. Geometry only: the N4B1C decoder is unchanged."
     },
     "physical": {
       "enabled": true,
@@ -133,11 +135,11 @@
     "virtual_distance": 100.0
   },
   "policy": {
-    "_comment": "Exact provenance required. The M1.8-N4B1C lateral dual-path decoder loads only an N4B1C decoder record: rebuild it with python tools/n4b1c_decoder_record.py. tools/calibrate_escape.py measures the scalar single-sample criterion only and does not calibrate this decoder.",
+    "_comment": "Exact provenance required. The M1.8-N4B1C lateral dual-path decoder (unchanged) loads the M1.8-N4B5R geometry-candidate record, which carries the identical decoder block for the elevation-aware geometry configuration: rebuild it with python tools/n4b5r_geometry_record.py. The N4B1C decoder record itself is preserved unchanged. tools/calibrate_escape.py measures the scalar single-sample criterion only and does not calibrate this decoder.",
     "escape_threshold": null,
     "calibration_paths": [
-      "artifacts/game/calibration_room_m1_8_n4b1c.json",
-      "results/game/calibration_room_m1_8_n4b1c.json"
+      "artifacts/game/calibration_room_m1_8_n4b5r.json",
+      "results/game/calibration_room_m1_8_n4b5r.json"
     ],
     "escape_decoder": {
       "_comment": "M1.8-N4B1C combined DNp01 criterion. Escape when EITHER path qualifies outside the shared refractory period. LATERAL: the same DNp01 side produces lateral_required_spikes inferred spikes within lateral_same_side_window_ms (per-side spikes inferred from that side's own trace; a left spike followed by a right spike never qualifies). Summed N2b path: FAST when left + right >= summed_fast_threshold; SUSTAINED when the current summed sample is >= sustained_threshold AND at least sustained_required_samples of the most recent sustained_window_samples summed samples are >= sustained_threshold. All values are Class C engineering decoder parameters derived from simulator evidence, not biological constants. sustained_threshold must equal the record's escape_threshold.",
