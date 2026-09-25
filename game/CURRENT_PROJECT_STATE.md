@@ -4,7 +4,7 @@ This file is an operational handoff for future sessions. It is not a scientific 
 a runtime artifact. Evidence lives in the milestone reports listed below. Update it at the
 end of every substantial milestone.
 
-Last updated: 2026-09-25, M1.8-N4B5R geometry accepted, frozen and pushed (`363a1a9`); it is the current runtime baseline.
+Last updated: 2026-09-25, M1.8-N4B6 controlled slow-approach characterization complete (research only). Runtime baseline: M1.8-N4B5R (`363a1a9`), unchanged. **Decision pending (see Next permitted actions).**
 
 ## Start of a new session
 
@@ -49,7 +49,7 @@ Earlier frozen milestones (see `AGENTS.md`): M1.7.1 swatter dynamics and M1.8-A 
 
 | Branch | HEAD | Role |
 |---|---|---|
-| `wip/m1-4-enclosure` | the N4B5 research commit (see `git log -1`); N4B4 at `6b5c4ce`, N4B3 at `d09dac4`, N4B2 at `5be0aea` | research branch; research-only commits |
+| `wip/m1-4-enclosure` | the N4B6 research commit (see `git log -1`); N4B6 preregistration `987b2a9`, N4B5R state `81b213e`, N4B5 `0e9d2d9`, N4B4 `6b5c4ce`, N4B3 `d09dac4`, N4B2 `5be0aea` | research branch; research-only commits |
 | `feature/m1-8-n4b5r-geometry` | `363a1a9` | **current accepted runtime** (N4B1C + G3 geometry); **do not modify** |
 | `feature/m1-8-n4b1c-runtime` | `e3c55b3` | previous accepted runtime (decoder layer); **do not modify** |
 | `archive/m1-8-n2b-rejected` | `2c306174d7bdb4e74b6c5517519ae695bd90cf44` | rejected N2b runtime snapshot; **never merge** |
@@ -58,8 +58,9 @@ Earlier frozen milestones (see `AGENTS.md`): M1.7.1 swatter dynamics and M1.8-A 
 
 Research worktrees (git-ignored, under `artifacts/worktrees/`): `n2b-rejected` (detached at
 the archive commit), `n4b1c-runtime` (the feature branch), and `n4b1c-runtime-detached`
-(detached at `e3c55b3`; used read-only by the N4B2-N4B5 tools). Each has a `data` junction to
-`data/`.
+(detached at `e3c55b3`; used read-only by the N4B2-N4B5 tools), and `n4b5r-geometry` (the
+accepted N4B5R branch; used read-only by the N4B6 tools, must stay clean). Each has a `data`
+junction to `data/`.
 
 ## M1.8-N4B5R acceptance summary
 
@@ -89,18 +90,26 @@ Do not call C or D "false triggers".
 
 ## Current research milestone
 
-**M1.8-N4B5: paddle visual geometry and overhead foreshortening** (research only):
-**complete.** Recommendation 3 (geometry runtime candidate G3) was implemented as
-M1.8-N4B5R and human-accepted on 2026-09-25. Next: M1.8-N4B6 (controlled slow approach).
+**M1.8-N4B6: controlled slow-approach characterization** (research only): **complete.
+Slow-approach blind spot confirmed under the accepted runtime; preregistered outcome
+"mixed". It is outcome 2 (DNp01 readout limit) at human-typical slow speeds and outcome 3
+(stimulus limit) at the slowest decile. Runtime unchanged; waiting for the user's
+direction.**
 
-- Report: `game/M1_8_N4B5_PADDLE_VISUAL_GEOMETRY.md` (read the short answer, then sections
-  6, 7 and 10).
-- Tools: `tools/n4b5_geometry.py` (frozen candidate formulas), `tools/n4b5_analysis.py`,
-  `tools/n4b5_resim.py` (in-process re-simulation with a patched `World.visual_half_size`;
-  G0 is exact), `tools/n4b5_evaluate.py`.
-- Artifacts: `artifacts/m1_8_n4b5/` (git-ignored). `frozen_geometry.json` has sha256
-  `a11cafa0...`.
+- Report: `game/M1_8_N4B6_CONTROLLED_SLOW_APPROACH.md` (read the short answer, then sections
+  3, 4, 6.3, 8 and 9).
+- Tools:
+  - `tools/n4b6_protocol.py`: preregistered matrix and rules, sha256 `01d91ab8...`,
+    committed before any neural run as `987b2a9`;
+  - `tools/n4b6_controlled_approach.py`: freeze / geometry / run / analyze;
+  - `tools/n4b6_supplement.py`: exploratory mechanism analysis.
+- Artifacts: `artifacts/m1_8_n4b6/` (git-ignored): 720 trial records, `results.json`,
+  `supplement.json`.
+- Runs the accepted runtime read-only from `artifacts/worktrees/n4b5r-geometry`, which must
+  stay clean at `363a1a9`.
 - Previous milestones:
+  - N4B5: `game/M1_8_N4B5_PADDLE_VISUAL_GEOMETRY.md` (tools `tools/n4b5_*.py`, artifacts
+    `artifacts/m1_8_n4b5/`);
   - N4B4: `game/M1_8_N4B4_FREE_FLIGHT_ESCAPE_INTERPRETATION.md`;
   - N4B3: `game/M1_8_N4B3_SELECTIVE_DNP04.md`;
   - N4B2: `game/M1_8_N4B2_ALTERNATIVE_DN_READOUT.md`.
@@ -108,6 +117,7 @@ M1.8-N4B5R and human-accepted on 2026-09-25. Next: M1.8-N4B6 (controlled slow ap
   - N4B3 holdout: N0 seeds 410000-440149, ROOM seeds 7401-7440;
   - N4B3 development ROOM: seeds 7301-7324;
   - N4B2 holdouts: N0 seeds 310000-340149, ROOM seeds 7201-7212.
+  - N4B6 brain-noise seeds 500001-500048 (fixed-fly controlled approaches);
   - N4B4 and N4B5 generated no new seeds. They re-simulated stored runs, and N4B5 re-ran
     them under candidate geometries.
 
@@ -161,6 +171,16 @@ M1.8-N4B5R and human-accepted on 2026-09-25. Next: M1.8-N4B6 (controlled slow ap
   - **The same foreshortening term produced the episode-5 slow-close signal** (610-613: all
     of the expansion from apparent size, with the range receding).
   - Metric split: adopted as categories A-D above.
+- N4B6 (controlled, fixed-fly, 15 preregistered trajectories x 48 noise seeds, through
+  G3 -> Retina -> encoder -> MaleCNS -> N4B1C):
+  - **A real slow-approach blind spot exists under the accepted runtime.** It is not caused
+    by the old geometry: radial approaches have no tilt term.
+  - Detection by speed: 130 units/s 0-6 %; 300 units/s 29 %; 800 units/s 100 % (0.36 s
+    before closest approach).
+  - Controls: stationary / receding 0 responses; pre-holds 0 in 24 min.
+  - Attribution: DNp01 readout limit at p25 speed; stimulus limit at p10 speed.
+  - **DNp04:** no help at 130 units/s (21-38 %, only near arrival); clearly earlier at 300
+    units/s (100 %, +0.5 s); non-specific (47 / 48 on the stop-rotation transient).
 - N4B5: **the current `tilt_anisotropy` term is a clear artifact near overhead.**
   - It depends on the horizontal bearing only.
   - Under a stationary paddle it produces 2.5-6.9 rad/s of expansion within 10 units of the
@@ -179,13 +199,19 @@ M1.8-N4B5R and human-accepted on 2026-09-25. Next: M1.8-N4B6 (controlled slow ap
   - Caveat: the frozen "every direct strike fires" criterion failed as written (38 / 39).
     G0 itself is 38 / 39 in 3 of 4 other noise realizations.
 
-## Known open question
+## Known open questions
 
-The episode-5 "slow-close" case (N2b session) is no longer clean slow-approach evidence:
-N4B4 and N4B5 showed that its early signal came from the old bearing-only tilt
-foreshortening, with the range receding. Under the accepted G3 geometry it has no expansion
-at all. Whether the accepted G3 + N4B1C system has a real slow-approach sensitivity problem
-under a controlled monotonic approach is open; M1.8-N4B6 addresses it.
+- **Slow approach (N4B6):** a hover-height approach at 130 units/s (human p25) is detected in
+  time by N4B1C in 0-6 % of seeds. It is marginal at 300 units/s (29 %) and reliable at 800
+  units/s. The encoder exceeds N0 in time in 100 % of seeds at 130 units/s. DNp01 rises to
+  about 4 spikes/s, and a per-side count of >= 4 spikes in 1 s is almost absent from 840 min
+  of N0. N4B1C's <= 60 ms / trace >= 2.1 rules do not read it. At 50 units/s the encoder
+  itself is insufficient.
+- **Stop-rotation transient (N4B6, category C):** when the paddle stops after sideways
+  motion, the accepted controller rotates it by about 90 deg during overshoot correction.
+  Through the tilt term this gives 0.35 rad/s of apparent expansion at constant range.
+  N4B1C responded in 17 / 48 orbit-control trials and DNp04 in 47 / 48. How often it
+  happens in real play is unknown.
 
 ## Do not reopen
 
@@ -199,13 +225,25 @@ under a controlled monotonic approach is open; M1.8-N4B6 addresses it.
 - The N4B2 and N4B3 frozen criteria, and the design of new criteria on any used holdout
   listed above.
 
-## Next permitted actions
+## Next permitted actions (decision pending)
 
-- M1.8-N4B6, controlled slow-approach characterization (research only), authorized by the
-  user on 2026-09-25 together with the N4B5R acceptance.
-- The M1.8-B activity-budget and flight-kinematics work remains planning only.
+N4B6 stopped at an architectural approval boundary. The options are:
 
-Superseded: the N4B2-N4B5 decision options, including the stationary-fly DNp04 path.
+- **A. Keep the runtime unchanged and document the slow-approach limitation** (the default
+  if no decision is made).
+- **B. A research-only milestone (N4B7): an N0-safe, free-flight-specific DNp01 temporal-
+  integration readout** (for example per-side spike counts over about 1 s, OR'ed with the
+  N4B1C paths). It would use preregistered new N0 seeds, no-player free flight under G3
+  (categories A-D), and fast-attack latency checks. Research itself is permitted; **any
+  runtime adoption needs explicit approval and a human test.**
+- **C. Review the stop-rotation transient.** This touches the frozen M1.7.1 controller or
+  the accepted N4B5R tilt term, so it **needs explicit approval** and recorded-play
+  evidence first.
+
+Not recommended: DNp04 for slow approach (whitelist expansion; no benefit at slow speed);
+Retina / encoder changes for the 50 units/s case (a biological-model change).
+
+The M1.8-B activity-budget and flight-kinematics work remains planning only.
 
 ## Permitted without asking
 
