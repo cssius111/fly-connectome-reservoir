@@ -59,6 +59,8 @@ def _args():
     p.add_argument('--worker', type=int, default=0)
     p.add_argument('--workers', type=int, default=1)
     p.add_argument('--noise-offset', type=int)
+    p.add_argument('--reverse', action='store_true',
+                   help='hold-room: process all seeds in reverse order (extra workers; existing results are skipped)')
     return p.parse_args()
 
 
@@ -410,6 +412,7 @@ def shadow_room(label, a, names):
                                for j in range(t + 1, min(len(a['dl']), t + 76)))) if clean and t + 1 < len(a['dl']) else None
             nxt = next((u for u in ref if u >= t), None)
             added.append(dict(e, **classify(a, t, cf_min), counterfactual_clean=clean,
+                              max_drive_last_50=float(np.max(a['drive'][max(0, t - 49):t + 1])),
                               lifecycle=a['lifecycle'][t] if 'lifecycle' in a else None,
                               n4b1c_next_s=None if nxt is None else (nxt - t) * DT))
         out['added'][name] = added
@@ -843,6 +846,8 @@ def hold_room():
     d = OUT / 'hold_room'
     d.mkdir(parents=True, exist_ok=True)
     mine = [s for i, s in enumerate(seeds_of('room_free_flight')) if i % ARGS.workers == ARGS.worker]
+    if ARGS.reverse:
+        mine = seeds_of('room_free_flight')[::-1][ARGS.worker::ARGS.workers]
     t0 = time.time()
     for seed in mine:
         f = d / ('%d.json' % seed)
@@ -857,7 +862,11 @@ def hold_room():
                 cfs[str(e['t'])] = float(min(math.hypot(ca['px'][j] - ca['fx'][j], ca['py'][j] - ca['fy'][j])
                                              for j in range(e['t'] + 1, min(len(ca['dl']), e['t'] + 76))))
             rec[live] = {'events': events, 'cf_min_horizontal': cfs, 'rows': pack(a)}
-        f.write_text(json.dumps(rec) + '\n', encoding='utf-8')
+        if f.exists():
+            continue
+        tmp = f.with_suffix('.tmp%d' % os.getpid())
+        tmp.write_text(json.dumps(rec) + '\n', encoding='utf-8')
+        os.replace(tmp, f)
         print('worker %d seed %d: N4B1C %d, L1 %d escapes (%.0f s)' % (ARGS.worker, seed, len(rec['N4B1C']['events']),
                                                                       len(rec['L1 combined']['events']), time.time() - t0), flush=True)
     print('worker %d room done' % ARGS.worker, flush=True)
@@ -963,7 +972,8 @@ def room_holdout(recs):
             bursts = max(bursts, max_long_in_5s(r[live]['events']))
             for e in r[live]['events']:
                 cf = r[live]['cf_min_horizontal'].get(str(e['t']))
-                x = dict(e, seed=r['seed'], **classify(a, e['t'], cf), lifecycle=a['lifecycle'][e['t']])
+                x = dict(e, seed=r['seed'], **classify(a, e['t'], cf), lifecycle=a['lifecycle'][e['t']],
+                         max_drive_last_50=float(np.max(a['drive'][max(0, e['t'] - 49):e['t'] + 1])))
                 if 'LONG' in e['paths'].split('+'):
                     nxt = next((u for u in ref_n4b1c if u >= e['t']), None)
                     x['n4b1c_alone_replay_next_s'] = None if nxt is None else (nxt - e['t']) * DT

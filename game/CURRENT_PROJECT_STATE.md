@@ -4,7 +4,7 @@ This file is an operational handoff for future sessions. It is not a scientific 
 a runtime artifact. Evidence lives in the milestone reports listed below. Update it at the
 end of every substantial milestone.
 
-Last updated: 2026-09-25, M1.8-N4B6 controlled slow-approach characterization complete (research only). Runtime baseline: M1.8-N4B5R (`363a1a9`), unchanged. **Decision pending (see Next permitted actions).**
+Last updated: 2026-09-25, M1.8-N4B7 long-window DNp01 readout complete (research only): **L1 not recommended** (fails free-flight category B). Runtime baseline: M1.8-N4B5R (`363a1a9`), unchanged. Frozen alternative in force: keep the runtime and document the slow-approach limitation.
 
 ## Start of a new session
 
@@ -49,7 +49,7 @@ Earlier frozen milestones (see `AGENTS.md`): M1.7.1 swatter dynamics and M1.8-A 
 
 | Branch | HEAD | Role |
 |---|---|---|
-| `wip/m1-4-enclosure` | the N4B6 research commit (see `git log -1`); N4B6 preregistration `987b2a9`, N4B5R state `81b213e`, N4B5 `0e9d2d9`, N4B4 `6b5c4ce`, N4B3 `d09dac4`, N4B2 `5be0aea` | research branch; research-only commits |
+| `wip/m1-4-enclosure` | the N4B7 research commit (see `git log -1`); N4B7 freeze `8fee28a`, N4B6 `b203b46` (preregistration `987b2a9`), N4B5R state `81b213e`, N4B5 `0e9d2d9`, N4B4 `6b5c4ce`, N4B3 `d09dac4`, N4B2 `5be0aea` | research branch; research-only commits |
 | `feature/m1-8-n4b5r-geometry` | `363a1a9` | **current accepted runtime** (N4B1C + G3 geometry); **do not modify** |
 | `feature/m1-8-n4b1c-runtime` | `e3c55b3` | previous accepted runtime (decoder layer); **do not modify** |
 | `archive/m1-8-n2b-rejected` | `2c306174d7bdb4e74b6c5517519ae695bd90cf44` | rejected N2b runtime snapshot; **never merge** |
@@ -90,24 +90,31 @@ Do not call C or D "false triggers".
 
 ## Current research milestone
 
-**M1.8-N4B6: controlled slow-approach characterization** (research only): **complete.
-Slow-approach blind spot confirmed under the accepted runtime; preregistered outcome
-"mixed". It is outcome 2 (DNp01 readout limit) at human-typical slow speeds and outcome 3
-(stimulus limit) at the slowest decile. Runtime unchanged; waiting for the user's
-direction.**
+**M1.8-N4B7: long-timescale DNp01 slow-approach readout** (research only): **complete.
+The primary candidate L1 (N4B1C OR same-side >= 4 DNp01 spikes in 1.0 s) is NOT
+recommended.**
 
-- Report: `game/M1_8_N4B6_CONTROLLED_SLOW_APPROACH.md` (read the short answer, then sections
-  3, 4, 6.3, 8 and 9).
+- Fresh-holdout outcome:
+  - 130 units/s approaches: 100 % against 6.9 % (pass);
+  - fixed-fly N0: 3 events in 336 min (pass);
+  - fresh committed strikes: unchanged (pass);
+  - **free flight: 9 -> 167 escapes in 240 min, category B 44 (upper 0.24/min): FAIL;**
+  - repetition: FAIL.
+- Cause: the fly's own flight toward the parked paddle produces the same slow-expansion
+  stimulus. A DNp01-only readout cannot separate them (the N4B3 information limit).
+- Report: `game/M1_8_N4B7_LONG_DNP01_READOUT.md` (read the short answer, then sections 5.4,
+  6, 7 and 9).
 - Tools:
-  - `tools/n4b6_protocol.py`: preregistered matrix and rules, sha256 `01d91ab8...`,
-    committed before any neural run as `987b2a9`;
-  - `tools/n4b6_controlled_approach.py`: freeze / geometry / run / analyze;
-  - `tools/n4b6_supplement.py`: exploratory mechanism analysis.
-- Artifacts: `artifacts/m1_8_n4b6/` (git-ignored): 720 trial records, `results.json`,
-  `supplement.json`.
-- Runs the accepted runtime read-only from `artifacts/worktrees/n4b5r-geometry`, which must
+  - `tools/n4b7_candidates.py`: frozen, sha256 `6b69a447...`; committed before any holdout
+    as `8fee28a`;
+  - `tools/n4b7_long_readout.py`: dev / freeze / holdouts / analyze.
+- Artifacts: `artifacts/m1_8_n4b7/` (git-ignored): `preregistration.json`,
+  `holdout.json`, `dev_*.json`, and the holdout trial records.
+- Uses the accepted runtime read-only from `artifacts/worktrees/n4b5r-geometry`, which must
   stay clean at `363a1a9`.
 - Previous milestones:
+  - N4B6: `game/M1_8_N4B6_CONTROLLED_SLOW_APPROACH.md` (tools `tools/n4b6_*.py`, artifacts
+    `artifacts/m1_8_n4b6/`);
   - N4B5: `game/M1_8_N4B5_PADDLE_VISUAL_GEOMETRY.md` (tools `tools/n4b5_*.py`, artifacts
     `artifacts/m1_8_n4b5/`);
   - N4B4: `game/M1_8_N4B4_FREE_FLIGHT_ESCAPE_INTERPRETATION.md`;
@@ -118,6 +125,8 @@ direction.**
   - N4B3 development ROOM: seeds 7301-7324;
   - N4B2 holdouts: N0 seeds 310000-340149, ROOM seeds 7201-7212.
   - N4B6 brain-noise seeds 500001-500048 (fixed-fly controlled approaches);
+  - N4B7 holdouts: controlled 700001-700096, fixed-fly N0 800001-800720, committed strikes
+    900001-900120, ROOM free flight 7601-7680;
   - N4B4 and N4B5 generated no new seeds. They re-simulated stored runs, and N4B5 re-ran
     them under candidate geometries.
 
@@ -171,6 +180,17 @@ direction.**
   - **The same foreshortening term produced the episode-5 slow-close signal** (610-613: all
     of the expansion from apparent size, with the range receding).
   - Metric split: adopted as categories A-D above.
+- N4B7 (preregistered, fresh holdouts): N4B1C OR [same-side >= 4 DNp01 spikes in 1 s]:
+  - recovers 130 units/s approaches (100 %, lead 1.4 s);
+  - fixed fly: silent (3 in 336 min);
+  - strikes: unchanged;
+  - **but in closed-loop free flight: 167 escapes in 240 min (N4B1C 9); 162 are LONG-only
+    (B 42, D 102), all airborne, from the fly flying toward the parked paddle at about 130
+    units/s;**
+  - it also adds 19 / 96 stop-rotation responses.
+  - **Conclusion:** with the current inputs, slow-approach sensitivity and free-flight
+    quietness trade off directly for any DNp01-temporal readout. L2 / L3 are comparisons
+    only and were not promoted.
 - N4B6 (controlled, fixed-fly, 15 preregistered trajectories x 48 noise seeds, through
   G3 -> Retina -> encoder -> MaleCNS -> N4B1C):
   - **A real slow-approach blind spot exists under the accepted runtime.** It is not caused
@@ -206,7 +226,9 @@ direction.**
   units/s. The encoder exceeds N0 in time in 100 % of seeds at 130 units/s. DNp01 rises to
   about 4 spikes/s, and a per-side count of >= 4 spikes in 1 s is almost absent from 840 min
   of N0. N4B1C's <= 60 ms / trace >= 2.1 rules do not read it. At 50 units/s the encoder
-  itself is insufficient.
+  itself is insufficient. **N4B7:** a 1 s same-side DNp01 count recovers it (100 %) but
+  fails free flight (category B 0.18/min, from self-approach). A DNp01-only fix is ruled
+  out under the current inputs.
 - **Stop-rotation transient (N4B6, category C):** when the paddle stops after sideways
   motion, the accepted controller rotates it by about 90 deg during overshoot correction.
   Through the tilt term this gives 0.35 rad/s of apparent expansion at constant range.
@@ -225,23 +247,24 @@ direction.**
 - The N4B2 and N4B3 frozen criteria, and the design of new criteria on any used holdout
   listed above.
 
-## Next permitted actions (decision pending)
+## Next permitted actions
 
-N4B6 stopped at an architectural approval boundary. The options are:
+**Default in force: keep the accepted runtime (N4B5R) unchanged and document the
+slow-approach limitation (N4B6 / N4B7).** Nothing needs approval to stay here.
 
-- **A. Keep the runtime unchanged and document the slow-approach limitation** (the default
-  if no decision is made).
-- **B. A research-only milestone (N4B7): an N0-safe, free-flight-specific DNp01 temporal-
-  integration readout** (for example per-side spike counts over about 1 s, OR'ed with the
-  N4B1C paths). It would use preregistered new N0 seeds, no-player free flight under G3
-  (categories A-D), and fast-attack latency checks. Research itself is permitted; **any
-  runtime adoption needs explicit approval and a human test.**
-- **C. Review the stop-rotation transient.** This touches the frozen M1.7.1 controller or
-  the accepted N4B5R tilt term, so it **needs explicit approval** and recorded-play
-  evidence first.
+Options that remain, all needing explicit user direction:
 
-Not recommended: DNp04 for slow approach (whitelist expansion; no benefit at slow speed);
-Retina / encoder changes for the 50 units/s case (a biological-model change).
+- **A. Stationary-fly-restricted long path (research).** A new preregistered candidate
+  that gates LONG by the already policy-observable MotionState, analogous to the N4B3
+  stationary-fly DNp04 path. It would help only a stationary / perched fly. The whitelist
+  is unchanged, but the candidate is new.
+- **B. Stop-rotation transient review.** This touches the frozen M1.7.1 controller or the
+  N4B5R tilt term, so it needs recorded-play evidence first.
+- **C. A biological long-mode channel** (new DN channels, encoder or Retina changes). This
+  is an architectural / biological-model change.
+
+Not recommended: adopting L1 / L2 / L3; DNp04 for slow approach; tuning on the N4B7
+holdouts.
 
 The M1.8-B activity-budget and flight-kinematics work remains planning only.
 
