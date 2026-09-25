@@ -4,7 +4,7 @@ This file is an operational handoff for future sessions. It is not a scientific 
 a runtime artifact. Evidence lives in the milestone reports listed below. Update it at the
 end of every substantial milestone.
 
-Last updated: 2026-09-24, at the end of M1.8-N4B4 (research complete; decision pending).
+Last updated: 2026-09-25, at the end of M1.8-N4B5 (research complete; runtime approval pending).
 
 ## Start of a new session
 
@@ -35,7 +35,7 @@ Earlier frozen milestones (see `AGENTS.md`): M1.7.1 swatter dynamics and M1.8-A 
 
 | Branch | HEAD | Role |
 |---|---|---|
-| `wip/m1-4-enclosure` | the N4B4 research commit (see `git log -1`); N4B3 at `d09dac4`, N4B2 at `5be0aea` | research branch; research-only commits |
+| `wip/m1-4-enclosure` | the N4B5 research commit (see `git log -1`); N4B4 at `6b5c4ce`, N4B3 at `d09dac4`, N4B2 at `5be0aea` | research branch; research-only commits |
 | `feature/m1-8-n4b1c-runtime` | `e3c55b3` | accepted runtime; **do not modify** |
 | `archive/m1-8-n2b-rejected` | `2c306174d7bdb4e74b6c5517519ae695bd90cf44` | rejected N2b runtime snapshot; **never merge** |
 | `main` | `309abd9` | untouched |
@@ -43,28 +43,43 @@ Earlier frozen milestones (see `AGENTS.md`): M1.7.1 swatter dynamics and M1.8-A 
 
 Research worktrees (git-ignored, under `artifacts/worktrees/`): `n2b-rejected` (detached at
 the archive commit), `n4b1c-runtime` (the feature branch), and `n4b1c-runtime-detached`
-(detached at `e3c55b3`; used read-only by the N4B2-N4B4 tools). Each has a `data` junction to
+(detached at `e3c55b3`; used read-only by the N4B2-N4B5 tools). Each has a `data` junction to
 `data/`.
+
+## Reporting categories (adopted 2026-09-25, from N4B4)
+
+| Category | Meaning | Criterion |
+|---|---|---|
+| A | fixed-fly / no-drive neural false escapes | < 0.1/min at 95 % |
+| B | inappropriate free-flight escapes (visual input present, behaviourally inappropriate) | < 0.1/min at 95 %, a **provisional working engineering criterion** |
+| C | foreshortening-driven escapes (apparent-size / tilt geometry) | tracked; not a failure by itself |
+| D | genuine self-approach escapes | tracked; not a failure by itself |
+
+Do not call C or D "false triggers".
 
 ## Current research milestone
 
-**M1.8-N4B4: interpretation of the accepted N4B1C free-flight escapes** (research only):
-**complete. Decision: keep N4B1C frozen and document a limitation. One separate modelling
-question is pending for the user** (see "Next permitted actions").
+**M1.8-N4B5: paddle visual geometry and overhead foreshortening** (research only):
+**complete. Recommendation 3: a new geometry runtime candidate (G3). Waiting for explicit
+user approval; nothing implemented.**
 
-- Report: `game/M1_8_N4B4_FREE_FLIGHT_ESCAPE_INTERPRETATION.md` (read the short answer,
-  then sections 3, 6 and 9).
-- Tools: `tools/n4b4_replay.py` (deterministic reconstruction and counterfactual replay),
-  `tools/n4b4_analysis.py`, `tools/n4b4_figures.py`.
-- Artifacts: `artifacts/m1_8_n4b4/` (git-ignored, including a figures review set).
+- Report: `game/M1_8_N4B5_PADDLE_VISUAL_GEOMETRY.md` (read the short answer, then sections
+  6, 7 and 10).
+- Tools: `tools/n4b5_geometry.py` (frozen candidate formulas), `tools/n4b5_analysis.py`,
+  `tools/n4b5_resim.py` (in-process re-simulation with a patched `World.visual_half_size`;
+  G0 is exact), `tools/n4b5_evaluate.py`.
+- Artifacts: `artifacts/m1_8_n4b5/` (git-ignored). `frozen_geometry.json` has sha256
+  `a11cafa0...`.
 - Previous milestones:
+  - N4B4: `game/M1_8_N4B4_FREE_FLIGHT_ESCAPE_INTERPRETATION.md`;
   - N4B3: `game/M1_8_N4B3_SELECTIVE_DNP04.md`;
   - N4B2: `game/M1_8_N4B2_ALTERNATIVE_DN_READOUT.md`.
 - **Used data; never reuse for design:**
   - N4B3 holdout: N0 seeds 410000-440149, ROOM seeds 7401-7440;
   - N4B3 development ROOM: seeds 7301-7324;
   - N4B2 holdouts: N0 seeds 310000-340149, ROOM seeds 7201-7212.
-  - N4B4 generated no new scenario data. It only re-simulated stored runs.
+  - N4B4 and N4B5 generated no new seeds. They re-simulated stored runs, and N4B5 re-ran
+    them under candidate geometries.
 
 ## Major conclusions so far
 
@@ -115,18 +130,33 @@ question is pending for the user** (see "Next permitted actions").
   - Inappropriate escapes by the preregistered rule: 2 in 249 min (upper 0.025/min).
   - **The same foreshortening term produced the episode-5 slow-close signal** (610-613: all
     of the expansion from apparent size, with the range receding).
-  - Proposed metric split:
-    - no-loom neural false escapes (M1): N4B1C upper 0.0077/min;
-    - inappropriate free-flight escapes (M2): upper 0.025/min;
-    - visual-artifact escapes (M3) and legitimate self-approach escapes (M4): tracked.
+  - Metric split: adopted as categories A-D above.
+- N4B5: **the current `tilt_anisotropy` term is a clear artifact near overhead.**
+  - It depends on the horizontal bearing only.
+  - Under a stationary paddle it produces 2.5-6.9 rad/s of expansion within 10 units of the
+    footprint centre, against 0.13 rad/s physically.
+  - It caused all 8 N4B4 overhead escapes and the episode-5 slow-close and pre-click
+    signals.
+  - **G3 (anisotropy x cos(elevation))** removes the artifact:
+    - free-flight category C goes from 8 to 0 in 249 min;
+    - all free-flight escapes: 0.048/min, upper 0.078;
+    - N1 strong / medium are unchanged at 60 / 60, 0.08 / 0.10 s;
+    - human direct and strike-phase coverage stay within the current geometry's own
+      noise range.
+  - **Cost:** hover coverage drops only on bouts that were artifact-driven (0.91 to 0.58
+    detection).
+  - G1 (isotropic), G2 (0.10) and G4 (explicit disk) are rejected.
+  - Caveat: the frozen "every direct strike fires" criterion failed as written (38 / 39).
+    G0 itself is 38 / 39 in 3 of 4 other noise realizations.
 
 ## Known unresolved limitation
 
 Slow or gradual approach is still detected too late: the N4B1C decoder fires at tick 668 in
-the episode-5 slow-close case (N2b session). N4B4 showed that this case's early signal is
-apparent-size change from bearing-only tilt foreshortening while the paddle hovers overhead,
-not a closing approach. Documented N4B1C limitation: about 0.08 free-flight escapes/min,
-about half from self-approach and about half from the same foreshortening effect.
+the episode-5 slow-close case (N2b session). N4B4 and N4B5 showed that this case's early
+signal is an artifact of the bearing-only tilt foreshortening, not a closing approach. Under
+the corrected geometry (G3) it has no expansion at all. Documented N4B1C limitation: about
+0.08 free-flight escapes/min, about 40 % of them from that artifact. The limitation is
+resolved only if the G3 runtime candidate is approved and accepted.
 
 ## Do not reopen
 
@@ -140,21 +170,25 @@ about half from self-approach and about half from the same foreshortening effect
 
 ## Next permitted actions (decision pending)
 
-N4B4 decision: **keep N4B1C frozen and document the limitation** (no runtime change).
-Pending user decisions, each needing explicit approval:
+N4B5 recommends **3: a geometry runtime candidate G3** (elevation-aware tilt anisotropy):
 
-1. **Visual-geometry review milestone:** decide whether the bearing-only tilt foreshortening
-   in `World.visual_half_size` (`swatter.directional.tilt_anisotropy`, from `58ffd60`) is a
-   defect, for example whether it should fade with elevation. This is a Retina/World
-   modelling change that may touch M1.7-era swatter geometry. It needs its own milestone
-   with before/after validation of N0, N1, human replays and free flight.
-2. **Adopt the proposed metric split (M1-M4)** for future acceptance reports. No threshold
-   has changed yet.
-3. **Narrow stationary-fly DNp04 path** (from N4B3). This is a whitelist expansion and is
-   not recommended now.
+    f  = edge_on_factor + (1 - edge_on_factor) * face
+    f *= 1 - tilt_anisotropy * cos(elevation) * (1 - face) * abs(sin(bearing - orientation))
 
-Superseded: the N4B2 options, and the N4B3 option "characterize N4B1C's free-flight
-escapes", which N4B4 has done.
+**It needs explicit user approval before any runtime change.** If approved, a runtime
+milestone must:
+
+- implement the change in `World.visual_half_size`, preferably behind an explicit ROOM
+  config flag with a version bump;
+- keep the N4B1C decoder frozen;
+- update the tests that pin retinal geometry;
+- re-verify the decoder record and provenance against the new config;
+- repeat fixed-fly N0 and no-player free-flight checks at runtime;
+- **get a human test of hover responsiveness.**
+
+If not approved, keep G0 and document the artifact (category C is tracked, not failed).
+
+Earlier options are superseded: the N4B2-N4B4 options and the stationary-fly DNp04 path.
 
 ## Permitted without asking
 
