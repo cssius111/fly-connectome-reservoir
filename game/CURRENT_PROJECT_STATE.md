@@ -4,7 +4,7 @@ This file is an operational handoff for future sessions. It is not a scientific 
 a runtime artifact. Evidence lives in the milestone reports listed below. Update it at the
 end of every substantial milestone.
 
-Last updated: 2026-09-25, at the end of M1.8-N4B5 (research complete; runtime approval pending).
+Last updated: 2026-09-25, M1.8-N4B5R geometry accepted, frozen and pushed (`363a1a9`); it is the current runtime baseline.
 
 ## Start of a new session
 
@@ -15,7 +15,21 @@ Last updated: 2026-09-25, at the end of M1.8-N4B5 (research complete; runtime ap
 Do not ask the user to reconstruct old context unless the repository conflicts with this
 file.
 
-## Accepted and frozen runtime
+## Accepted and frozen runtime (current baseline)
+
+| Item | Value |
+|---|---|
+| Milestone | **M1.8-N4B5R**, human-accepted and frozen (2026-09-25) |
+| Branch | `feature/m1-8-n4b5r-geometry` (pushed; not merged) |
+| Commit | `363a1a94cf3f5e33efab08cb28594c24ca694a03` (parent: N4B1C `e3c55b3`) |
+| Geometry | ROOM-only `swatter.directional.tilt_geometry = elevation_aware_tilt_v1`: bearing-based tilt term x cos(elevation); ROOM config_version 17 |
+| Decoder | N4B1C `lateral_dual_path_v1`, **unchanged** |
+| Records | `results/game/calibration_room_m1_8_n4b5r.json` (active geometry provenance); N4B1C record unmodified |
+| Validation at acceptance | 427 tests pass; protected files 20 / 20; `verify_results.py` passes; recorder schema 4 |
+| Accepted | geometry, direct strikes, hover / chase tradeoff, overhead-foreshortening correction; no further tuning requested |
+| Report | `game/M1_8_N4B5R_GEOMETRY_RUNTIME_CANDIDATE.md` (on the N4B5R branch) |
+
+The N4B1C decoder layer inside it (frozen since the N4B1C acceptance):
 
 | Item | Value |
 |---|---|
@@ -36,7 +50,8 @@ Earlier frozen milestones (see `AGENTS.md`): M1.7.1 swatter dynamics and M1.8-A 
 | Branch | HEAD | Role |
 |---|---|---|
 | `wip/m1-4-enclosure` | the N4B5 research commit (see `git log -1`); N4B4 at `6b5c4ce`, N4B3 at `d09dac4`, N4B2 at `5be0aea` | research branch; research-only commits |
-| `feature/m1-8-n4b1c-runtime` | `e3c55b3` | accepted runtime; **do not modify** |
+| `feature/m1-8-n4b5r-geometry` | `363a1a9` | **current accepted runtime** (N4B1C + G3 geometry); **do not modify** |
+| `feature/m1-8-n4b1c-runtime` | `e3c55b3` | previous accepted runtime (decoder layer); **do not modify** |
 | `archive/m1-8-n2b-rejected` | `2c306174d7bdb4e74b6c5517519ae695bd90cf44` | rejected N2b runtime snapshot; **never merge** |
 | `main` | `309abd9` | untouched |
 | PR #1 (`wip/m1-4-enclosure` -> `main`) | open | **unmerged; do not merge without explicit approval** |
@@ -45,6 +60,21 @@ Research worktrees (git-ignored, under `artifacts/worktrees/`): `n2b-rejected` (
 the archive commit), `n4b1c-runtime` (the feature branch), and `n4b1c-runtime-detached`
 (detached at `e3c55b3`; used read-only by the N4B2-N4B5 tools). Each has a `data` junction to
 `data/`.
+
+## M1.8-N4B5R acceptance summary
+
+- Worktree: `artifacts/worktrees/n4b5r-geometry` (branch `feature/m1-8-n4b5r-geometry`, with
+  `data` and `artifacts/results` junctions to the main checkout). Use it read-only for
+  research that needs the accepted runtime code.
+- Automated validation (report section 4):
+  - N1 strong / medium 60 / 60 at 0.08 / 0.10 s; N0 0 events in 70 min.
+  - Free flight (249 min): A 0, B 3, **C 8 -> 0**, D 5, mixed 4; total 12 (0.048/min).
+  - Human replays: direct 38-39 / 39, strike-phase 28-29 / 29, hover 24-25 / 33; far perched
+    and voluntary takeoff silent.
+  - Recorder: schema 4, exact replay.
+- Human test: accepted as-is on 2026-09-25; no further tuning requested.
+- The human-test recording was written to `results/game/sessions、/` (the folder name
+  contains a stray full-width comma from the launch command). It is untracked and left as is.
 
 ## Reporting categories (adopted 2026-09-25, from N4B4)
 
@@ -60,8 +90,8 @@ Do not call C or D "false triggers".
 ## Current research milestone
 
 **M1.8-N4B5: paddle visual geometry and overhead foreshortening** (research only):
-**complete. Recommendation 3: a new geometry runtime candidate (G3). Waiting for explicit
-user approval; nothing implemented.**
+**complete.** Recommendation 3 (geometry runtime candidate G3) was implemented as
+M1.8-N4B5R and human-accepted on 2026-09-25. Next: M1.8-N4B6 (controlled slow approach).
 
 - Report: `game/M1_8_N4B5_PADDLE_VISUAL_GEOMETRY.md` (read the short answer, then sections
   6, 7 and 10).
@@ -149,17 +179,18 @@ user approval; nothing implemented.**
   - Caveat: the frozen "every direct strike fires" criterion failed as written (38 / 39).
     G0 itself is 38 / 39 in 3 of 4 other noise realizations.
 
-## Known unresolved limitation
+## Known open question
 
-Slow or gradual approach is still detected too late: the N4B1C decoder fires at tick 668 in
-the episode-5 slow-close case (N2b session). N4B4 and N4B5 showed that this case's early
-signal is an artifact of the bearing-only tilt foreshortening, not a closing approach. Under
-the corrected geometry (G3) it has no expansion at all. Documented N4B1C limitation: about
-0.08 free-flight escapes/min, about 40 % of them from that artifact. The limitation is
-resolved only if the G3 runtime candidate is approved and accepted.
+The episode-5 "slow-close" case (N2b session) is no longer clean slow-approach evidence:
+N4B4 and N4B5 showed that its early signal came from the old bearing-only tilt
+foreshortening, with the range receding. Under the accepted G3 geometry it has no expansion
+at all. Whether the accepted G3 + N4B1C system has a real slow-approach sensitivity problem
+under a controlled monotonic approach is open; M1.8-N4B6 addresses it.
 
 ## Do not reopen
 
+- N4B5R geometry (`elevation_aware_tilt_v1`, ROOM config_version 17). Reopen only if
+  recorded evidence demonstrates a real defect.
 - N4B1C tuning: the same-side <= 60 ms rule, summed FAST 2.10, the summed 3-of-5 rule, the
   refractory and the motor semantics. Reopen only if a future milestone demonstrates a
   defect.
@@ -168,27 +199,13 @@ resolved only if the G3 runtime candidate is approved and accepted.
 - The N4B2 and N4B3 frozen criteria, and the design of new criteria on any used holdout
   listed above.
 
-## Next permitted actions (decision pending)
+## Next permitted actions
 
-N4B5 recommends **3: a geometry runtime candidate G3** (elevation-aware tilt anisotropy):
+- M1.8-N4B6, controlled slow-approach characterization (research only), authorized by the
+  user on 2026-09-25 together with the N4B5R acceptance.
+- The M1.8-B activity-budget and flight-kinematics work remains planning only.
 
-    f  = edge_on_factor + (1 - edge_on_factor) * face
-    f *= 1 - tilt_anisotropy * cos(elevation) * (1 - face) * abs(sin(bearing - orientation))
-
-**It needs explicit user approval before any runtime change.** If approved, a runtime
-milestone must:
-
-- implement the change in `World.visual_half_size`, preferably behind an explicit ROOM
-  config flag with a version bump;
-- keep the N4B1C decoder frozen;
-- update the tests that pin retinal geometry;
-- re-verify the decoder record and provenance against the new config;
-- repeat fixed-fly N0 and no-player free-flight checks at runtime;
-- **get a human test of hover responsiveness.**
-
-If not approved, keep G0 and document the artifact (category C is tracked, not failed).
-
-Earlier options are superseded: the N4B2-N4B4 options and the stationary-fly DNp04 path.
+Superseded: the N4B2-N4B5 decision options, including the stationary-fly DNp04 path.
 
 ## Permitted without asking
 
@@ -201,5 +218,6 @@ Earlier options are superseded: the N4B2-N4B4 options and the stationary-fly DNp
   calibration records, recorder schema).
 - **Expanding the policy observation whitelist** (for example adding DNp04).
 - Changing biological model parameters, Retina or encoder equations, noise or physics.
-- Merging branches or PRs, rewriting Git history, or modifying `feature/m1-8-n4b1c-runtime`.
+- Merging branches or PRs, rewriting Git history, or modifying `feature/m1-8-n4b1c-runtime`
+  or `feature/m1-8-n4b5r-geometry`.
 - Choosing between materially different product or scientific directions.
