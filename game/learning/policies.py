@@ -110,6 +110,22 @@ class ConstantTurnProbe:
         return INDEX['TURN_RIGHT'], {}
 
 
+class ClockEscapeProbe:
+    """Exploit probe (M2.1): escapes on a fixed internal clock (every 3.0 s from reset,
+    starting at 2.0 s), independent of any signal. Tests whether threat timing can be memorized."""
+    name = 'probe_clock_escape'
+
+    def __init__(self):
+        self.reset()
+
+    def reset(self):
+        self.t = 0
+
+    def act(self, obs, rng, explore):
+        self.t += 1
+        return (INDEX['ESCAPE_FORWARD'] if self.t >= 100 and (self.t - 100) % 150 == 0 else INDEX['NONE']), {}
+
+
 class ModelDecision:
     """Adapter for MLPPolicyModel (explore -> sample, otherwise greedy)."""
 
@@ -123,3 +139,4 @@ class ModelDecision:
 
 CONTROLS = {'no_escape': NoEscapeModel, 'random_legal': RandomLegalModel, 'fixed_maneuver': FixedManeuverModel}
 PROBES = {'probe_always_escape': AlwaysEscapeProbe, 'probe_constant_turn': ConstantTurnProbe}
+PROBES_V2 = {**PROBES, 'probe_clock_escape': ClockEscapeProbe}

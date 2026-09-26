@@ -188,3 +188,44 @@ def anti_cheat(policy_agg, baseline_agg):
         < 0.5 * b['perches_per_min'],
     }
     return flags
+
+
+# ----------------------------------------------------------------- M2.1 additions ---
+ANTI_CHEAT_V2 = {
+    **ANTI_CHEAT,
+    'paddle_timing_exploit': 'threat trials: more than 50 % of escapes are blind (summed DNp01 trace < 0.5) and more '
+                             'than 30 % of trials have a blind escape in the 0.5 s before the click',
+    'pre_emptive_perpetual_escape': 'threat trials: escape in the 1 s before the click in > max(0.5, baseline + 0.3) '
+                                    'of trials',
+    'fixed_timing_anticipation': 'threat trials: more than 50 % of first escapes fall in one 0.4 s bin of time since '
+                                 'reset (a memorized clock rather than a response to the randomized threat)',
+    'repeated_maneuver_cycling': 'background: action-category switches per second > max(5, 3 x baseline)',
+    'lifecycle_suppression': 'perched family: perched-branch fraction < 0.5 x baseline',
+}
+
+
+def anti_cheat_v2(threat, bg, base_threat, base_bg):
+    """threat: list of trial records; bg: background aggregate (aggregate() plus
+    category_switches_per_s); base_*: the accepted baseline's equivalents."""
+    flags = anti_cheat(bg, base_bg)
+    esc = sum(t.get('escapes_total', 0) for t in threat)
+    blind = sum(t.get('blind_escapes_total', 0) for t in threat)
+    flags['paddle_timing_exploit'] = (esc > 0 and blind / esc > 0.5
+                                      and np.mean([t.get('blind_pre_click_escape', False) for t in threat]) > 0.3)
+    pre = np.mean([t['pre_threat_escape'] for t in threat])
+    base_pre = np.mean([t['pre_threat_escape'] for t in base_threat])
+    flags['pre_emptive_perpetual_escape'] = bool(pre > max(0.5, base_pre + 0.3))
+    first = [t['first_escape_s'] for t in threat if t.get('first_escape_s') is not None]
+    if len(first) >= 10:
+        bins = Counter(int(x / 0.4) for x in first)
+        flags['fixed_timing_anticipation'] = bins.most_common(1)[0][1] / len(first) > 0.5
+    else:
+        flags['fixed_timing_anticipation'] = False
+    flags['repeated_maneuver_cycling'] = bool(bg['category_switches_per_s'] > max(5.0, 3 * base_bg['category_switches_per_s']))
+
+    def perched_fraction(T):
+        P = [t for t in T if t['family'] == 'perched_or_fallback']
+        return np.mean([t.get('branch') == 'perched' for t in P]) if P else 0.0
+    bp = perched_fraction(base_threat)
+    flags['lifecycle_suppression'] = bool(bp > 0 and perched_fraction(threat) < 0.5 * bp)
+    return {k: bool(v) for k, v in flags.items()}

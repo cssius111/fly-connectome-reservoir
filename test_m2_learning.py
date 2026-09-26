@@ -256,7 +256,9 @@ class BaselineAndRuntime(unittest.TestCase):
                                            'results'], cwd=ROOT, text=True).split()
         changed += subprocess.check_output(['git', 'ls-files', '--others', '--exclude-standard', 'game'],
                                            cwd=ROOT, text=True).split()
-        self.assertEqual([c for c in changed if not c.startswith('game/learning/')], [])
+        # Only the learning package and the M2 milestone reports may differ from the accepted runtime.
+        self.assertEqual([c for c in changed if not c.startswith('game/learning/')
+                          and not (c.startswith('game/M2_') and c.endswith('.md'))], [])
 
     def test_benchmark_suite_is_frozen(self):
         self.assertEqual(runner.suite_hash(), FROZEN_SUITE_SHA256)

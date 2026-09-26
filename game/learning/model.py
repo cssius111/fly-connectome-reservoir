@@ -64,6 +64,25 @@ class MLPPolicyModel:
             h.update(np.ascontiguousarray(self.params[k]).tobytes())
         return h.hexdigest()
 
+    def save(self, path):
+        """Checkpoint: parameters plus architecture; returns the parameter sha256."""
+        np.savez(path, arch=np.array(self.arch), **self.params)
+        return self.param_hash()
+
+    @classmethod
+    def load(cls, path, expected_sha256=None):
+        z = np.load(path, allow_pickle=False)
+        if str(z['arch']) != cls.arch:
+            raise ValueError('checkpoint architecture mismatch')
+        m = cls(seed=0)
+        for k in m.params:
+            if z[k].shape != m.params[k].shape:
+                raise ValueError('checkpoint shape mismatch for %s' % k)
+            m.params[k] = np.array(z[k], dtype=np.float64)
+        if expected_sha256 is not None and m.param_hash() != expected_sha256:
+            raise ValueError('checkpoint hash mismatch')
+        return m
+
     def apply_update(self, deltas: dict):
         if self.frozen:
             raise RuntimeError('parameter updates are forbidden in EVAL mode')

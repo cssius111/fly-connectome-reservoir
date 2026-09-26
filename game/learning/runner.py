@@ -19,7 +19,7 @@ import numpy as np
 
 from . import contracts, runmode
 from .metrics import STRIKE_PHASES, EpisodeRecorder
-from .policies import CONTROLS, PROBES, ManeuverPolicy
+from .policies import CONTROLS, PROBES, PROBES_V2, ManeuverPolicy
 from .reward import RewardSpec, RewardTracker
 from .scenarios import SCENARIO_INDEX, SCENARIOS
 
@@ -59,7 +59,7 @@ def make_policy(name, config, model=None, seed=0, mode=runmode.EVAL):
         from .policies import ModelDecision
         decision = ModelDecision(model)
     else:
-        decision = {**CONTROLS, **PROBES}[name]()
+        decision = {**CONTROLS, **PROBES_V2}[name]()
     return ManeuverPolicy(decision, tick, refractory, seed=seed, explore=mode.explore, record=mode.updates_allowed)
 
 
