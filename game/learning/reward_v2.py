@@ -13,9 +13,11 @@ Evaluation objective:
     J = mean trial score  -  unnecessary x (background unnecessary escapes per minute)
 Constraints (constraint-first; envelopes measured from the accepted baseline on TRAIN /
 development seeds, never on EVAL):
-    background unnecessary escapes / min, wall-contact fraction, max-speed fraction and
-    continuous-turn fraction each <= baseline envelope; perch participation >= 0.5 x baseline;
-    no anti-cheat flag.
+    background unnecessary escapes / min <= the baseline's 95 % upper bound (a behavioural
+    budget); perch participation >= 0.5 x baseline; wall-contact and max-speed fractions <= the
+    baseline's 95 % upper bound + 0.05 and continuous-turn fraction <= 0.5 (movement-pathology
+    margins from the frozen M2.0 anti-cheat thresholds, so that merely different behaviour is
+    allowed); no anti-cheat flag.
 
 Coefficients are not chosen by intuition. `derive` computes the admissible band of the
 unnecessary-escape price from probe-policy inequalities on development data:
@@ -128,12 +130,15 @@ def derive(dev):
     constraints = {
         'unnecessary_escapes_per_min': {'max': poisson_upper(k, minutes),
                                         'basis': 'exact 95 % Poisson upper bound of the baseline development rate'},
-        'wall_contact_fraction': {'max': bootstrap_upper([e['wall_contact_fraction'] for e in B], 1) + 0.02,
-                                  'basis': 'bootstrap 95 % upper bound of the baseline episode mean + 0.02'},
-        'max_speed_fraction': {'max': bootstrap_upper([e['max_speed_fraction'] for e in B], 2) + 0.02,
-                               'basis': 'bootstrap 95 % upper bound of the baseline episode mean + 0.02'},
-        'turn_active_fraction': {'max': bootstrap_upper([e['turn_active_fraction'] for e in B], 3) + 0.02,
-                                 'basis': 'bootstrap 95 % upper bound of the baseline episode mean + 0.02'},
+        # Movement pathologies use the frozen M2.0 anti-cheat margins, so behaviour that merely
+        # differs from the baseline (for example more turning to dodge) is not excluded.
+        'wall_contact_fraction': {'max': bootstrap_upper([e['wall_contact_fraction'] for e in B], 1) + 0.05,
+                                  'basis': 'bootstrap 95 % upper bound of the baseline episode mean + 0.05 '
+                                           '(pathology margin, as the M2.0 max-speed flag)'},
+        'max_speed_fraction': {'max': bootstrap_upper([e['max_speed_fraction'] for e in B], 2) + 0.05,
+                               'basis': 'bootstrap 95 % upper bound of the baseline episode mean + 0.05 '
+                                        '(the M2.0 max_speed_flight margin)'},
+        'turn_active_fraction': {'max': 0.5, 'basis': 'the M2.0 constant_turning threshold (not baseline-anchored)'},
         'perches_per_min': {'min': 0.5 * perch_rate, 'basis': '0.5 x the baseline development perch rate'},
     }
     record = {'threat_score_unpriced': s0, 'background_unnecessary_per_min': U,
