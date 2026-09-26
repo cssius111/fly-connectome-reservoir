@@ -4,7 +4,7 @@ This file is an operational handoff for future sessions. It is not a scientific 
 a runtime artifact. Evidence lives in the milestone reports listed below. Update it at the
 end of every substantial milestone.
 
-Last updated: 2026-09-26. **M2.1 exposure-controlled benchmark v2 and reward v2 complete; recommendation: GO for M2.2 training, with constrained optimisation.** Runtime baseline: M1.8-N4B5R (`363a1a9`), unchanged. The M1 slow-approach line is closed.
+Last updated: 2026-09-26. **M2.2 first constrained PPO training complete: NO-GO for human testing** (all 5 seeds collapsed to a no-escape policy; optimisation failure). Runtime baseline: M1.8-N4B5R (`363a1a9`), unchanged; no learned policy integrated. The M1 slow-approach line is closed.
 
 ## Start of a new session
 
@@ -51,7 +51,7 @@ Earlier frozen milestones (see `AGENTS.md`): M1.7.1 swatter dynamics and M1.8-A 
 |---|---|---|
 | `wip/m1-4-enclosure` | the N4B8 research commit (see `git log -1`); N4B8 freeze `ecb86d3`, N4B7 `c61dbd3` (freeze `8fee28a`), N4B6 `b203b46` (preregistration `987b2a9`), N4B5R state `81b213e`, N4B5 `0e9d2d9`, N4B4 `6b5c4ce`, N4B3 `d09dac4`, N4B2 `5be0aea` | research branch; research-only commits |
 | `feature/m1-8-n4b5r-geometry` | `363a1a9` | **current accepted runtime** (N4B1C + G3 geometry); **do not modify** |
-| `feature/m2-0-learning-infra` | `ec4db49` | M2 learning line (from `363a1a9`): M2.0 infrastructure (`b53f9a9`), M2.1 benchmark v2 / reward v2 (freeze `66b286e`); no accepted runtime file changed; pushed, not merged |
+| `feature/m2-0-learning-infra` | `41c65b5` | M2 learning line (from `363a1a9`): M2.0 infrastructure (`b53f9a9`), M2.1 benchmark v2 / reward v2 (freeze `66b286e`), M2.2 PPO training (protocol `63dbeb6`, candidate `2e454a9`); no accepted runtime file changed; pushed, not merged |
 | `feature/m1-8-n4b1c-runtime` | `e3c55b3` | previous accepted runtime (decoder layer); **do not modify** |
 | `archive/m1-8-n2b-rejected` | `2c306174d7bdb4e74b6c5517519ae695bd90cf44` | rejected N2b runtime snapshot; **never merge** |
 | `main` | `309abd9` | untouched |
@@ -93,44 +93,37 @@ Do not call C or D "false triggers".
 
 ## Current milestone
 
-**M2.1: exposure-controlled benchmark v2 and reward v2** (infrastructure / research only):
-**complete. Recommendation for M2.2 training: GO, with conditions.**
+**M2.2: constrained learned dodge policy** (approved training; research only):
+**complete. Result: NO-GO for human testing.**
 
-- **Branch:** `feature/m2-0-learning-infra` @ `ec4db49`.
-- **Report:** `game/M2_1_EXPOSURE_CONTROLLED_BENCHMARK.md` (read sections 1, 9, 10 and 13).
-- **Benchmark v2:**
-  - discrete threat trials (direct, hover, wall, perched-or-fallback) with one committed
-    strike each;
-  - every encounter parameter is fixed from the seed before the first tick;
-  - a forced click at engage + 4 s;
-  - a matched airborne fallback threat if the fly never perches;
-  - easy / nominal / hard attacker distributions;
-  - separate background families (free flight, glancing, aborted, hover-only).
-- **Reward v2:** +1 per avoided strike, -1 per hit (per trial). The background
-  unnecessary-escape price is 0.00589, the geometric mean of the probe band
-  [0.00090, 0.0386] from TRAIN development data.
-- **Constraints:**
-  - unnecessary escapes <= 5.36 / min (the baseline's 95 % upper bound);
-  - perches >= 0.275 / min;
-  - movement pathologies use the M2.0 anti-cheat margins;
-  - no anti-cheat flag.
-- **Frozen:** `game/learning/benchmark_v2_frozen.json` (sha256 `c06c5bc5...`) at `66b286e`,
-  before EVAL. Definition `127de798...`, attackers `9d25f8f6...`, reward `e5d9106b...`.
-- **EVAL** (run once; seeds 3,800,000 + 1000 x group + k):
-  - every trial is exposed for every policy; the encounter is identical across policies;
-  - baseline: hit 0.617, 5.15 unnecessary / min, admissible, J -0.264;
-  - no_escape: hit 0.721, J -0.442;
-  - fixed_maneuver: hit 0.475 but 11.4 unnecessary / min, inadmissible;
-  - every degenerate probe is inadmissible and flagged.
-  - Probe acceptance A-E passes.
-- Tests: 461 / 461.
-- **Conditions for M2.2:**
-  - a Lagrangian / constrained objective on the unnecessary-escape budget and perch
-    participation;
-  - a validation split from the TRAIN range for checkpoint selection;
-  - EVAL once per frozen candidate;
-  - the frozen contracts and the 2,315-parameter MLP;
-  - replacing the runtime policy needs explicit approval and a human test.
+- **Branch:** `feature/m2-0-learning-infra` @ `41c65b5`.
+- **Report:** `game/M2_2_CONSTRAINED_LEARNED_POLICY.md` (read sections 3, 6, 7, 9 and 10).
+- **Frozen protocol:** `game/learning/m2_2_protocol.json` (sha256 `15350d0a...`, committed
+  before training as `63dbeb6`):
+  - numpy PPO on the frozen 2,315-parameter MLP with a NONE prior of 0.97;
+  - Adam 3e-4, gamma 0.99, GAE lambda 0.95, clip 0.2, entropy 0.01;
+  - Lagrangian dual ascent on unnecessary escapes and perch rate;
+  - 100 iterations x about 22k decisions per seed; 5 seeds;
+  - TRAIN-OPT / TRAIN-VAL split (sha256 `48f5fe26...`).
+- **Outcome:**
+  - all 5 seeds collapsed within 10-20 iterations: an early lambda_u overshoot (about 2)
+    suppressed every escape, entropy went to about 0, and nothing recovered after lambda
+    returned to 0;
+  - no conditioning on DNp01 was learned;
+  - 23 of 25 checkpoints are eligible on TRAIN-VAL, with hit 0.667-0.729 (baseline 0.646);
+  - selected candidate: `seed_2/ckpt_it100` (parameter sha256 `7297eef3...`, archived at
+    `game/learning/checkpoints/m2_2_candidate.npz`).
+- **One-shot EVAL:**
+  - candidate: hit 0.738, never escapes in the threat window, 0.05 unnecessary / min,
+    perches 0.90 / min, admissible, no flags;
+  - N4B1C: 0.617 / 5.15;
+  - no_escape: 0.721.
+  - Success criterion C fails, so NO-GO.
+- **Failure class:** optimisation (premature exploration collapse under early Lagrangian
+  pressure plus sparse credit assignment). Not information, action space, capacity or
+  benchmark: N4B1C and the fixed rule do better with the same inputs and actions.
+- **Play command (inspection only):** `tools/m2_play_learned.py`, in the M2 worktree.
+- Tests: 466 / 466.
 
 **Previous milestone:** M2.0, learning infrastructure (NO-GO because of reward v1 exploits);
 report `game/M2_0_LEARNING_INFRASTRUCTURE.md`.
@@ -305,12 +298,15 @@ Other known open item (not scheduled): **stop-rotation transient** (N4B6, catego
 
 ## Next permitted actions
 
-- **M2.2: first learned-policy training** (research only, on the M2 branch), when
-  requested, under the M2.1 conditions:
-  - constrained objective;
-  - TRAIN seeds for training and a separate TRAIN-range validation split;
-  - frozen benchmark v2 EVAL once per candidate;
-  - the frozen contracts and the 2,315-parameter MLP.
+- **M2.3 (training method only; no reward, benchmark or contract change), when requested:**
+  - behaviour-clone N4B1C into the frozen MLP, then constrained PPO with a KL penalty to the
+    cloned policy;
+  - dual warm-up / lower dual gain;
+  - an adaptive entropy target;
+  - threat-dense rollouts.
+  - It needs a new preregistered protocol; TRAIN / VAL only; EVAL once per frozen candidate.
+  - A decision-rate / maneuver-persistence change would alter the action contract and needs
+    explicit approval.
 - **Replacing the accepted runtime policy with a learned one requires explicit approval and
   a human test.**
 
