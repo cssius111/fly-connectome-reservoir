@@ -88,10 +88,17 @@ def report():
             per[s['scenario']] = aggregate([e['metrics'] for e in Es])
             per[s['scenario']]['reward_mean'] = {k: float(np.mean([e['reward'][k] for e in Es])) for k in Es[0]['reward']}
             if s['scenario'] == 'perched_strike':
-                per[s['scenario']]['perch_reached'] = sum(1 for e in Es if e['metrics']['scenario']['perch_reached'])
+                reached = [e for e in Es if e['metrics']['scenario']['perch_reached']]
+                per[s['scenario']]['perch_reached'] = len(reached)
+                per[s['scenario']]['survival_when_exposed'] = (float(np.mean([not e['metrics']['died'] for e in reached]))
+                                                               if reached else None)
             if s['scenario'] == 'wall_edge_strike':
                 per[s['scenario']]['placements'] = dict(zip(*np.unique([e['metrics']['scenario']['placement'] for e in Es],
                                                                        return_counts=True)))
+        exposed = [e for e in E if not (e['scenario'] == 'perched_strike' and not e['metrics']['scenario']['perch_reached'])]
+        pooled['survival_fraction_exposed_only'] = float(np.mean([not e['metrics']['died'] for e in exposed])) if exposed else None
+        pooled['perched_scenario_not_reached'] = sum(1 for e in E if e['scenario'] == 'perched_strike'
+                                                     and not e['metrics']['scenario']['perch_reached'])
         res['policies'][pol] = {'pooled': pooled, 'per_scenario': per,
                                 'reward_mean_total': float(np.mean([e['reward']['total'] for e in E])),
                                 'trajectory_hashes': hashlib.sha256(''.join(sorted(e['trajectory_sha256'] for e in E)).encode()).hexdigest()}

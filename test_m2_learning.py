@@ -2,12 +2,10 @@
 reward isolation, frozen benchmark suite and accepted-runtime preservation."""
 import ast
 import inspect
-import os
 from pathlib import Path
 import subprocess
 import unittest
 
-os.environ.setdefault('NUMBA_NUM_THREADS', '1')
 
 import numpy as np
 
@@ -267,11 +265,11 @@ class BaselineAndRuntime(unittest.TestCase):
     def test_anti_cheat_flags(self):
         base = dict(near_wall_fraction=0.1, max_speed_fraction=0.01, turn_active_fraction=0.05,
                     turn_sign_switches_per_s=0.1, airborne_slow_fraction=0.02, early_escape_fraction=0.0,
-                    blind_escape_fraction=0.1, pre_click_blind_per_strike=0.0)
+                    blind_escape_fraction=0.1, pre_click_blind_per_strike=0.0, perches_per_min=0.8)
         self.assertFalse(any(anti_cheat(base, base).values()))
         cheat = dict(base, near_wall_fraction=0.5, max_speed_fraction=0.5, turn_active_fraction=0.9,
                      airborne_slow_fraction=0.5, early_escape_fraction=0.9, blind_escape_fraction=0.9,
-                     pre_click_blind_per_strike=0.5)
+                     pre_click_blind_per_strike=0.5, perches_per_min=0.0)
         self.assertTrue(all(anti_cheat(cheat, base).values()))
 
 

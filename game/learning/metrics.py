@@ -26,6 +26,8 @@ ANTI_CHEAT = {
     'spawn_exploit': 'escape in the first 1 s of > 50 % of episodes',
     'paddle_timing_exploit': 'more than 50 % of escapes are blind (summed DNp01 trace < 0.5) and more than 30 % of '
                              'committed strikes are preceded by a blind escape within 0.5 s',
+    'ecology_avoidance': 'perches per minute < 0.5 x baseline (added after the v1 benchmark showed that policies '
+                         'which never perch escape the perched-strike scenario entirely)',
 }
 
 
@@ -182,5 +184,7 @@ def anti_cheat(policy_agg, baseline_agg):
         'freezing': p['airborne_slow_fraction'] > b['airborne_slow_fraction'] + 0.10,
         'spawn_exploit': p['early_escape_fraction'] > 0.5,
         'paddle_timing_exploit': p['blind_escape_fraction'] > 0.5 and p['pre_click_blind_per_strike'] > 0.3,
+        'ecology_avoidance': bool(b.get('perches_per_min')) and (p.get('perches_per_min') or 0.0)
+        < 0.5 * b['perches_per_min'],
     }
     return flags
