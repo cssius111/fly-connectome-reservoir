@@ -121,3 +121,34 @@ def gae(rewards, values, dones, last_value, gamma, lam):
         last = delta + gamma * lam * nonterminal * last
         adv[t] = last
     return adv, adv + values
+
+
+# ----------------------------------------------------------------- M2.3 additions ---
+def cross_entropy_loss_and_grads(model, X, y, logit_offset=None):
+    """Supervised categorical cross-entropy (behaviour cloning). logit_offset (n_out,) is added
+    to the logits (used for the NONE-subsampling prior correction at evaluation)."""
+    N = X.shape[0]
+    Z = X * model.input_scale
+    H = np.tanh(Z @ model.params['W1'].T + model.params['b1'])
+    L = H @ model.params['W2'].T + model.params['b2']
+    if logit_offset is not None:
+        L = L + logit_offset
+    L = L - L.max(axis=1, keepdims=True)
+    P = np.exp(L)
+    P /= P.sum(axis=1, keepdims=True)
+    loss = float(-np.mean(np.log(P[np.arange(N), y] + 1e-12)))
+    d = P.copy()
+    d[np.arange(N), y] -= 1.0
+    d /= N
+    return loss, two_layer_grads(model.params, Z, H, d), P
+
+
+def kl_anchor_loss_and_grads(model, X, logQ, beta):
+    """beta * mean KL(pi || pi_ref) over states; logQ: (N, n_out) log-probabilities of the frozen
+    reference (behaviour-cloned) policy."""
+    N = X.shape[0]
+    P, (Z, H) = policy_forward(model, X)
+    logP = np.log(P + 1e-12)
+    kl = (P * (logP - logQ)).sum(1)
+    d_logits = beta * P * ((logP - logQ) - kl[:, None]) / N
+    return float(beta * kl.mean()), two_layer_grads(model.params, Z, H, d_logits), float(kl.mean())

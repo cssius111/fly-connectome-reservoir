@@ -79,3 +79,24 @@ class GAEAndInit(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class M23Gradients(unittest.TestCase):
+    def test_cross_entropy_and_kl_anchor_gradients(self):
+        from game.learning.ppo import cross_entropy_loss_and_grads, kl_anchor_loss_and_grads, policy_forward
+        rng = np.random.default_rng(7)
+        X = rng.normal(0, 1, (48, OBSERVATION_SIZE))
+        m = MLPPolicyModel(seed=8)
+        m.params['W2'] = rng.normal(0, 0.3, m.params['W2'].shape)
+        m.input_scale = np.ones(OBSERVATION_SIZE)
+        y = rng.integers(N_MANEUVERS, size=48)
+        off = np.zeros(N_MANEUVERS)
+        off[0] = np.log(4.0)
+        _, g, _ = cross_entropy_loss_and_grads(m, X, y, off)
+        fd_check(self, m.params, lambda: cross_entropy_loss_and_grads(m, X, y, off)[0], g)
+        ref = MLPPolicyModel(seed=9)
+        ref.params['W2'] = rng.normal(0, 0.3, ref.params['W2'].shape)
+        ref.input_scale = np.ones(OBSERVATION_SIZE)
+        logQ = np.log(policy_forward(ref, X)[0])
+        _, g2, _ = kl_anchor_loss_and_grads(m, X, logQ, 0.7)
+        fd_check(self, m.params, lambda: kl_anchor_loss_and_grads(m, X, logQ, 0.7)[0], g2)
