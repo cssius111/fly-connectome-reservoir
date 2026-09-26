@@ -1,0 +1,195 @@
+{
+ "label": "M2.2 frozen learned candidate",
+ "selected_utc": "2026-09-26T09:34:46Z",
+ "selection_rule": "TRAIN-VAL only. Eligible: unnecessary escapes / min <= 5.36, perches / min >= 0.275, all M2.1 movement constraints, and no anti-cheat flag (M2.1 admissibility, anti-cheat reference = the baseline on TRAIN-VAL). Among eligible checkpoints: lowest committed-strike hit probability; ties: lower unnecessary escapes / min, then earlier checkpoint. Scalar reward is not used.",
+ "protocol_sha256": "15350d0ac903824143d2e8778602eb67417aef625d63cd8ca5311c2422db11c2",
+ "n_checkpoints": 25,
+ "n_eligible": 23,
+ "eligible": [
+  "seed_1/ckpt_it020",
+  "seed_1/ckpt_it040",
+  "seed_1/ckpt_it060",
+  "seed_1/ckpt_it080",
+  "seed_1/ckpt_it100",
+  "seed_2/ckpt_it020",
+  "seed_2/ckpt_it040",
+  "seed_2/ckpt_it060",
+  "seed_2/ckpt_it080",
+  "seed_2/ckpt_it100",
+  "seed_3/ckpt_it020",
+  "seed_3/ckpt_it040",
+  "seed_3/ckpt_it060",
+  "seed_3/ckpt_it080",
+  "seed_3/ckpt_it100",
+  "seed_4/ckpt_it020",
+  "seed_4/ckpt_it040",
+  "seed_4/ckpt_it080",
+  "seed_4/ckpt_it100",
+  "seed_5/ckpt_it040",
+  "seed_5/ckpt_it060",
+  "seed_5/ckpt_it080",
+  "seed_5/ckpt_it100"
+ ],
+ "candidate": "seed_2/ckpt_it100",
+ "checkpoint_sha256": "7297eef3b2f712a685b31d22f5917762f38d2a7023d3c5add1dc88511713c155",
+ "checkpoint_file": "game\\learning\\checkpoints\\m2_2_candidate.npz",
+ "checkpoint_file_sha256": "acafe52a99fe2c4d55a043e2bcee1f2e856159f6fbc16a1738e70643e0e345ae",
+ "model": {
+  "arch": "mlp-60-32-11-tanh-softmax",
+  "n_parameters": 2315,
+  "stochastic_policy": true
+ },
+ "selection_evidence": {
+  "meta": {
+   "training_seed": 2,
+   "iteration": 100,
+   "env_steps": 2236117,
+   "code_commit": "fea943adb972135809faebecaa1a8efbd4c66879",
+   "protocol_sha256": "15350d0ac903824143d2e8778602eb67417aef625d63cd8ca5311c2422db11c2",
+   "observation_schema_sha256": "a53b963997c8207ddd1c53a5205f6b48b6bada28db933762f02d68454519b080",
+   "action_schema_sha256": "8848a9c7d4bf0e5377d71e85775717a4873fc41e2bc83478ae3e54b43937a6a0",
+   "reward_v2_sha256": "e5d9106b09219c601ad9e3e560375cb3be45ead2531d4832dcf6fbaa2460db1d",
+   "constraints_sha256": "69c189978613285f1c02a617fce3786598404ddadcb9af94a650513ec316a822",
+   "checkpoint_sha256": "7297eef3b2f712a685b31d22f5917762f38d2a7023d3c5add1dc88511713c155",
+   "lambda_u": 0.0,
+   "lambda_p": 0.0
+  },
+  "hit_probability": 0.6666666666666666,
+  "threat": {
+   "trials": 96,
+   "exposed": 96,
+   "hits": 64,
+   "hit_probability": 0.6666666666666666,
+   "escape_in_window_fraction": 0.0,
+   "median_escape_latency_s": null,
+   "mean_extra_escapes_in_window": 0.0,
+   "pre_threat_escape_fraction": 0.0,
+   "escape_state_at_click_fraction": 0.0,
+   "forced_click_fraction": 0.0
+  },
+  "threat_by_attacker": {
+   "easy": {
+    "trials": 32,
+    "exposed": 32,
+    "hits": 12,
+    "hit_probability": 0.375,
+    "escape_in_window_fraction": 0.0,
+    "median_escape_latency_s": null,
+    "mean_extra_escapes_in_window": 0.0,
+    "pre_threat_escape_fraction": 0.0,
+    "escape_state_at_click_fraction": 0.0,
+    "forced_click_fraction": 0.0
+   },
+   "nominal": {
+    "trials": 32,
+    "exposed": 32,
+    "hits": 20,
+    "hit_probability": 0.625,
+    "escape_in_window_fraction": 0.0,
+    "median_escape_latency_s": null,
+    "mean_extra_escapes_in_window": 0.0,
+    "pre_threat_escape_fraction": 0.0,
+    "escape_state_at_click_fraction": 0.0,
+    "forced_click_fraction": 0.0
+   },
+   "hard": {
+    "trials": 32,
+    "exposed": 32,
+    "hits": 32,
+    "hit_probability": 1.0,
+    "escape_in_window_fraction": 0.0,
+    "median_escape_latency_s": null,
+    "mean_extra_escapes_in_window": 0.0,
+    "pre_threat_escape_fraction": 0.0,
+    "escape_state_at_click_fraction": 0.0,
+    "forced_click_fraction": 0.0
+   }
+  },
+  "background": {
+   "episodes": 24,
+   "minutes": 12.0,
+   "survival_fraction": 1.0,
+   "strikes": 0,
+   "hit_rate_per_strike": null,
+   "escape_assisted_survival_per_strike": null,
+   "escapes_per_min": 0.25,
+   "unnecessary_escapes_per_min": 0.25,
+   "wall_contact_fraction": 0.0,
+   "object_contact_fraction": 0.008402777777777778,
+   "near_wall_fraction": 0.0017222222222222222,
+   "distance_bl_per_min": 424.7558807429305,
+   "speed_bl_s_p50": 6.99657907759873,
+   "speed_bl_s_p90": 11.006742740886239,
+   "max_speed_fraction": 0.0,
+   "airborne_slow_fraction": 0.020042177976591524,
+   "turn_active_fraction": 0.0027500000000000003,
+   "saccades_per_min": 3.1666666666666665,
+   "turn_sign_switches_per_s": 0.027083333333333334,
+   "perches_per_min": 0.3333333333333333,
+   "perched_fraction": 0.032624999999999994,
+   "lifecycle_stuck_approaches": 0,
+   "early_escape_fraction": 0.0,
+   "blind_escape_fraction": 1.0,
+   "pre_click_blind_per_strike": 0.0,
+   "category_entropy_bits": 0.03356185431101511,
+   "category_counts": {
+    "NONE": 35896,
+    "TURN_LEFT": 34,
+    "TURN_RIGHT": 28,
+    "SACCADE": 39,
+    "ESCAPE_BACKWARD": 2,
+    "ESCAPE_LEFT": 1
+   },
+   "category_switches_per_s": 0.2805555555555556,
+   "speed_entropy_bits": 1.7839998585212602
+  },
+  "constraints": {
+   "unnecessary_escapes_per_min": {
+    "value": 0.25,
+    "max": 5.357162254774502,
+    "basis": "exact 95 % Poisson upper bound of the baseline development rate",
+    "ok": true
+   },
+   "wall_contact_fraction": {
+    "value": 0.0,
+    "max": 0.054525000000000004,
+    "basis": "bootstrap 95 % upper bound of the baseline episode mean + 0.05 (pathology margin, as the M2.0 max-speed flag)",
+    "ok": true
+   },
+   "max_speed_fraction": {
+    "value": 0.0,
+    "max": 0.05021862891207154,
+    "basis": "bootstrap 95 % upper bound of the baseline episode mean + 0.05 (the M2.0 max_speed_flight margin)",
+    "ok": true
+   },
+   "turn_active_fraction": {
+    "value": 0.0027500000000000003,
+    "max": 0.5,
+    "basis": "the M2.0 constant_turning threshold (not baseline-anchored)",
+    "ok": true
+   },
+   "perches_per_min": {
+    "value": 0.3333333333333333,
+    "min": 0.275,
+    "basis": "0.5 x the baseline development perch rate",
+    "ok": true
+   }
+  },
+  "anti_cheat_flags": {
+   "wall_hugging": false,
+   "max_speed_flight": false,
+   "constant_turning": false,
+   "freezing": false,
+   "spawn_exploit": false,
+   "paddle_timing_exploit": false,
+   "ecology_avoidance": false,
+   "pre_emptive_perpetual_escape": false,
+   "fixed_timing_anticipation": false,
+   "repeated_maneuver_cycling": false,
+   "lifecycle_suppression": false
+  },
+  "admissible": true,
+  "objective_J": -0.33480608333333334,
+  "unnecessary_per_min": 0.25
+ }
+}
