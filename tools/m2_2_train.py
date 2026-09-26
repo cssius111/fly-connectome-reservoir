@@ -457,10 +457,42 @@ def eval_final():
             [k for k, f in v['anti_cheat_flags'].items() if f]))
 
 
+def report():
+    """Learning / constraint curves and mode-collapse diagnostics per training seed."""
+    out = {}
+    for d in sorted((OUT / 'runs').glob('seed_*')):
+        rows = [json.loads(l) for l in (d / 'log.jsonl').open(encoding='utf-8')]
+        snaps = [r for r in rows if r['iteration'] in (1, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100)]
+
+        def window(k, a, b):
+            v = [r[k] for r in rows if a <= r['iteration'] <= b]
+            return float(np.mean(v)) if v else None
+        last = rows[-1]
+        collapse = {'one_action_over_80pct': last['max_action_share'] > 0.8,
+                    'permanent_escape': last['escape_fraction'] > 0.5,
+                    'permanent_turn': last['turn_fraction'] > 0.5,
+                    'near_zero_entropy': last['policy_entropy'] < 0.05}
+        out[d.name] = {'iterations': len(rows), 'env_steps': last['env_steps'],
+                       'snapshots': [{k: r[k] for k in ('iteration', 'env_steps', 'hit_rate', 'unnecessary_per_min',
+                                                        'perch_per_min', 'lambda_u', 'lambda_p', 'policy_entropy',
+                                                        'approx_kl', 'explained_variance', 'max_action_share',
+                                                        'escape_fraction', 'turn_fraction', 'wall_fraction',
+                                                        'max_speed_fraction', 'policy_loss', 'value_loss',
+                                                        'grad_norm_policy', 'clipfrac')} for r in snaps],
+                       'hit_rate_first10': window('hit_rate', 1, 10), 'hit_rate_last20': window('hit_rate', 81, 100),
+                       'unnecessary_last20': window('unnecessary_per_min', 81, 100),
+                       'perch_last20': window('perch_per_min', 81, 100),
+                       'final_action_distribution': last['action_distribution'], 'collapse_flags': collapse}
+    (OUT / 'training_report.json').write_text(json.dumps(out, indent=1) + '\n', encoding='utf-8')
+    for k, v in out.items():
+        print(k, 'steps', v['env_steps'], 'hit first10 %.3f last20 %.3f' % (v['hit_rate_first10'], v['hit_rate_last20'] or -1),
+              'U last20 %.2f P last20 %.2f' % (v['unnecessary_last20'] or -1, v['perch_last20'] or -1), 'collapse', v['collapse_flags'])
+
+
 if __name__ == '__main__':
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument('mode', choices=('smoke', 'freeze', 'train', 'val-baselines', 'validate', 'select', 'eval-final'))
+    ap.add_argument('mode', choices=('smoke', 'freeze', 'train', 'val-baselines', 'validate', 'select', 'eval-final', 'report'))
     ap.add_argument('--seed', type=int)
     a = ap.parse_args()
     {'smoke': smoke, 'freeze': freeze, 'train': lambda: train(a.seed), 'val-baselines': val_baselines,
-     'validate': validate, 'select': select, 'eval-final': eval_final}[a.mode]()
+     'validate': validate, 'select': select, 'eval-final': eval_final, 'report': report}[a.mode]()
