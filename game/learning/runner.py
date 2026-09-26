@@ -69,7 +69,8 @@ def make_session(policy, config):
 
 
 # ----------------------------------------------------------------- episode ---
-def run_episode(session, scenario_cls, seed, mode, reward_spec=RewardSpec(), model=None, keep_rows=False):
+def run_episode(session, scenario_cls, seed, mode, reward_spec=RewardSpec(), model=None, keep_rows=False,
+                tick_hook=None):
     mode.check_seed(seed)
     policy = session.policy
     session.reset(seed)
@@ -89,11 +90,14 @@ def run_episode(session, scenario_cls, seed, mode, reward_spec=RewardSpec(), mod
         pointer, strike = scenario.step(session, t, enc_rng)
         committed_before = w.swatter.phase.value in STRIKE_PHASES
         horizontal = float(np.hypot(w.swatter.x - w.fly.x, w.swatter.y - w.fly.y))
+        mode_before = None if w.lifecycle is None else w.lifecycle.mode
         events = session.tick(pointer=pointer, strike=strike)
         action = session.fly_loop.last_action
         idx = policy.last_index if isinstance(policy, ManeuverPolicy) else None
         rec.record(t, action, events, idx)
         rew.step(w, action, events, committed_before, horizontal)
+        if tick_hook is not None:
+            tick_hook(session, t, events, action, committed_before, horizontal, mode_before, False)
         h.update(np.array([w.fly.x, w.fly.y, w.fly.heading, float(w.fly.alive), float(action.escape),
                            action.turn, action.saccade]).tobytes())
         t += 1

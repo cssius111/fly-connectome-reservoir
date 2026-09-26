@@ -127,14 +127,19 @@ class ClockEscapeProbe:
 
 
 class ModelDecision:
-    """Adapter for MLPPolicyModel (explore -> sample, otherwise greedy)."""
+    """Adapter for MLPPolicyModel (explore -> sample, otherwise greedy).
 
-    def __init__(self, model):
+    stochastic=True makes sampling part of the frozen policy: it samples in every mode from
+    the policy's own seeded RNG (reseeded from the episode seed), so EVAL stays deterministic
+    and no parameters change."""
+
+    def __init__(self, model, stochastic=False):
         self.model = model
+        self.stochastic = bool(stochastic)
         self.name = 'mlp'
 
     def act(self, obs, rng, explore):
-        return self.model.act(obs, rng, explore)
+        return self.model.act(obs, rng, explore or self.stochastic)
 
 
 CONTROLS = {'no_escape': NoEscapeModel, 'random_legal': RandomLegalModel, 'fixed_maneuver': FixedManeuverModel}

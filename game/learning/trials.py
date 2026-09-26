@@ -232,7 +232,7 @@ BACKGROUND_FAMILIES = (FreeFlight, GlancingPass, AbortedApproach, HoverOnly)
 
 
 # ----------------------------------------------------------------- trial runner ---
-def run_threat_trial(session, family_cls, attacker_profile, seed, mode):
+def run_threat_trial(session, family_cls, attacker_profile, seed, mode, tick_hook=None):
     """One exposure-controlled threat trial. Returns a per-trial record (never seen by a policy)."""
     from .policies import ManeuverPolicy
     mode.check_seed(seed)
@@ -252,6 +252,9 @@ def run_threat_trial(session, family_cls, attacker_profile, seed, mode):
     hit = False
     while True:
         pointer, strike = trial.pointer(session, t, noise_rng)
+        committed_before = w.swatter.phase.value in ('commit', 'fast_swing', 'active_contact', 'follow_through', 'recovery')
+        horizontal_before = math.hypot(w.swatter.x - w.fly.x, w.swatter.y - w.fly.y)
+        mode_before = None if w.lifecycle is None else w.lifecycle.mode
         events = session.tick(pointer=pointer, strike=strike)
         if events.strike_started and trial.click_t is None:
             trial.click_t = t
@@ -271,6 +274,9 @@ def run_threat_trial(session, family_cls, attacker_profile, seed, mode):
             hit = True
         if trial.click_t is not None and trial.resolved_t is None and (events.strike_resolved or events.hit):
             trial.resolved_t = t
+        if tick_hook is not None:
+            tick_hook(session, t, events, action, committed_before, horizontal_before, mode_before,
+                      trial.resolved_t == t)
         t += 1
         if hit:
             break
@@ -316,10 +322,10 @@ def summarize_trial(trial, rows, hit, world, seed, family, profile, traj_hash):
     return rec
 
 
-def run_background(session, scenario_cls, seed, mode):
+def run_background(session, scenario_cls, seed, mode, tick_hook=None):
     """Background episode: reuses the M2.0 runner and adds locomotor-diversity measures."""
     from .runner import run_episode
-    r = run_episode(session, scenario_cls, seed, mode, keep_rows=True)
+    r = run_episode(session, scenario_cls, seed, mode, keep_rows=True, tick_hook=tick_hook)
     rows = r.pop('rows')
     speeds = np.array([x['speed'] for x in rows]) / session.world.body_length
     hist = np.histogram(np.clip(speeds, 0, 40), bins=20, range=(0, 40))[0]
