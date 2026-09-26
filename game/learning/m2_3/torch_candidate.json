@@ -1,0 +1,156 @@
+{
+ "label": "M2.3 frozen PyTorch learned candidate",
+ "selected_utc": "2026-09-26T23:19:07Z",
+ "selection_rule": "among eligible checkpoints (TRAIN-VAL only): lowest hit probability; then lower unnecessary escapes / min; then smaller mean KL(policy || BC) on the TRAIN-VAL BC-dataset states. Scalar reward is not used.",
+ "eligibility_rule": "TRAIN-VAL: M2.1 admissible (unnecessary <= 5.36 / min, perches >= 0.275 / min, movement constraints, no hard anti-cheat flag) AND threat-window escape fraction >= 0.3 AND not no_escape-equivalent: synthetic strong one-sided DNp01 escape probability >= 0.2 and >= 10 x quiet, NONE share of TRAIN-VAL background decisions < 0.995 AND measurable neural conditioning on the TRAIN-VAL BC-dataset states: mean escape probability at max DNp01 >= 2 is >= 10 x that at max DNp01 < 0.25",
+ "protocol_sha256": "3f56c198e13d1329bc44f4b518e7078e655260858614e048241bd9cb24cf1306",
+ "n_checkpoints": 30,
+ "n_eligible": 24,
+ "eligible": [
+  "seed_1/ckpt_it020",
+  "seed_1/ckpt_it030",
+  "seed_1/ckpt_it040",
+  "seed_1/ckpt_it050",
+  "seed_1/ckpt_it060",
+  "seed_2/ckpt_it010",
+  "seed_2/ckpt_it020",
+  "seed_2/ckpt_it030",
+  "seed_2/ckpt_it040",
+  "seed_2/ckpt_it050",
+  "seed_2/ckpt_it060",
+  "seed_3/ckpt_it030",
+  "seed_3/ckpt_it040",
+  "seed_3/ckpt_it050",
+  "seed_3/ckpt_it060",
+  "seed_4/ckpt_it030",
+  "seed_4/ckpt_it040",
+  "seed_4/ckpt_it050",
+  "seed_4/ckpt_it060",
+  "seed_5/ckpt_it020",
+  "seed_5/ckpt_it030",
+  "seed_5/ckpt_it040",
+  "seed_5/ckpt_it050",
+  "seed_5/ckpt_it060"
+ ],
+ "candidate": "seed_4/ckpt_it060",
+ "checkpoint_sha256": "b545583eda9f58f89397c2095838e0cbb8ffcb5f5d39d7b14fe87f729f6400c2",
+ "checkpoint_file_sha256": "0ef411385a67e4d77a474eddd71eec78d388e1bd8ef7ced8424a7d494b16e1de",
+ "numpy_export": "game/learning/checkpoints/m2_3_candidate.npz",
+ "numpy_export_param_sha256": "4bb9fd32556a3ed78d5627a28c3e3baf2064070fe293761f4c7ab0a3f255443b",
+ "bc_parent_sha256": "c6c21c23e639f89d6dcb7d98662b19320961f2ceb00cad610830a1e9a56dba4b",
+ "training_seed": 4,
+ "iteration": 60,
+ "env_steps": 1991346,
+ "torch": "2.13.0+cu132",
+ "cuda": "13.2",
+ "reward_v2_sha256": "e5d9106b09219c601ad9e3e560375cb3be45ead2531d4832dcf6fbaa2460db1d",
+ "constraints_sha256": "69c189978613285f1c02a617fce3786598404ddadcb9af94a650513ec316a822",
+ "observation_schema_sha256": "a53b963997c8207ddd1c53a5205f6b48b6bada28db933762f02d68454519b080",
+ "action_schema_sha256": "8848a9c7d4bf0e5377d71e85775717a4873fc41e2bc83478ae3e54b43937a6a0",
+ "selection_evidence": {
+  "meta": {
+   "training_seed": 4,
+   "iteration": 60,
+   "env_steps": 1991346,
+   "code_commit": "76ad1f410341015348c4c29102e23d67e4460c1e",
+   "protocol_sha256": "3f56c198e13d1329bc44f4b518e7078e655260858614e048241bd9cb24cf1306",
+   "bc_parent_sha256": "c6c21c23e639f89d6dcb7d98662b19320961f2ceb00cad610830a1e9a56dba4b",
+   "observation_schema_sha256": "a53b963997c8207ddd1c53a5205f6b48b6bada28db933762f02d68454519b080",
+   "action_schema_sha256": "8848a9c7d4bf0e5377d71e85775717a4873fc41e2bc83478ae3e54b43937a6a0",
+   "reward_v2_sha256": "e5d9106b09219c601ad9e3e560375cb3be45ead2531d4832dcf6fbaa2460db1d",
+   "constraints_sha256": "69c189978613285f1c02a617fce3786598404ddadcb9af94a650513ec316a822",
+   "lambda_u": 0.0,
+   "lambda_p": 0.0,
+   "beta_kl": 0.1,
+   "entropy_coef": 0.0001,
+   "torch": "2.13.0+cu132",
+   "cuda": "13.2",
+   "checkpoint_sha256": "b545583eda9f58f89397c2095838e0cbb8ffcb5f5d39d7b14fe87f729f6400c2"
+  },
+  "summary": {
+   "hit_probability": 0.4895833333333333,
+   "hit_by_attacker": {
+    "easy": 0.15625,
+    "nominal": 0.4375,
+    "hard": 0.875
+   },
+   "escape_in_window": 0.78125,
+   "median_escape_latency_s": 0.1,
+   "unnecessary_per_min": 2.9166666666666665,
+   "perches_per_min": 0.5,
+   "admissible": true,
+   "flags": [],
+   "violations": [],
+   "category_counts": {
+    "NONE": 35297,
+    "SACCADE": 118,
+    "ESCAPE_LEFT": 20,
+    "TURN_LEFT": 216,
+    "TURN_RIGHT": 308,
+    "ESCAPE_RIGHT": 33,
+    "ESCAPE_FORWARD": 8
+   }
+  },
+  "escape_response": {
+   "escape_prob_quiet": 1.1150909038276747e-06,
+   "escape_prob_strong_left": 0.4450859675120948,
+   "escape_prob_by_dnp01_left": [
+    1.1150909038276747e-06,
+    0.0017192810624133846,
+    0.12940012648604401,
+    0.4450859675120948,
+    0.7571836395180281
+   ]
+  },
+  "none_share_background": 0.9804722222222222,
+  "no_escape_collapse_diagnostic_ok": true,
+  "neural_conditioning": {
+   "by_dnp01": [
+    {
+     "dnp01_max": [
+      0.0,
+      0.25
+     ],
+     "samples": 64391,
+     "mean_escape_prob": 1.1542058677169808e-05
+    },
+    {
+     "dnp01_max": [
+      0.25,
+      1.0
+     ],
+     "samples": 14725,
+     "mean_escape_prob": 0.00097933696873054
+    },
+    {
+     "dnp01_max": [
+      1.0,
+      2.0
+     ],
+     "samples": 5677,
+     "mean_escape_prob": 0.019497645071787126
+    },
+    {
+     "dnp01_max": [
+      2.0,
+      null
+     ],
+     "samples": 757,
+     "mean_escape_prob": 0.046654832566468206
+    }
+   ],
+   "low": 1.1542058677169808e-05,
+   "high": 0.046654832566468206,
+   "ratio": 4042.1586712907174,
+   "ok": true
+  },
+  "eligible": true,
+  "kl_to_bc_val_states": 0.0018596046138554811,
+  "threat_by_family": {
+   "direct": 0.4583333333333333,
+   "hover": 0.5416666666666666,
+   "wall": 0.375,
+   "perched_or_fallback": 0.5833333333333334
+  }
+ }
+}
