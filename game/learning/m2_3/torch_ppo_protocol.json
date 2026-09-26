@@ -1,0 +1,287 @@
+{
+ "label": "M2.3 frozen PyTorch PPO protocol (KL-anchored constrained PPO from the PyTorch BC policy)",
+ "frozen_utc": "2026-09-26T18:46:59Z",
+ "environment": {
+  "python": "3.11.16",
+  "torch": "2.13.0+cu132",
+  "cuda_runtime": "13.2",
+  "cuda_available": true,
+  "cudnn": 92000,
+  "device": "NVIDIA GeForce RTX 4060 Laptop GPU",
+  "capability": [
+   8,
+   9
+  ],
+  "device_memory_gb": 8.0
+ },
+ "ppo": {
+  "learner": "PyTorch (torch.nn.Module policy + separate critic, autograd, torch.optim.Adam, torch.distributions.Categorical, clip_grad_norm_), float32 on CUDA",
+  "init": "every training seed starts from the frozen PyTorch BC checkpoint (identical parameters)",
+  "reference": "a frozen deep copy of the BC policy (requires_grad False, never updated)",
+  "critic_init": "separate TorchCritic 60 -> 32 tanh -> 1, W1 ~ N(0, 1/sqrt(60)), W2 ~ N(0, 0.01), zero biases, torch generator seed = training seed + 1; policy frozen during the critic warm-up",
+  "critic_warmup_iterations": 3,
+  "lr_policy": 0.0003,
+  "lr_critic": 0.001,
+  "development_choice": "lr_policy 3e-4 chosen over 1e-4 from the TRAIN-only smokes (draft seed 101, lr3e-4 seed 102): at 1e-4 clipfrac stayed 0 and KL(policy || BC) ~1e-4 (updates too small to test improvement); at 3e-4 KL rose to ~1e-3 with conditional escape, entropy and dual warm-up intact. KL schedule, entropy control, dual warm-up and the 1 : 6 mixture unchanged.",
+  "adam": [
+   0.9,
+   0.999,
+   1e-08
+  ],
+  "gamma": 0.99,
+  "gae_lambda": 0.95,
+  "ppo_clip": 0.2,
+  "value_coef": 1.0,
+  "update_epochs": 4,
+  "minibatch_size": 4096,
+  "grad_clip_norm": 0.5,
+  "advantage_normalization": "per batch (mean 0, std 1)",
+  "reward_normalization": "none",
+  "kl_anchor": {
+   "beta_start": 1.0,
+   "hold_until_iteration": 15,
+   "beta_end": 0.1,
+   "decay_until_iteration": 45
+  },
+  "entropy": {
+   "target_fraction": 0.8,
+   "coef_init": 0.001,
+   "coef_min": 0.0001,
+   "coef_max": 0.05,
+   "gain": 0.5
+  },
+  "dual": {
+   "min_warmup_iterations": 15,
+   "stable_iterations_required": 3,
+   "conditional_escape_check": "synthetic strong one-sided DNp01 escape probability >= 0.2 and >= 10 x quiet, and threat-trial escape fraction >= 0.5",
+   "unnecessary_target_per_min": 4.824000000000001,
+   "perch_target_per_min": 0.41250000000000003,
+   "step": 0.02,
+   "ema_alpha": 0.3,
+   "lambda_u_max": 10.0,
+   "lambda_p_max": 5.0
+  },
+  "mixture": {
+   "background_per_unit": 1,
+   "threat_per_unit": 6
+  },
+  "rollout_units_per_iteration": 7,
+  "iterations": 60,
+  "checkpoint_every": 10,
+  "training_seeds": [
+   1,
+   2,
+   3,
+   4,
+   5
+  ],
+  "rollout_seed_salt": 2306
+ },
+ "bc_torch_config": {
+  "reuses": "tools/m2_3_bc_ppo.py BC_CONFIG unchanged (same dataset, NONE subsampling mask, prior correction, learning rate, batch size, epochs, shuffle order, clipping and checkpoint-selection rule)",
+  "model": "TorchPolicy (torch.nn.Module), 60 -> 32 tanh -> 11, 2,315 trainable parameters",
+  "init": "parameters copied from MLPPolicyModel(seed = 2303), the numpy BC initialisation",
+  "loss": "torch.nn.functional.cross_entropy on logits + log(0.05) NONE offset (training); natural distribution for TRAIN-VAL selection",
+  "optimizer": "torch.optim.Adam(lr 1e-3, betas (0.9, 0.999), eps 1e-8)",
+  "grad_clip": "torch.nn.utils.clip_grad_norm_(max_norm = 1.0)",
+  "dtype": "float32",
+  "device": "cuda",
+  "determinism": "torch.use_deterministic_algorithms(True), CUBLAS_WORKSPACE_CONFIG=:4096:8"
+ },
+ "bc_config": {
+  "dataset_train": "TRAIN-OPT seeds: 12 threat groups (4 families x 3 attackers) x 50 trials + 4 background families x 30 episodes; seeds drawn by numpy default_rng(2300 + group) from [20e6, 25e6) excluding the M2.1 development seeds",
+  "dataset_val": "the M2.2 TRAIN-VAL specification (96 threat trials, 24 background episodes)",
+  "teacher": "accepted N4B1C FixedEscapePolicy mapped to the 11 maneuvers (game/learning/teacher.py); the mapped maneuver is executed",
+  "none_keep_fraction": 0.05,
+  "none_subsample_seed": 2301,
+  "prior_correction": "log(1 / none_keep_fraction) added to the NONE logit (training loss uses it, so the learned logits stay calibrated to the natural distribution)",
+  "init_seed": 2303,
+  "optimizer": "Adam (0.9, 0.999, 1e-8)",
+  "learning_rate": 0.001,
+  "batch_size": 1024,
+  "epochs": 40,
+  "shuffle_seed": 2304,
+  "grad_clip_norm": 1.0,
+  "checkpoint_selection": "epoch with the lowest cross-entropy on the natural-distribution TRAIN-VAL BC set"
+ },
+ "bc_checkpoint_state_dict_sha256": "c6c21c23e639f89d6dcb7d98662b19320961f2ceb00cad610830a1e9a56dba4b",
+ "bc_checkpoint_file_sha256": "ec0cdf40401dcc700b2f7f6c2830c50e4b52ddf9b92a856f57ff6b661658192d",
+ "bc_dataset_manifest_sha256": "bb786cb1062f564db80c393ab059be846b111d0be073a54fe2721d83bca6e61a",
+ "bc_gate_sha256": "b93421c0835118dd96b75d689a973dcdac20e8d27411106007f15a20fce9a7e5",
+ "development_smoke_summary_sha256": "94d73b0530cafde68d8400f4634b4fb7e5306cdd1f371b3784e44e057bd0df04",
+ "rollout_inference": "per-tick numpy forward on the CPU rollout workers with parameters exported from the torch policy (measured 23.5 us / decision vs 85 us torch-CPU and 642 us torch-CUDA); MaleCNS and the game simulation stay on CPU; the PPO update runs on CUDA",
+ "architecture": "TorchPolicy 60 -> 32 tanh -> 11 (2,315 trainable parameters) + training-only TorchCritic 60 -> 32 tanh -> 1 (1,985); stochastic seeded sampling at deployment",
+ "split": {
+  "train_opt": {
+   "range": [
+    20000000,
+    24999999
+   ],
+   "excluded": "M2.1 development seeds"
+  },
+  "train_val": {
+   "threat:direct:easy": [
+    25132843,
+    28475002,
+    29713812,
+    26051788,
+    29909319,
+    26385481,
+    25113742,
+    29039800
+   ],
+   "threat:direct:nominal": [
+    29259331,
+    28670619,
+    28513147,
+    25709775,
+    25590373,
+    28602344,
+    26679190,
+    28490000
+   ],
+   "threat:direct:hard": [
+    27464747,
+    28537504,
+    25737228,
+    28710688,
+    25946012,
+    26385779,
+    25428993,
+    25938230
+   ],
+   "threat:hover:easy": [
+    25942609,
+    26539426,
+    25142390,
+    27407186,
+    25506326,
+    26654200,
+    29615753,
+    26013309
+   ],
+   "threat:hover:nominal": [
+    27897980,
+    29002223,
+    25485416,
+    29582886,
+    29410163,
+    26131560,
+    26942352,
+    27804682
+   ],
+   "threat:hover:hard": [
+    29560531,
+    27276964,
+    28842013,
+    28524176,
+    29077343,
+    27448751,
+    27337941,
+    26744017
+   ],
+   "threat:wall:easy": [
+    29176952,
+    28133804,
+    28247724,
+    29315081,
+    25163007,
+    28809478,
+    27984945,
+    26910194
+   ],
+   "threat:wall:nominal": [
+    28558045,
+    28278087,
+    26299135,
+    28220165,
+    28243828,
+    27446155,
+    28924046,
+    25454568
+   ],
+   "threat:wall:hard": [
+    25720305,
+    29108342,
+    26693500,
+    27416833,
+    27818141,
+    26185152,
+    28503590,
+    28347466
+   ],
+   "threat:perched_or_fallback:easy": [
+    28258445,
+    26590698,
+    29892197,
+    25409909,
+    26111748,
+    25266459,
+    26619707,
+    28438249
+   ],
+   "threat:perched_or_fallback:nominal": [
+    28996907,
+    28833106,
+    25874065,
+    26088233,
+    28749056,
+    26890886,
+    28042356,
+    27680811
+   ],
+   "threat:perched_or_fallback:hard": [
+    25010419,
+    28882232,
+    28576527,
+    25308088,
+    27979362,
+    27705168,
+    25354691,
+    27858816
+   ],
+   "background:free_flight": [
+    25424028,
+    29047080,
+    26942829,
+    25095931,
+    28087769,
+    27332383
+   ],
+   "background:glancing_pass": [
+    29611947,
+    29266716,
+    26997654,
+    25086581,
+    27267911,
+    28255467
+   ],
+   "background:aborted_approach": [
+    26733221,
+    26449366,
+    29500462,
+    25476059,
+    25548210,
+    25788981
+   ],
+   "background:hover_only": [
+    26697248,
+    28804896,
+    29682790,
+    29373394,
+    28453096,
+    25488617
+   ]
+  }
+ },
+ "split_sha256": "48f5fe261c0e5ebd278e6e454623d49968a33dbc712d317915bac235cd4d091a",
+ "reward_v2_sha256": "e5d9106b09219c601ad9e3e560375cb3be45ead2531d4832dcf6fbaa2460db1d",
+ "constraints_sha256": "69c189978613285f1c02a617fce3786598404ddadcb9af94a650513ec316a822",
+ "observation_schema_sha256": "a53b963997c8207ddd1c53a5205f6b48b6bada28db933762f02d68454519b080",
+ "action_schema_sha256": "8848a9c7d4bf0e5377d71e85775717a4873fc41e2bc83478ae3e54b43937a6a0",
+ "max_environment_steps": "60 iterations x about 33,000 decisions (7 units x (1 background + 6 threat)); exact counts logged",
+ "checkpoint_cadence": "every 10 iterations",
+ "eligibility": "TRAIN-VAL: M2.1 admissible (unnecessary <= 5.36 / min, perches >= 0.275 / min, movement constraints, no hard anti-cheat flag) AND threat-window escape fraction >= 0.3 AND not no_escape-equivalent: synthetic strong one-sided DNp01 escape probability >= 0.2 and >= 10 x quiet, NONE share of TRAIN-VAL background decisions < 0.995 AND measurable neural conditioning on the TRAIN-VAL BC-dataset states: mean escape probability at max DNp01 >= 2 is >= 10 x that at max DNp01 < 0.25",
+ "selection": "among eligible checkpoints (TRAIN-VAL only): lowest hit probability; then lower unnecessary escapes / min; then smaller mean KL(policy || BC) on the TRAIN-VAL BC-dataset states. Scalar reward is not used.",
+ "eval": "frozen M2.1 v2 EVAL set, exactly once, for the single selected checkpoint"
+}

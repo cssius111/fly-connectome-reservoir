@@ -90,7 +90,11 @@ PPO = {
     'critic_init': 'separate TorchCritic 60 -> 32 tanh -> 1, W1 ~ N(0, 1/sqrt(60)), W2 ~ N(0, 0.01), zero biases, '
                    'torch generator seed = training seed + 1; policy frozen during the critic warm-up',
     'critic_warmup_iterations': 3,
-    'lr_policy': 1e-4, 'lr_critic': 1e-3, 'adam': [0.9, 0.999, 1e-8],
+    'lr_policy': 3e-4, 'lr_critic': 1e-3,
+    'development_choice': 'lr_policy 3e-4 chosen over 1e-4 from the TRAIN-only smokes (draft seed 101, lr3e-4 seed '
+                          '102): at 1e-4 clipfrac stayed 0 and KL(policy || BC) ~1e-4 (updates too small to test '
+                          'improvement); at 3e-4 KL rose to ~1e-3 with conditional escape, entropy and dual warm-up '
+                          'intact. KL schedule, entropy control, dual warm-up and the 1 : 6 mixture unchanged.', 'adam': [0.9, 0.999, 1e-8],
     'gamma': 0.99, 'gae_lambda': 0.95, 'ppo_clip': 0.2, 'value_coef': 1.0,
     'update_epochs': 4, 'minibatch_size': 4096, 'grad_clip_norm': 0.5,
     'advantage_normalization': 'per batch (mean 0, std 1)', 'reward_normalization': 'none',
@@ -107,6 +111,7 @@ PPO = {
 }
 SMOKE_VARIANTS = {
     'draft': {},
+    'lr3e-4': {'lr_policy': 3e-4},
 }
 
 
@@ -391,7 +396,7 @@ def per_sample_pg_norms(policy, X, A, ADV):
 
     def f(p, x, a, adv):
         logits = functional_call(policy, (p, buffers), (x[None],))
-        return -adv * torch.log_softmax(logits, -1)[0, a]
+        return -adv * torch.log_softmax(logits, -1)[0].gather(0, a.unsqueeze(0))[0]
     g = vmap(grad(f), in_dims=(None, 0, 0, 0))(params, X, A, ADV)
     norms = torch.sqrt(sum(v.flatten(1).pow(2).sum(1) for v in g.values()))
     summed = torch.sqrt(sum(v.sum(0).pow(2).sum() for v in g.values()))
@@ -654,6 +659,53 @@ def ppo_smoke(seed, variant, iters):
     ppo_train(seed, H, out, iterations=iters)
 
 
+def summarize_log(rows):
+    def col(k, f=lambda r, k: r.get(k)):
+        return [f(r, k) for r in rows]
+    last5 = rows[-5:]
+    return {
+        'iterations': len(rows),
+        'hit_rate_first5_mean': float(np.mean([r['hit_rate'] for r in rows[:5]])),
+        'hit_rate_last5_mean': float(np.mean([r['hit_rate'] for r in last5])),
+        'none_share': col('none_share'),
+        'entropy': col('entropy_rollout_before_update') if 'entropy_rollout_before_update' in rows[0] else col('entropy'),
+        'entropy_coef': col('entropy_coef_next') if 'entropy_coef_next' in rows[0] else col('entropy_coef'),
+        'kl_policy_bc': col('kl_policy_bc_rollout'), 'lambda_u': col('lambda_u'), 'lambda_p': col('lambda_p'),
+        'unnecessary_per_min': col('unnecessary_per_min'), 'perch_per_min': col('perch_per_min'),
+        'escape_prob_strong_left': [r['escape_response']['escape_prob_strong_left'] for r in rows],
+        'escape_prob_quiet': [r['escape_response']['escape_prob_quiet'] for r in rows],
+        'conditional_escape': [r.get('conditional_escape') for r in rows],
+        'dual_active_since': rows[-1].get('dual_active_since'),
+        'nonfinite_gradient_steps': int(sum(r.get('nonfinite_gradient_steps', 0) for r in rows)),
+        'explained_variance': col('explained_variance_after') if 'explained_variance_after' in rows[0] else col('explained_variance'),
+        'timing_mean': None if 'timing' not in rows[0] else {k: float(np.mean([r['timing'][k] for r in rows]))
+                                                              for k in rows[0]['timing']},
+        'credit_last': rows[-1].get('credit'),
+        'credit_mean': None if 'credit' not in rows[0] else {
+            k: float(np.mean([r['credit'][k] for r in rows])) for k in
+            ('decisions_per_committed_strike', 'threat_decisions_per_committed_strike', 'frac_abs_adv_raw_ge_0.05',
+             'frac_abs_adv_raw_ge_0.2', 'frac_abs_adv_norm_ge_1')},
+    }
+
+
+def smoke_summary():
+    out = {'label': 'M2.3 TRAIN-only development smokes (not official seeds; EVAL never touched)',
+           'environment': env_info(), 'variants': SMOKE_VARIANTS, 'runs': {}}
+    npz = DATA / 'smoke_seed_101' / 'log.jsonl'
+    if npz.exists():
+        out['runs']['numpy_draft_seed_101 (handwritten gradients; diagnostic only)'] = summarize_log(
+            [json.loads(line) for line in npz.open(encoding='utf-8')])
+    for d in sorted((OUT / 'smoke').glob('*_seed_*')):
+        f = d / 'log.jsonl'
+        if f.exists():
+            out['runs']['torch_' + d.name] = summarize_log([json.loads(line) for line in f.open(encoding='utf-8')])
+    (TRACK / 'torch_smoke_summary.json').write_text(json.dumps(out, indent=1, default=float) + '\n', encoding='utf-8')
+    for k, v in out['runs'].items():
+        print(k, v['iterations'], 'hit %.3f -> %.3f' % (v['hit_rate_first5_mean'], v['hit_rate_last5_mean']),
+              'esc@L3 %.3f -> %.3f' % (v['escape_prob_strong_left'][0], v['escape_prob_strong_left'][-1]),
+              'KL %.5f' % v['kl_policy_bc'][-1], 'lam_u %.3f' % v['lambda_u'][-1], 'NONE %.4f' % v['none_share'][-1])
+
+
 def freeze():
     if PROTOCOL_FILE.exists():
         raise SystemExit('already frozen')
@@ -671,6 +723,9 @@ def freeze():
              'bc_dataset_manifest_sha256': sha_file(TRACK / 'bc_dataset_manifest.json'),
              'bc_gate_sha256': sha_file(BC_GATE_FILE),
              'development_smoke_summary_sha256': sha_file(smoke) if smoke.exists() else None,
+             'rollout_inference': 'per-tick numpy forward on the CPU rollout workers with parameters exported from the '
+                                  'torch policy (measured 23.5 us / decision vs 85 us torch-CPU and 642 us torch-CUDA); '
+                                  'MaleCNS and the game simulation stay on CPU; the PPO update runs on CUDA',
              'architecture': 'TorchPolicy 60 -> 32 tanh -> 11 (2,315 trainable parameters) + training-only TorchCritic '
                              '60 -> 32 tanh -> 1 (1,985); stochastic seeded sampling at deployment',
              'split': p22['split'], 'split_sha256': p22['split_sha256'],
@@ -866,4 +921,5 @@ if __name__ == '__main__':
     a = ap.parse_args()
     {'env': lambda: print(json.dumps(env_info(), indent=1)), 'bc-train': bc_train, 'bc-gate': bc_gate,
      'ppo-smoke': lambda: ppo_smoke(a.seed, a.variant, a.iters), 'freeze': freeze, 'train': lambda: train(a.seed),
-     'validate': validate, 'select': select, 'compare': compare, 'eval-final': eval_final}[a.mode]()
+     'smoke-summary': smoke_summary, 'validate': validate, 'select': select, 'compare': compare,
+     'eval-final': eval_final}[a.mode]()
