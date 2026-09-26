@@ -1,0 +1,133 @@
+{
+ "label": "M2.3 PyTorch BC gate (the frozen BC gate of tools/m2_3_bc_ppo.py)",
+ "gate": {
+  "hit_probability_max": "TRAIN-VAL N4B1C hit probability + 0.05",
+  "unnecessary_escapes_per_min_max": 5.36,
+  "perches_per_min_min": 0.275,
+  "admissible": true,
+  "threat_window_escape_min": "0.5 x the mapped teacher's TRAIN-VAL escape-in-window fraction",
+  "no_collapse": "escape probability at a strong one-sided DNp01 frame (L = 3, R = 0) >= 0.2 and >= 10 x the escape probability at a quiet frame (L = R = 0)"
+ },
+ "checks": {
+  "hit_close_to_n4b1c": true,
+  "unnecessary_within_budget": true,
+  "perch_participation": true,
+  "admissible_no_flags": true,
+  "threat_window_escape": true,
+  "no_collapse": true
+ },
+ "pass": true,
+ "bc_checkpoint_state_dict_sha256": "c6c21c23e639f89d6dcb7d98662b19320961f2ceb00cad610830a1e9a56dba4b",
+ "bc_checkpoint_file_sha256": "ec0cdf40401dcc700b2f7f6c2830c50e4b52ddf9b92a856f57ff6b661658192d",
+ "torch_bc": {
+  "hit_probability": 0.6770833333333334,
+  "hit_by_attacker": {
+   "easy": 0.4375,
+   "nominal": 0.625,
+   "hard": 0.96875
+  },
+  "escape_in_window": 0.78125,
+  "median_escape_latency_s": 0.1,
+  "unnecessary_per_min": 5.166666666666667,
+  "perches_per_min": 0.5,
+  "admissible": true,
+  "flags": [],
+  "violations": [],
+  "category_counts": {
+   "SACCADE": 131,
+   "NONE": 35304,
+   "ESCAPE_LEFT": 44,
+   "TURN_LEFT": 196,
+   "TURN_RIGHT": 260,
+   "ESCAPE_RIGHT": 52,
+   "ESCAPE_FORWARD": 11,
+   "ESCAPE_BACKWARD": 2
+  }
+ },
+ "teacher_mapped": {
+  "hit_probability": 0.6770833333333334,
+  "hit_by_attacker": {
+   "easy": 0.46875,
+   "nominal": 0.59375,
+   "hard": 0.96875
+  },
+  "escape_in_window": 0.75,
+  "median_escape_latency_s": 0.08,
+  "unnecessary_per_min": 5.666666666666667,
+  "perches_per_min": 1.0833333333333333,
+  "admissible": false,
+  "flags": [],
+  "violations": [
+   "unnecessary_escapes_per_min"
+  ],
+  "category_counts": {
+   "NONE": 35371,
+   "SACCADE": 152,
+   "ESCAPE_LEFT": 44,
+   "TURN_LEFT": 166,
+   "ESCAPE_RIGHT": 37,
+   "TURN_RIGHT": 213,
+   "ESCAPE_FORWARD": 17
+  }
+ },
+ "n4b1c": {
+  "hit_probability": 0.6458333333333334,
+  "hit_by_attacker": {
+   "easy": 0.40625,
+   "nominal": 0.5625,
+   "hard": 0.96875
+  },
+  "escape_in_window": 0.7395833333333334,
+  "median_escape_latency_s": 0.08,
+  "unnecessary_per_min": 4.916666666666667,
+  "perches_per_min": 0.5833333333333334,
+  "admissible": true,
+  "flags": [],
+  "violations": [],
+  "category_counts": {
+   "NONE": 35518,
+   "SACCADE": 165,
+   "ESCAPE_FORWARD": 15,
+   "ESCAPE_LEFT": 37,
+   "ESCAPE_RIGHT": 46,
+   "TURN_RIGHT": 146,
+   "TURN_LEFT": 73
+  }
+ },
+ "numpy_bc_development_evidence": {
+  "hit_probability": 0.6770833333333334,
+  "hit_by_attacker": {
+   "easy": 0.4375,
+   "nominal": 0.625,
+   "hard": 0.96875
+  },
+  "escape_in_window": 0.78125,
+  "median_escape_latency_s": 0.1,
+  "unnecessary_per_min": 5.166666666666667,
+  "perches_per_min": 0.5,
+  "admissible": true,
+  "flags": [],
+  "violations": [],
+  "category_counts": {
+   "SACCADE": 131,
+   "NONE": 35304,
+   "ESCAPE_LEFT": 44,
+   "TURN_LEFT": 196,
+   "TURN_RIGHT": 260,
+   "ESCAPE_RIGHT": 52,
+   "ESCAPE_FORWARD": 11,
+   "ESCAPE_BACKWARD": 2
+  }
+ },
+ "escape_response": {
+  "escape_prob_quiet": 2.132507955221525e-06,
+  "escape_prob_strong_left": 0.5740846562913104,
+  "escape_prob_by_dnp01_left": [
+   2.132507955221525e-06,
+   0.004670349914772753,
+   0.23246035621742678,
+   0.5740846562913104,
+   0.8377898375210218
+  ]
+ }
+}
