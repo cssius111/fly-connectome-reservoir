@@ -4,7 +4,7 @@ This file is an operational handoff for future sessions. It is not a scientific 
 a runtime artifact. Evidence lives in the milestone reports listed below. Update it at the
 end of every substantial milestone.
 
-Last updated: 2026-09-25. **The M1 slow-approach research line is CLOSED** (N4B8 accepted as its final conclusion). Runtime baseline: M1.8-N4B5R (`363a1a9`), unchanged. Current milestone: **M2.0, learning infrastructure and baseline benchmark** (see below).
+Last updated: 2026-09-25. **M2.0 learning infrastructure complete; go / no-go for training: NO-GO** (reward exploits found). Runtime baseline: M1.8-N4B5R (`363a1a9`), unchanged. The M1 slow-approach research line is closed.
 
 ## Start of a new session
 
@@ -51,6 +51,7 @@ Earlier frozen milestones (see `AGENTS.md`): M1.7.1 swatter dynamics and M1.8-A 
 |---|---|---|
 | `wip/m1-4-enclosure` | the N4B8 research commit (see `git log -1`); N4B8 freeze `ecb86d3`, N4B7 `c61dbd3` (freeze `8fee28a`), N4B6 `b203b46` (preregistration `987b2a9`), N4B5R state `81b213e`, N4B5 `0e9d2d9`, N4B4 `6b5c4ce`, N4B3 `d09dac4`, N4B2 `5be0aea` | research branch; research-only commits |
 | `feature/m1-8-n4b5r-geometry` | `363a1a9` | **current accepted runtime** (N4B1C + G3 geometry); **do not modify** |
+| `feature/m2-0-learning-infra` | `b53f9a9` | M2.0 learning infrastructure (from `363a1a9`; adds `game/learning/`, tests, benchmark tool; no accepted runtime file changed); pushed, not merged |
 | `feature/m1-8-n4b1c-runtime` | `e3c55b3` | previous accepted runtime (decoder layer); **do not modify** |
 | `archive/m1-8-n2b-rejected` | `2c306174d7bdb4e74b6c5517519ae695bd90cf44` | rejected N2b runtime snapshot; **never merge** |
 | `main` | `309abd9` | untouched |
@@ -58,8 +59,10 @@ Earlier frozen milestones (see `AGENTS.md`): M1.7.1 swatter dynamics and M1.8-A 
 
 Research worktrees (git-ignored, under `artifacts/worktrees/`): `n2b-rejected` (detached at
 the archive commit), `n4b1c-runtime` (the feature branch), and `n4b1c-runtime-detached`
-(detached at `e3c55b3`; used read-only by the N4B2-N4B5 tools), and `n4b5r-geometry` (the
-accepted N4B5R branch; used read-only by the N4B6 tools, must stay clean). Each has a `data`
+(detached at `e3c55b3`; used read-only by the N4B2-N4B5 tools), `n4b5r-geometry` (the
+accepted N4B5R branch; used read-only by the N4B6-N4B8 tools, must stay clean), and
+`m2-learning` (branch `feature/m2-0-learning-infra`; also has an `artifacts/results`
+junction). Each has a `data`
 junction to `data/`.
 
 ## M1.8-N4B5R acceptance summary
@@ -88,24 +91,53 @@ junction to `data/`.
 
 Do not call C or D "false triggers".
 
-## Current research milestone
+## Current milestone
 
-**M1.8-N4B8: biological long-mode escape pathway feasibility** (research only):
-**complete. Outcome C: no useful long-mode signal among the literature-motivated candidates
-(DNp02, DNp11, DNp03, DNp07, DNp10).**
+**M2.0: learning infrastructure and baseline benchmark** (infrastructure and research only):
+**complete. Go / no-go for learned-policy training: NO-GO.**
 
-- The self-motion mirror test gives bit-identical Retina input and identical spikes in
-  every candidate (48 / 48 seeds). The brain cannot distinguish external from
-  self-generated approach, because its only input is relative geometry.
-- The landing DNs (DNp07 / DNp10) and DNp03 depend on visual projection types and
-  flight-state inputs the simulator does not model.
-- Report: `game/M1_8_N4B8_LONG_MODE_PATHWAY_FEASIBILITY.md` (read the short answer, then
-  sections 2, 4, 6.1, 7 and 9).
-- Tools:
-  - `tools/n4b8_candidates.py`: frozen, sha256 `9d0e99c5...`; committed before any N4B8
-    simulation as `ecb86d3`;
-  - `tools/n4b8_long_mode.py`.
-- Artifacts: `artifacts/m1_8_n4b8/` (git-ignored).
+- **Branch:** `feature/m2-0-learning-infra` @ `b53f9a9` (worktree `artifacts/worktrees/m2-learning`).
+- **Report:** `game/M2_0_LEARNING_INFRASTRUCTURE.md`, on that branch (read the summary, then
+  sections 6, 7, 8 and 10).
+- **Built:**
+  - TRAIN / EVAL modes with a disjoint seed registry (EVAL 3,1xx,xxx-3,7xx,xxx; TRAIN
+    20,000,000-29,999,999) and an EVAL parameter guard;
+  - the whitelist observation encoder (60 floats, 4-frame history, DN trace excluded);
+  - an 11-maneuver action contract with the accepted 0.4 s escape refractory;
+  - policy adapter, controls and exploit probes;
+  - scripted opponents calibrated to human strike geometry;
+  - reward terms computed outside the policy;
+  - metrics and anti-cheat diagnostics;
+  - run manifests;
+  - a 2,315-parameter MLP proposal (not trained).
+  - 23 new tests; 450 / 450 pass.
+- **Frozen benchmark:** v1, 7 scenarios x 20 EVAL seeds, suite sha256 `884de583...`; 840
+  episodes. Hit rate per strike:
+
+  | Policy | Hit rate | Unnecessary escapes / min |
+  |---|---|---|
+  | N4B1C baseline | 0.62 | 4.5 |
+  | no escape | 0.75 | - |
+  | fixed rule | 0.485 | 10.5 |
+
+  The anti-cheat flags fire on every exploit probe and on none of the sensible policies.
+- **NO-GO reasons:**
+  - reward v1 ranks no-escape and constant turning above the baseline;
+  - policies that never perch avoid the perched-strike scenario.
+  - No observation or reward leakage was found.
+- **Next (infrastructure only, no runtime change):**
+  - suite v2 with policy-independent threat exposure and per-strike trials;
+  - reward v2: a per-strike hit objective with unnecessary escapes as a constraint;
+  - validate v2 on TRAIN-seed probes;
+  - only then small-scale training of the proposed MLP.
+
+## Previous research milestone
+
+**M1.8-N4B8: biological long-mode escape pathway feasibility** (research only): complete,
+outcome C. It closes the M1 slow-approach line.
+
+- Report: `game/M1_8_N4B8_LONG_MODE_PATHWAY_FEASIBILITY.md`.
+- Tools: `tools/n4b8_*.py`.
 - Previous milestones:
   - N4B7: `game/M1_8_N4B7_LONG_DNP01_READOUT.md` (L1 rejected; tools `tools/n4b7_*.py`);
   - N4B6: `game/M1_8_N4B6_CONTROLLED_SLOW_APPROACH.md` (tools `tools/n4b6_*.py`, artifacts
@@ -269,14 +301,17 @@ Other known open item (not scheduled): **stop-rotation transient** (N4B6, catego
 
 ## Next permitted actions
 
-**M2.0: learning infrastructure and baseline benchmark** (infrastructure and research only;
-started 2026-09-25).
-
-- It must not replace the accepted runtime policy and must not modify
-  `feature/m1-8-n4b5r-geometry`.
-- Actual learned-policy training that would change runtime behaviour needs explicit
-  approval.
-- See the M2.0 section once the milestone report exists.
+- **M2.1 (infrastructure / research only), when requested:**
+  - benchmark suite v2: threat exposure independent of the policy, e.g. the perched
+    scenario attacks an airborne fly if it has not perched; fixed strike trials per
+    episode;
+  - reward v2: a per-strike hit objective, with unnecessary escapes as a constraint at or
+    below the baseline's 4.5/min;
+  - validate v2 against the exploit probes on TRAIN seeds;
+  - then small-scale training of the 2,315-parameter MLP on TRAIN seeds, evaluated on the
+    frozen EVAL seeds as a Pareto comparison with the baseline.
+- **Replacing the accepted runtime policy with a learned one requires explicit approval
+  and a human test.**
 
 The M1.8-B activity-budget and flight-kinematics work remains planning only.
 
