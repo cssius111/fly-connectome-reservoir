@@ -1,0 +1,165 @@
+{
+  "fixture": "three deterministic 8-second episodes; sweeps, pursuit, pause and between-tick clicks",
+  "session_directory": "D:\\Projects\\flybrain-lab\\results\\game\\sessions\\20260921T004254.657763Z-941a3e64",
+  "replay": {
+    "exact": true,
+    "ticks_verified": 1200,
+    "input_operations": 1212,
+    "episodes": 3,
+    "scope": "all deterministic tick fields including compact neural readouts; presentation/wall time excluded",
+    "source_verified": true,
+    "runtime_verified": {
+      "numba_threads": 4,
+      "numba_threading_layer": "omp"
+    },
+    "full_brain_snapshots_compared": false,
+    "report_path": "D:\\Projects\\flybrain-lab\\results\\game\\sessions\\20260921T004254.657763Z-941a3e64\\replays\\5af5a6a5364f.json"
+  },
+  "summary": {
+    "schema_version": 3,
+    "session_id": "20260921T004254.657763Z-941a3e64",
+    "duration_simulation_seconds": 24.0,
+    "duration_wall_seconds": 6.207258300000831,
+    "episodes": 3,
+    "ticks": 1200,
+    "strikes": 7,
+    "hits": 1,
+    "misses": 6,
+    "escapes": 0,
+    "hit_rate": 0.14285714285714285,
+    "first_strike_hit_rate": 0.3333333333333333,
+    "incomplete_strikes": 0,
+    "edge_outcomes": {
+      "hit_near_wall": 0,
+      "miss_near_wall": 0
+    },
+    "alert_count": 26,
+    "escape_count": 6,
+    "dnp01_threshold_crossings": 16,
+    "escape_latency_seconds": {
+      "n": 2,
+      "mean": 0.56,
+      "median": 0.56,
+      "definition": "first new ESCAPE within 2 s after strike start minus neural threat onset in the indexed window (1 s before to 2 s after); unavailable/preexisting escapes excluded"
+    },
+    "tick_populations": {
+      "all": 1200,
+      "alive_post_step": 911,
+      "definition": "alive means post-step fly.alive; fatal ticks excluded from alive-only statistics"
+    },
+    "threat_state_fraction_all": {
+      "ALERT": 0.15583333333333332,
+      "CALM": 0.475,
+      "ESCAPE": 0.36916666666666664
+    },
+    "threat_state_fraction_alive": {
+      "ALERT": 0.2052689352360044,
+      "CALM": 0.6256860592755215,
+      "ESCAPE": 0.1690450054884742
+    },
+    "ecological_state_fraction_all": {
+      "ALERT": 0.15583333333333332,
+      "ESCAPE": 0.36916666666666664,
+      "EXPLORE": 0.18,
+      "ODOR_TRACK": 0.005833333333333334,
+      "RECOVER": 0.2891666666666667
+    },
+    "ecological_state_fraction_alive": {
+      "ALERT": 0.2052689352360044,
+      "ESCAPE": 0.1690450054884742,
+      "EXPLORE": 0.23710208562019758,
+      "ODOR_TRACK": 0.007683863885839737,
+      "RECOVER": 0.3809001097694841
+    },
+    "speed_bl_s_all": {
+      "n": 1200,
+      "mean": 7.667164120298772,
+      "p50": 7.421862184970514,
+      "p75": 8.949987568500182,
+      "p90": 15.35229486429854,
+      "p95": 19.597792490236706,
+      "max": 37.47381312419826
+    },
+    "speed_bl_s_alive": {
+      "n": 911,
+      "mean": 10.099447798417701,
+      "p50": 8.276596684691187,
+      "p75": 11.254034497840525,
+      "p90": 17.056177874395157,
+      "p95": 21.681543772627464,
+      "max": 37.47381312419826
+    },
+    "alive_approach": {
+      "physical_speed": {
+        "n": 678,
+        "mean": 424.72217628231937,
+        "p50": 280.0020521364272,
+        "p75": 663.7959151343038,
+        "p90": 681.7593087084832,
+        "p95": 997.263803782081,
+        "max": 1110.6370028774302
+      },
+      "pointer_speed": {
+        "n": 675,
+        "mean": 288.5684187801707,
+        "p50": 269.2582403567252,
+        "p75": 269.2582403567252,
+        "p90": 273.09498392950985,
+        "p95": 338.4366947618689,
+        "max": 5331.9239395637405
+      },
+      "target_error": {
+        "n": 675,
+        "mean": 306.944220223541,
+        "p50": 8.531094803004786,
+        "p75": 526.6620577962511,
+        "p90": 1101.9465779880954,
+        "p95": 1391.0837157638016,
+        "max": 1897.684526668943
+      },
+      "speed_cap": 1800.0,
+      "fraction_at_95pct_cap": 0.0
+    },
+    "speed_bl_s": {
+      "mean": 10.088373842498385,
+      "peak": 37.47381312419826
+    },
+    "threat_state_fraction": {
+      "CALM": 0.475,
+      "ALERT": 0.15583333333333332,
+      "ESCAPE": 0.36916666666666664
+    },
+    "ecological_state_fraction": {
+      "EXPLORE": 0.18,
+      "ALERT": 0.15583333333333332,
+      "RECOVER": 0.2891666666666667,
+      "ODOR_TRACK": 0.005833333333333334,
+      "ESCAPE": 0.36916666666666664
+    },
+    "wall_time_seconds": 4.68,
+    "perimeter_time_seconds": 4.92,
+    "contact_time_seconds": 0.08,
+    "odor_encounters": 1,
+    "landing_attempts": 0,
+    "attack_direction_bins_degrees": {
+      "0": 3,
+      "45": 1,
+      "180": 3
+    },
+    "full_brain_recorded": false,
+    "learning_updates": 0
+  },
+  "elapsed_seconds": 14.071595999997953,
+  "files_bytes": {
+    "episodes.jsonl": 547,
+    "events.jsonl": 11306,
+    "inputs.jsonl": 198715,
+    "manifest.json": 15194,
+    "policy_observations.jsonl": 1539397,
+    "REPORT.md": 2797,
+    "source_snapshot.zip": 63801,
+    "strikes.json": 7414,
+    "summary.json": 3726,
+    "ticks.jsonl": 6062781
+  }
+}

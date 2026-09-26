@@ -1,0 +1,1693 @@
+{
+  "provenance": {
+    "schema_version": 2,
+    "measurement_protocol": "fixed-fly-v2",
+    "config_hash_format": "canonical-json-sort-keys-ascii-compact",
+    "game_config_sha256": "766dcc825c34b0ad5b256fb29400d424d405ac81e450dea4862ca708f2ad0341",
+    "flybrain_version": "0.1.0",
+    "encoder_population_rule": "min-per-type-per-side-v1",
+    "encoder_seed": 20260917,
+    "encoder_types": {
+      "loom": [
+        "LPLC2"
+      ],
+      "threat": [
+        "LC4"
+      ]
+    },
+    "sensory_input": false,
+    "tick_seconds": 0.02,
+    "brain_dt_seconds": 0.02
+  },
+  "scenario": "2 seeds x 8 approach axes x 3 pointer profiles; no tuning to hit rate",
+  "trials": [
+    {
+      "seed": 101,
+      "approach_degrees": 0.0,
+      "profile": "linear",
+      "initial_heading": -1.4599816006203703,
+      "actual_attack_angle": -0.11338389139027891,
+      "hit": true,
+      "first_response_seconds": 1.3,
+      "theta_range": [
+        0.09290916342359964,
+        2.058322601178449
+      ],
+      "theta_dot_range": [
+        -8.19967929476032,
+        12.630500639363806
+      ],
+      "azimuth_range": [
+        -0.8524133104469507,
+        0.9978188046692378
+      ],
+      "dnp01_peak_LR": [
+        3.2288689613342285,
+        2.0392255783081055
+      ],
+      "dna02_peak_LR": [
+        1.040762186050415,
+        0.0
+      ],
+      "max_yaw_rad_s": 24.44612108788109,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 1127.407766451586
+    },
+    {
+      "seed": 101,
+      "approach_degrees": 0.0,
+      "profile": "accelerating",
+      "initial_heading": -1.4599816006203703,
+      "actual_attack_angle": 0.18266251208795187,
+      "hit": true,
+      "first_response_seconds": 1.48,
+      "theta_range": [
+        0.09290916342359964,
+        2.173579316597242
+      ],
+      "theta_dot_range": [
+        -8.094565963808408,
+        12.00245560380645
+      ],
+      "azimuth_range": [
+        -0.9814130187237347,
+        0.9652199075482666
+      ],
+      "dnp01_peak_LR": [
+        4.4122819900512695,
+        1.9873576164245605
+      ],
+      "dna02_peak_LR": [
+        1.040762186050415,
+        0.0
+      ],
+      "max_yaw_rad_s": 22.69749028581836,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 1491.9026249207686
+    },
+    {
+      "seed": 101,
+      "approach_degrees": 0.0,
+      "profile": "leading",
+      "initial_heading": -1.4599816006203703,
+      "actual_attack_angle": -0.3245379112540375,
+      "hit": true,
+      "first_response_seconds": 1.2,
+      "theta_range": [
+        0.09290916342359964,
+        2.78222043235662
+      ],
+      "theta_dot_range": [
+        -13.689252803363194,
+        18.864806263752996
+      ],
+      "azimuth_range": [
+        -0.9136403682425456,
+        0.9837970432937222
+      ],
+      "dnp01_peak_LR": [
+        3.396977424621582,
+        2.1018357276916504
+      ],
+      "dna02_peak_LR": [
+        1.040762186050415,
+        1.0
+      ],
+      "max_yaw_rad_s": 22.906842752229192,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 1123.6747085136767
+    },
+    {
+      "seed": 101,
+      "approach_degrees": 45.0,
+      "profile": "linear",
+      "initial_heading": -1.4599816006203703,
+      "actual_attack_angle": 0.5270004567314172,
+      "hit": true,
+      "first_response_seconds": 1.3,
+      "theta_range": [
+        0.09290916342359964,
+        2.1277860102874517
+      ],
+      "theta_dot_range": [
+        -8.376063943469159,
+        12.393237288052127
+      ],
+      "azimuth_range": [
+        -0.999325770096441,
+        0.9930855447023601
+      ],
+      "dnp01_peak_LR": [
+        3.727741241455078,
+        2.0096006393432617
+      ],
+      "dna02_peak_LR": [
+        1.0,
+        0.0
+      ],
+      "max_yaw_rad_s": 22.767318883983314,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 978.9721665077642
+    },
+    {
+      "seed": 101,
+      "approach_degrees": 45.0,
+      "profile": "accelerating",
+      "initial_heading": -1.4599816006203703,
+      "actual_attack_angle": 0.8278724406964498,
+      "hit": true,
+      "first_response_seconds": 1.48,
+      "theta_range": [
+        0.09290916342359964,
+        1.882282813104633
+      ],
+      "theta_dot_range": [
+        -7.045484824178027,
+        12.375334881931698
+      ],
+      "azimuth_range": [
+        -0.9989855946591712,
+        0.9923845955694914
+      ],
+      "dnp01_peak_LR": [
+        4.062718391418457,
+        2.0042965412139893
+      ],
+      "dna02_peak_LR": [
+        1.0,
+        1.0
+      ],
+      "max_yaw_rad_s": 23.091563549678494,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 1316.6733727153078
+    },
+    {
+      "seed": 101,
+      "approach_degrees": 45.0,
+      "profile": "leading",
+      "initial_heading": -1.4599816006203703,
+      "actual_attack_angle": 0.6609909460244633,
+      "hit": true,
+      "first_response_seconds": 1.28,
+      "theta_range": [
+        0.09290916342359964,
+        2.76804673304541
+      ],
+      "theta_dot_range": [
+        -13.05287994347406,
+        20.321372830593585
+      ],
+      "azimuth_range": [
+        -0.9954807413476475,
+        0.9787720546204495
+      ],
+      "dnp01_peak_LR": [
+        2.900721549987793,
+        2.0290117263793945
+      ],
+      "dna02_peak_LR": [
+        1.040762186050415,
+        1.0007466077804565
+      ],
+      "max_yaw_rad_s": 24.302681041229675,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 1413.007384669332
+    },
+    {
+      "seed": 101,
+      "approach_degrees": 90.0,
+      "profile": "linear",
+      "initial_heading": -1.4599816006203703,
+      "actual_attack_angle": 1.2589566548060225,
+      "hit": true,
+      "first_response_seconds": 1.2,
+      "theta_range": [
+        0.09290916342359964,
+        2.121216117340486
+      ],
+      "theta_dot_range": [
+        -8.76662799786554,
+        13.292578627282348
+      ],
+      "azimuth_range": [
+        -0.9997903585755932,
+        0.9578935599349181
+      ],
+      "dnp01_peak_LR": [
+        3.312786340713501,
+        2.018014907836914
+      ],
+      "dna02_peak_LR": [
+        1.0045166015625,
+        0.0
+      ],
+      "max_yaw_rad_s": 23.819834701337072,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 1050.5771857728323
+    },
+    {
+      "seed": 101,
+      "approach_degrees": 90.0,
+      "profile": "accelerating",
+      "initial_heading": -1.4599816006203703,
+      "actual_attack_angle": 1.681521340709496,
+      "hit": true,
+      "first_response_seconds": 1.2,
+      "theta_range": [
+        0.09290916342359964,
+        2.0345504115497004
+      ],
+      "theta_dot_range": [
+        -7.524216741551448,
+        12.108822760604099
+      ],
+      "azimuth_range": [
+        -0.9995764975608175,
+        0.9967309481842974
+      ],
+      "dnp01_peak_LR": [
+        3.736757278442383,
+        1.807342529296875
+      ],
+      "dna02_peak_LR": [
+        1.0045166015625,
+        0.0
+      ],
+      "max_yaw_rad_s": 22.807194445080125,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 1693.433070940966
+    },
+    {
+      "seed": 101,
+      "approach_degrees": 90.0,
+      "profile": "leading",
+      "initial_heading": -1.4599816006203703,
+      "actual_attack_angle": 1.169357279675699,
+      "hit": true,
+      "first_response_seconds": 1.28,
+      "theta_range": [
+        0.09290916342359964,
+        2.249188016209463
+      ],
+      "theta_dot_range": [
+        -8.234115040876222,
+        11.965885420344735
+      ],
+      "azimuth_range": [
+        -0.995935384701574,
+        0.9232015549032796
+      ],
+      "dnp01_peak_LR": [
+        3.092374086380005,
+        1.7146973609924316
+      ],
+      "dna02_peak_LR": [
+        1.0045166015625,
+        1.0
+      ],
+      "max_yaw_rad_s": 23.285898763542562,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 710.9023528565838
+    },
+    {
+      "seed": 101,
+      "approach_degrees": 135.0,
+      "profile": "linear",
+      "initial_heading": -1.4599816006203703,
+      "actual_attack_angle": 2.545571560209726,
+      "hit": true,
+      "first_response_seconds": 1.2,
+      "theta_range": [
+        0.09290916342359964,
+        2.015974135292245
+      ],
+      "theta_dot_range": [
+        -7.685731554039776,
+        12.286717198249807
+      ],
+      "azimuth_range": [
+        -0.9956836034456229,
+        0.9990411617337696
+      ],
+      "dnp01_peak_LR": [
+        1.673705816268921,
+        3.8976237773895264
+      ],
+      "dna02_peak_LR": [
+        1.040762186050415,
+        0.0
+      ],
+      "max_yaw_rad_s": 22.430479976749787,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 1152.5021070810487
+    },
+    {
+      "seed": 101,
+      "approach_degrees": 135.0,
+      "profile": "accelerating",
+      "initial_heading": -1.4599816006203703,
+      "actual_attack_angle": 2.5831958698960285,
+      "hit": true,
+      "first_response_seconds": 1.2,
+      "theta_range": [
+        0.09290916342359964,
+        2.108307970690876
+      ],
+      "theta_dot_range": [
+        -8.321493228858767,
+        12.423119555622863
+      ],
+      "azimuth_range": [
+        -0.998653269458684,
+        0.9855731398411907
+      ],
+      "dnp01_peak_LR": [
+        1.7175202369689941,
+        4.556404113769531
+      ],
+      "dna02_peak_LR": [
+        1.040762186050415,
+        1.0
+      ],
+      "max_yaw_rad_s": 22.757066395880525,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 1369.247681119202
+    },
+    {
+      "seed": 101,
+      "approach_degrees": 135.0,
+      "profile": "leading",
+      "initial_heading": -1.4599816006203703,
+      "actual_attack_angle": 2.806696737097951,
+      "hit": true,
+      "first_response_seconds": 1.26,
+      "theta_range": [
+        0.09290916342359964,
+        2.7951385382602956
+      ],
+      "theta_dot_range": [
+        -13.839624819208085,
+        19.5441259394586
+      ],
+      "azimuth_range": [
+        -0.9751296455993439,
+        0.9955287985993606
+      ],
+      "dnp01_peak_LR": [
+        1.9783697128295898,
+        3.578099012374878
+      ],
+      "dna02_peak_LR": [
+        1.040762186050415,
+        1.0
+      ],
+      "max_yaw_rad_s": 24.064367350219975,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 1128.2824656951334
+    },
+    {
+      "seed": 101,
+      "approach_degrees": 180.0,
+      "profile": "linear",
+      "initial_heading": -1.4599816006203703,
+      "actual_attack_angle": -2.7679409237897956,
+      "hit": true,
+      "first_response_seconds": 1.26,
+      "theta_range": [
+        0.09290916342359964,
+        1.8762240245711685
+      ],
+      "theta_dot_range": [
+        -7.168327872905233,
+        12.506446147777506
+      ],
+      "azimuth_range": [
+        -0.9737546317174547,
+        0.965460214396829
+      ],
+      "dnp01_peak_LR": [
+        1.6827306747436523,
+        4.213593482971191
+      ],
+      "dna02_peak_LR": [
+        1.040762186050415,
+        1.0
+      ],
+      "max_yaw_rad_s": 24.499992787228322,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 839.1306120211543
+    },
+    {
+      "seed": 101,
+      "approach_degrees": 180.0,
+      "profile": "accelerating",
+      "initial_heading": -1.4599816006203703,
+      "actual_attack_angle": -3.057187885732746,
+      "hit": true,
+      "first_response_seconds": 1.3,
+      "theta_range": [
+        0.09290916342359964,
+        1.9380304170291776
+      ],
+      "theta_dot_range": [
+        -7.66222210386972,
+        12.907571954425956
+      ],
+      "azimuth_range": [
+        -0.9886361060675347,
+        0.998966114158801
+      ],
+      "dnp01_peak_LR": [
+        2.8921446800231934,
+        2.402273178100586
+      ],
+      "dna02_peak_LR": [
+        1.040762186050415,
+        1.0007466077804565
+      ],
+      "max_yaw_rad_s": 23.51395528595467,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 1348.011306526694
+    },
+    {
+      "seed": 101,
+      "approach_degrees": 180.0,
+      "profile": "leading",
+      "initial_heading": -1.4599816006203703,
+      "actual_attack_angle": -2.901332131908118,
+      "hit": true,
+      "first_response_seconds": 1.2,
+      "theta_range": [
+        0.09290916342359964,
+        2.232173465147909
+      ],
+      "theta_dot_range": [
+        -8.84616301321829,
+        12.369595265961264
+      ],
+      "azimuth_range": [
+        -0.998576275176732,
+        0.9802575469796692
+      ],
+      "dnp01_peak_LR": [
+        1.6723359823226929,
+        3.256870746612549
+      ],
+      "dna02_peak_LR": [
+        1.0002248287200928,
+        1.0007466077804565
+      ],
+      "max_yaw_rad_s": 23.39554616864454,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 738.9488639695776
+    },
+    {
+      "seed": 101,
+      "approach_degrees": 225.0,
+      "profile": "linear",
+      "initial_heading": -1.4599816006203703,
+      "actual_attack_angle": -2.6735321501406,
+      "hit": true,
+      "first_response_seconds": 1.2,
+      "theta_range": [
+        0.09290916342359964,
+        2.024643905354494
+      ],
+      "theta_dot_range": [
+        -8.022945816894245,
+        12.66182011235144
+      ],
+      "azimuth_range": [
+        -0.9905566982379402,
+        0.9910431317629983
+      ],
+      "dnp01_peak_LR": [
+        3.1284899711608887,
+        1.9563350677490234
+      ],
+      "dna02_peak_LR": [
+        1.0002248287200928,
+        1.0
+      ],
+      "max_yaw_rad_s": 22.855344642656863,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 1156.5874064039485
+    },
+    {
+      "seed": 101,
+      "approach_degrees": 225.0,
+      "profile": "accelerating",
+      "initial_heading": -1.4599816006203703,
+      "actual_attack_angle": -2.3264716661835183,
+      "hit": true,
+      "first_response_seconds": 1.2,
+      "theta_range": [
+        0.09290916342359964,
+        1.89097152863026
+      ],
+      "theta_dot_range": [
+        -7.40120152129764,
+        12.754686494055312
+      ],
+      "azimuth_range": [
+        -0.9905566982379402,
+        0.9910431317629983
+      ],
+      "dnp01_peak_LR": [
+        3.03887939453125,
+        2.0735206604003906
+      ],
+      "dna02_peak_LR": [
+        1.0002248287200928,
+        1.0
+      ],
+      "max_yaw_rad_s": 23.347526396847503,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 1338.7555255088002
+    },
+    {
+      "seed": 101,
+      "approach_degrees": 225.0,
+      "profile": "leading",
+      "initial_heading": -1.4599816006203703,
+      "actual_attack_angle": -2.1655955762440016,
+      "hit": true,
+      "first_response_seconds": 1.26,
+      "theta_range": [
+        0.09290916342359964,
+        2.1705745735319453
+      ],
+      "theta_dot_range": [
+        -8.811123501209439,
+        12.967294033838472
+      ],
+      "azimuth_range": [
+        -0.9977207018362916,
+        0.9947413727389164
+      ],
+      "dnp01_peak_LR": [
+        1.5713175535202026,
+        3.6157119274139404
+      ],
+      "dna02_peak_LR": [
+        1.0273237228393555,
+        1.0
+      ],
+      "max_yaw_rad_s": 24.203130712608544,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 832.5153647124579
+    },
+    {
+      "seed": 101,
+      "approach_degrees": 270.0,
+      "profile": "linear",
+      "initial_heading": -1.4599816006203703,
+      "actual_attack_angle": -1.1724394608140902,
+      "hit": true,
+      "first_response_seconds": 1.2,
+      "theta_range": [
+        0.09290916342359964,
+        2.1828782433573806
+      ],
+      "theta_dot_range": [
+        -9.257480113719707,
+        14.1415598452301
+      ],
+      "azimuth_range": [
+        -0.9779147089013853,
+        0.986984345020643
+      ],
+      "dnp01_peak_LR": [
+        2.0982885360717773,
+        3.803605318069458
+      ],
+      "dna02_peak_LR": [
+        1.040762186050415,
+        0.0
+      ],
+      "max_yaw_rad_s": 25.224919943842565,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 1073.4762907744953
+    },
+    {
+      "seed": 101,
+      "approach_degrees": 270.0,
+      "profile": "accelerating",
+      "initial_heading": -1.4599816006203703,
+      "actual_attack_angle": -1.5726069244869876,
+      "hit": true,
+      "first_response_seconds": 1.2,
+      "theta_range": [
+        0.09290916342359964,
+        2.0581129016859814
+      ],
+      "theta_dot_range": [
+        -8.26365114299218,
+        12.761611375824245
+      ],
+      "azimuth_range": [
+        -0.9699814829343527,
+        0.9963672662203354
+      ],
+      "dnp01_peak_LR": [
+        2.49267578125,
+        2.183154344558716
+      ],
+      "dna02_peak_LR": [
+        1.040762186050415,
+        0.0
+      ],
+      "max_yaw_rad_s": 23.507222623925013,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 1310.72020410702
+    },
+    {
+      "seed": 101,
+      "approach_degrees": 270.0,
+      "profile": "leading",
+      "initial_heading": -1.4599816006203703,
+      "actual_attack_angle": -1.2284312219017821,
+      "hit": true,
+      "first_response_seconds": 1.2,
+      "theta_range": [
+        0.09290916342359964,
+        2.3616588520677886
+      ],
+      "theta_dot_range": [
+        -8.943137723538397,
+        12.250992888487765
+      ],
+      "azimuth_range": [
+        -0.9930849386893553,
+        0.9557028688400028
+      ],
+      "dnp01_peak_LR": [
+        1.952199935913086,
+        4.219404697418213
+      ],
+      "dna02_peak_LR": [
+        1.040762186050415,
+        1.0
+      ],
+      "max_yaw_rad_s": 24.029921724166286,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 808.810609107036
+    },
+    {
+      "seed": 101,
+      "approach_degrees": 315.0,
+      "profile": "linear",
+      "initial_heading": -1.4599816006203703,
+      "actual_attack_angle": -0.7711382300012917,
+      "hit": true,
+      "first_response_seconds": 1.2,
+      "theta_range": [
+        0.09290916342359964,
+        2.0225356740524236
+      ],
+      "theta_dot_range": [
+        -7.64389281099398,
+        12.216971750445603
+      ],
+      "azimuth_range": [
+        -0.9124367034787547,
+        0.9626164034781014
+      ],
+      "dnp01_peak_LR": [
+        2.9069933891296387,
+        2.6156539916992188
+      ],
+      "dna02_peak_LR": [
+        1.040762186050415,
+        1.0
+      ],
+      "max_yaw_rad_s": 24.944181179731174,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 1164.5868993495426
+    },
+    {
+      "seed": 101,
+      "approach_degrees": 315.0,
+      "profile": "accelerating",
+      "initial_heading": -1.4599816006203703,
+      "actual_attack_angle": -0.789867091101724,
+      "hit": true,
+      "first_response_seconds": 1.2,
+      "theta_range": [
+        0.09290916342359964,
+        2.053318526162106
+      ],
+      "theta_dot_range": [
+        -7.868771381963913,
+        12.228593263882814
+      ],
+      "azimuth_range": [
+        -0.9790289062585836,
+        0.9237130376996537
+      ],
+      "dnp01_peak_LR": [
+        3.8656163215637207,
+        2.6156539916992188
+      ],
+      "dna02_peak_LR": [
+        1.040762186050415,
+        1.0
+      ],
+      "max_yaw_rad_s": 25.232114662393855,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 1385.2368305251944
+    },
+    {
+      "seed": 101,
+      "approach_degrees": 315.0,
+      "profile": "leading",
+      "initial_heading": -1.4599816006203703,
+      "actual_attack_angle": -1.1410830747178398,
+      "hit": true,
+      "first_response_seconds": 1.2,
+      "theta_range": [
+        0.09290916342359964,
+        2.5761250431180955
+      ],
+      "theta_dot_range": [
+        -10.239503108374914,
+        15.573511536894879
+      ],
+      "azimuth_range": [
+        -0.8645117986128843,
+        0.9871399393427126
+      ],
+      "dnp01_peak_LR": [
+        3.1514391899108887,
+        2.0969905853271484
+      ],
+      "dna02_peak_LR": [
+        1.040762186050415,
+        0.0
+      ],
+      "max_yaw_rad_s": 23.10564903900155,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 800.453492367141
+    },
+    {
+      "seed": 102,
+      "approach_degrees": 0.0,
+      "profile": "linear",
+      "initial_heading": 0.9187789138372526,
+      "actual_attack_angle": 0.28707826744317333,
+      "hit": true,
+      "first_response_seconds": 1.2,
+      "theta_range": [
+        0.1917474848454288,
+        1.8616786752764882
+      ],
+      "theta_dot_range": [
+        -6.83075714376935,
+        12.309311760674468
+      ],
+      "azimuth_range": [
+        -0.9620281628402847,
+        0.9878517487142212
+      ],
+      "dnp01_peak_LR": [
+        2.6735448837280273,
+        2.7531213760375977
+      ],
+      "dna02_peak_LR": [
+        1.0341335535049438,
+        1.0
+      ],
+      "max_yaw_rad_s": 23.188290417369103,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 831.9419434655692
+    },
+    {
+      "seed": 102,
+      "approach_degrees": 0.0,
+      "profile": "accelerating",
+      "initial_heading": 0.9187789138372526,
+      "actual_attack_angle": -0.09219117673837009,
+      "hit": true,
+      "first_response_seconds": 1.2,
+      "theta_range": [
+        0.1873934474296131,
+        2.022636107943602
+      ],
+      "theta_dot_range": [
+        -8.121272237562438,
+        12.880584752321566
+      ],
+      "azimuth_range": [
+        -0.9620281628402847,
+        0.9922630817969683
+      ],
+      "dnp01_peak_LR": [
+        2.398843765258789,
+        4.1562652587890625
+      ],
+      "dna02_peak_LR": [
+        1.0227805376052856,
+        1.0
+      ],
+      "max_yaw_rad_s": 23.836388736282217,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 1307.033292290301
+    },
+    {
+      "seed": 102,
+      "approach_degrees": 0.0,
+      "profile": "leading",
+      "initial_heading": 0.9187789138372526,
+      "actual_attack_angle": 0.22917510111835693,
+      "hit": true,
+      "first_response_seconds": 1.28,
+      "theta_range": [
+        0.1785645918738418,
+        2.2502052489442943
+      ],
+      "theta_dot_range": [
+        -8.775952492439599,
+        12.180099167730706
+      ],
+      "azimuth_range": [
+        -0.9990427229031762,
+        0.9880201250671559
+      ],
+      "dnp01_peak_LR": [
+        2.0153048038482666,
+        4.288959503173828
+      ],
+      "dna02_peak_LR": [
+        1.0497870445251465,
+        1.0
+      ],
+      "max_yaw_rad_s": 22.981229610742165,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 787.9671171759283
+    },
+    {
+      "seed": 102,
+      "approach_degrees": 45.0,
+      "profile": "linear",
+      "initial_heading": 0.9187789138372526,
+      "actual_attack_angle": 0.8139823121078837,
+      "hit": true,
+      "first_response_seconds": 1.2,
+      "theta_range": [
+        0.18310026698012524,
+        1.8994048198802431
+      ],
+      "theta_dot_range": [
+        -7.5469780694488175,
+        12.971940481763733
+      ],
+      "azimuth_range": [
+        -0.980474861837416,
+        0.9865964019898864
+      ],
+      "dnp01_peak_LR": [
+        3.2385237216949463,
+        2.1506130695343018
+      ],
+      "dna02_peak_LR": [
+        1.0339845418930054,
+        1.0
+      ],
+      "max_yaw_rad_s": 24.67713037962529,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 890.5455754238087
+    },
+    {
+      "seed": 102,
+      "approach_degrees": 45.0,
+      "profile": "accelerating",
+      "initial_heading": 0.9187789138372526,
+      "actual_attack_angle": 0.8444683958325734,
+      "hit": false,
+      "first_response_seconds": 1.2,
+      "theta_range": [
+        0.18310026698012524,
+        1.5164771298309323
+      ],
+      "theta_dot_range": [
+        -4.815523977149871,
+        7.873217289888412
+      ],
+      "azimuth_range": [
+        -0.9935414504485537,
+        0.9991983631943402
+      ],
+      "dnp01_peak_LR": [
+        3.2388875484466553,
+        3.9541914463043213
+      ],
+      "dna02_peak_LR": [
+        1.0339845418930054,
+        1.0
+      ],
+      "max_yaw_rad_s": 22.811704725294078,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 1337.4605596019612
+    },
+    {
+      "seed": 102,
+      "approach_degrees": 45.0,
+      "profile": "leading",
+      "initial_heading": 0.9187789138372526,
+      "actual_attack_angle": 1.0071512822266155,
+      "hit": true,
+      "first_response_seconds": 1.28,
+      "theta_range": [
+        0.17938547185516027,
+        2.2035647668455085
+      ],
+      "theta_dot_range": [
+        -8.884036922357529,
+        12.719684102666662
+      ],
+      "azimuth_range": [
+        -0.9693453897753334,
+        0.9934940266370285
+      ],
+      "dnp01_peak_LR": [
+        1.6703312397003174,
+        3.278704881668091
+      ],
+      "dna02_peak_LR": [
+        1.012277364730835,
+        1.0
+      ],
+      "max_yaw_rad_s": 23.46915507513269,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 783.3141806483544
+    },
+    {
+      "seed": 102,
+      "approach_degrees": 90.0,
+      "profile": "linear",
+      "initial_heading": 0.9187789138372526,
+      "actual_attack_angle": 1.3386278909085014,
+      "hit": false,
+      "first_response_seconds": 1.26,
+      "theta_range": [
+        0.1806782553558128,
+        1.5954194565859223
+      ],
+      "theta_dot_range": [
+        -7.053783577564499,
+        9.350929806369646
+      ],
+      "azimuth_range": [
+        -0.9435122964221632,
+        0.9976954842465989
+      ],
+      "dnp01_peak_LR": [
+        1.9944285154342651,
+        4.037636756896973
+      ],
+      "dna02_peak_LR": [
+        1.0151796340942383,
+        1.012277364730835
+      ],
+      "max_yaw_rad_s": 23.49206496355905,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 908.6168427258933
+    },
+    {
+      "seed": 102,
+      "approach_degrees": 90.0,
+      "profile": "accelerating",
+      "initial_heading": 0.9187789138372526,
+      "actual_attack_angle": 1.4333807953109856,
+      "hit": true,
+      "first_response_seconds": 1.26,
+      "theta_range": [
+        0.1806782553558128,
+        1.89188969627393
+      ],
+      "theta_dot_range": [
+        -7.206683840664596,
+        12.48844839546005
+      ],
+      "azimuth_range": [
+        -0.9962100383227117,
+        0.999749049548476
+      ],
+      "dnp01_peak_LR": [
+        1.8051035404205322,
+        3.2944397926330566
+      ],
+      "dna02_peak_LR": [
+        1.0122979879379272,
+        1.0
+      ],
+      "max_yaw_rad_s": 21.609546339552004,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 1309.8798630578983
+    },
+    {
+      "seed": 102,
+      "approach_degrees": 90.0,
+      "profile": "leading",
+      "initial_heading": 0.9187789138372526,
+      "actual_attack_angle": 1.7277396831641851,
+      "hit": true,
+      "first_response_seconds": 1.2,
+      "theta_range": [
+        0.20429667537711313,
+        2.673463506239802
+      ],
+      "theta_dot_range": [
+        -11.724292746396037,
+        16.809241729034863
+      ],
+      "azimuth_range": [
+        -0.9773570835691575,
+        0.9966679203326779
+      ],
+      "dnp01_peak_LR": [
+        1.8101142644882202,
+        4.231136322021484
+      ],
+      "dna02_peak_LR": [
+        1.0497870445251465,
+        1.0
+      ],
+      "max_yaw_rad_s": 23.060838719107732,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 883.6230647159629
+    },
+    {
+      "seed": 102,
+      "approach_degrees": 135.0,
+      "profile": "linear",
+      "initial_heading": 0.9187789138372526,
+      "actual_attack_angle": 2.153089533414583,
+      "hit": true,
+      "first_response_seconds": 1.2,
+      "theta_range": [
+        0.1807232056875913,
+        2.0749947500999633
+      ],
+      "theta_dot_range": [
+        -8.163107526244051,
+        12.409597495863766
+      ],
+      "azimuth_range": [
+        -0.9788994694056155,
+        0.9555937772741347
+      ],
+      "dnp01_peak_LR": [
+        3.9037814140319824,
+        1.9112985134124756
+      ],
+      "dna02_peak_LR": [
+        1.0497870445251465,
+        1.0
+      ],
+      "max_yaw_rad_s": 23.29094347728735,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 1075.5086203646524
+    },
+    {
+      "seed": 102,
+      "approach_degrees": 135.0,
+      "profile": "accelerating",
+      "initial_heading": 0.9187789138372526,
+      "actual_attack_angle": 2.378120974740614,
+      "hit": true,
+      "first_response_seconds": 1.2,
+      "theta_range": [
+        0.1807232056875913,
+        1.8840642189176962
+      ],
+      "theta_dot_range": [
+        -7.40020099436034,
+        12.789276375692204
+      ],
+      "azimuth_range": [
+        -0.9707494292283648,
+        0.9364453761491323
+      ],
+      "dnp01_peak_LR": [
+        3.488330125808716,
+        2.079524517059326
+      ],
+      "dna02_peak_LR": [
+        1.0497870445251465,
+        1.0
+      ],
+      "max_yaw_rad_s": 23.248419203897548,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 1355.1037937537828
+    },
+    {
+      "seed": 102,
+      "approach_degrees": 135.0,
+      "profile": "leading",
+      "initial_heading": 0.9187789138372526,
+      "actual_attack_angle": 2.9248346472753814,
+      "hit": true,
+      "first_response_seconds": 1.2,
+      "theta_range": [
+        0.18170802647803952,
+        2.7039786883997783
+      ],
+      "theta_dot_range": [
+        -12.140051292024578,
+        17.11675800956045
+      ],
+      "azimuth_range": [
+        -0.9965842827985726,
+        0.9968104414870801
+      ],
+      "dnp01_peak_LR": [
+        1.7848687171936035,
+        4.184075355529785
+      ],
+      "dna02_peak_LR": [
+        1.0122979879379272,
+        1.0
+      ],
+      "max_yaw_rad_s": 23.496572123306912,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 734.9266880869094
+    },
+    {
+      "seed": 102,
+      "approach_degrees": 180.0,
+      "profile": "linear",
+      "initial_heading": 0.9187789138372526,
+      "actual_attack_angle": -2.7462069644490397,
+      "hit": true,
+      "first_response_seconds": 1.2,
+      "theta_range": [
+        0.1809662438653886,
+        1.9113072644858413
+      ],
+      "theta_dot_range": [
+        -7.3868864688097275,
+        12.629073099978594
+      ],
+      "azimuth_range": [
+        -0.9937985236730631,
+        0.9953751872334805
+      ],
+      "dnp01_peak_LR": [
+        1.8200085163116455,
+        3.9778194427490234
+      ],
+      "dna02_peak_LR": [
+        1.012277364730835,
+        1.0
+      ],
+      "max_yaw_rad_s": 24.384834872082624,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 908.0212923548495
+    },
+    {
+      "seed": 102,
+      "approach_degrees": 180.0,
+      "profile": "accelerating",
+      "initial_heading": 0.9187789138372526,
+      "actual_attack_angle": 3.1083599425932316,
+      "hit": true,
+      "first_response_seconds": 1.2,
+      "theta_range": [
+        0.1809662438653886,
+        1.8727387382585519
+      ],
+      "theta_dot_range": [
+        -6.750958339072099,
+        12.280375579212132
+      ],
+      "azimuth_range": [
+        -0.9999539281559521,
+        0.9899270643877925
+      ],
+      "dnp01_peak_LR": [
+        1.760061502456665,
+        4.449034214019775
+      ],
+      "dna02_peak_LR": [
+        1.012277364730835,
+        1.0
+      ],
+      "max_yaw_rad_s": 23.121162299732486,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 1428.18954673643
+    },
+    {
+      "seed": 102,
+      "approach_degrees": 180.0,
+      "profile": "leading",
+      "initial_heading": 0.9187789138372526,
+      "actual_attack_angle": -2.826140419525526,
+      "hit": true,
+      "first_response_seconds": 1.28,
+      "theta_range": [
+        0.17930136430229476,
+        2.1257288046600262
+      ],
+      "theta_dot_range": [
+        -8.089636181700222,
+        12.107197885695486
+      ],
+      "azimuth_range": [
+        -0.9974151366102627,
+        0.9604808177656656
+      ],
+      "dnp01_peak_LR": [
+        1.8242285251617432,
+        3.6317899227142334
+      ],
+      "dna02_peak_LR": [
+        1.040762186050415,
+        1.0
+      ],
+      "max_yaw_rad_s": 23.846449592252963,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 734.8334490766542
+    },
+    {
+      "seed": 102,
+      "approach_degrees": 225.0,
+      "profile": "linear",
+      "initial_heading": 0.9187789138372526,
+      "actual_attack_angle": -2.4584880896409116,
+      "hit": true,
+      "first_response_seconds": 1.2,
+      "theta_range": [
+        0.18863304081553114,
+        2.0591008809016857
+      ],
+      "theta_dot_range": [
+        -7.867902960064188,
+        12.195391987575787
+      ],
+      "azimuth_range": [
+        -0.9138580920705051,
+        0.9284745217115578
+      ],
+      "dnp01_peak_LR": [
+        1.9764773845672607,
+        3.8446009159088135
+      ],
+      "dna02_peak_LR": [
+        1.0223708152770996,
+        1.0
+      ],
+      "max_yaw_rad_s": 24.9278972329269,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 1120.7129088475958
+    },
+    {
+      "seed": 102,
+      "approach_degrees": 225.0,
+      "profile": "accelerating",
+      "initial_heading": 0.9187789138372526,
+      "actual_attack_angle": -2.5564100347483083,
+      "hit": true,
+      "first_response_seconds": 1.2,
+      "theta_range": [
+        0.18863304081553114,
+        1.9446867943340214
+      ],
+      "theta_dot_range": [
+        -7.0823105940357785,
+        12.234683641745148
+      ],
+      "azimuth_range": [
+        -0.9670308866718652,
+        0.9351844096009675
+      ],
+      "dnp01_peak_LR": [
+        2.1449460983276367,
+        4.35494327545166
+      ],
+      "dna02_peak_LR": [
+        1.0223708152770996,
+        1.0
+      ],
+      "max_yaw_rad_s": 24.425841511874722,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 1469.8468430842265
+    },
+    {
+      "seed": 102,
+      "approach_degrees": 225.0,
+      "profile": "leading",
+      "initial_heading": 0.9187789138372526,
+      "actual_attack_angle": -2.0595982603395218,
+      "hit": true,
+      "first_response_seconds": 1.2,
+      "theta_range": [
+        0.1868476139676742,
+        2.7845416641369383
+      ],
+      "theta_dot_range": [
+        -13.726220327070914,
+        19.067192628697626
+      ],
+      "azimuth_range": [
+        -0.9974038829806434,
+        0.929391665539045
+      ],
+      "dnp01_peak_LR": [
+        2.0069241523742676,
+        3.972612142562866
+      ],
+      "dna02_peak_LR": [
+        1.0122979879379272,
+        1.0
+      ],
+      "max_yaw_rad_s": 22.928696636033074,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 1206.576210734347
+    },
+    {
+      "seed": 102,
+      "approach_degrees": 270.0,
+      "profile": "linear",
+      "initial_heading": 0.9187789138372526,
+      "actual_attack_angle": -1.1587642425267144,
+      "hit": true,
+      "first_response_seconds": 1.26,
+      "theta_range": [
+        0.18198580831729064,
+        1.912439186245746
+      ],
+      "theta_dot_range": [
+        -7.365669056109847,
+        12.59375860716727
+      ],
+      "azimuth_range": [
+        -0.9342693679482157,
+        0.9655780468836453
+      ],
+      "dnp01_peak_LR": [
+        1.828439712524414,
+        2.8831825256347656
+      ],
+      "dna02_peak_LR": [
+        1.0497870445251465,
+        1.0
+      ],
+      "max_yaw_rad_s": 23.480070899563625,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 760.4618770409877
+    },
+    {
+      "seed": 102,
+      "approach_degrees": 270.0,
+      "profile": "accelerating",
+      "initial_heading": 0.9187789138372526,
+      "actual_attack_angle": -1.6798270181715518,
+      "hit": false,
+      "first_response_seconds": 1.42,
+      "theta_range": [
+        0.18198580831729064,
+        1.5981815175821532
+      ],
+      "theta_dot_range": [
+        -7.157438080207423,
+        9.21555695470555
+      ],
+      "azimuth_range": [
+        -0.9986955669327784,
+        0.9965429423462522
+      ],
+      "dnp01_peak_LR": [
+        3.7893052101135254,
+        2.8642659187316895
+      ],
+      "dna02_peak_LR": [
+        1.0497870445251465,
+        1.0
+      ],
+      "max_yaw_rad_s": 23.12592463486812,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 1520.7967792233812
+    },
+    {
+      "seed": 102,
+      "approach_degrees": 270.0,
+      "profile": "leading",
+      "initial_heading": 0.9187789138372526,
+      "actual_attack_angle": -1.2325570039112383,
+      "hit": true,
+      "first_response_seconds": 1.26,
+      "theta_range": [
+        0.17841874610845,
+        2.251531915607935
+      ],
+      "theta_dot_range": [
+        -8.568456239866762,
+        12.04055922176197
+      ],
+      "azimuth_range": [
+        -0.8656627162008654,
+        0.9904324997242502
+      ],
+      "dnp01_peak_LR": [
+        1.6777689456939697,
+        4.262192726135254
+      ],
+      "dna02_peak_LR": [
+        1.0151796340942383,
+        1.0
+      ],
+      "max_yaw_rad_s": 23.153991053800738,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 724.7863132646506
+    },
+    {
+      "seed": 102,
+      "approach_degrees": 315.0,
+      "profile": "linear",
+      "initial_heading": 0.9187789138372526,
+      "actual_attack_angle": -0.7156816666448703,
+      "hit": true,
+      "first_response_seconds": 1.28,
+      "theta_range": [
+        0.18719509005210108,
+        1.9676838272978125
+      ],
+      "theta_dot_range": [
+        -7.119690035832904,
+        12.188798732333073
+      ],
+      "azimuth_range": [
+        -0.9914262333609825,
+        0.9990778474013692
+      ],
+      "dnp01_peak_LR": [
+        3.9169819355010986,
+        1.8500059843063354
+      ],
+      "dna02_peak_LR": [
+        1.05069899559021,
+        1.012277364730835
+      ],
+      "max_yaw_rad_s": 22.939904891781254,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 1255.1012480931925
+    },
+    {
+      "seed": 102,
+      "approach_degrees": 315.0,
+      "profile": "accelerating",
+      "initial_heading": 0.9187789138372526,
+      "actual_attack_angle": -0.8132333732239857,
+      "hit": true,
+      "first_response_seconds": 1.44,
+      "theta_range": [
+        0.18520294099137818,
+        1.9128484591536954
+      ],
+      "theta_dot_range": [
+        -7.632173167920464,
+        13.066505582433196
+      ],
+      "azimuth_range": [
+        -0.9382543327742237,
+        0.9581552790189586
+      ],
+      "dnp01_peak_LR": [
+        2.4215588569641113,
+        4.358161926269531
+      ],
+      "dna02_peak_LR": [
+        1.05069899559021,
+        1.012277364730835
+      ],
+      "max_yaw_rad_s": 24.720063445738422,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 1357.377389460878
+    },
+    {
+      "seed": 102,
+      "approach_degrees": 315.0,
+      "profile": "leading",
+      "initial_heading": 0.9187789138372526,
+      "actual_attack_angle": -1.0725800501976366,
+      "hit": true,
+      "first_response_seconds": 1.2,
+      "theta_range": [
+        0.1805932548568686,
+        2.7686413657194175
+      ],
+      "theta_dot_range": [
+        -13.052432671692094,
+        20.28914021114987
+      ],
+      "azimuth_range": [
+        -0.996172440811944,
+        0.9949458900467812
+      ],
+      "dnp01_peak_LR": [
+        3.0440375804901123,
+        1.9166913032531738
+      ],
+      "dna02_peak_LR": [
+        1.05069899559021,
+        1.0
+      ],
+      "max_yaw_rad_s": 23.28535960312715,
+      "constraint_ticks": 0,
+      "actual_attack_speed": 1639.5390467387656
+    }
+  ],
+  "distinct_retinal_sequences_rounded_1e_7": 48,
+  "hits": 45,
+  "responses": 48,
+  "arena_comparison": [
+    {
+      "arena": "LAB",
+      "seconds_per_seed": 120,
+      "trials": [
+        {
+          "seed": 17,
+          "near_wall_fraction": 0.4175,
+          "constraint_ticks": 0,
+          "min_speed": 80.67470579503173,
+          "max_slip_degrees": 98.65579083092568,
+          "max_yaw_rad_s": 23.570862886060045,
+          "max_step_px": 3.2000000000000455,
+          "longest_below_40_seconds": 0.0,
+          "longest_near_wall_seconds": 4.64
+        },
+        {
+          "seed": 101,
+          "near_wall_fraction": 0.39,
+          "constraint_ticks": 1,
+          "min_speed": 58.85153156520861,
+          "max_slip_degrees": 121.78441095246757,
+          "max_yaw_rad_s": 22.931889016061465,
+          "max_step_px": 3.2000000000000455,
+          "longest_below_40_seconds": 0.0,
+          "longest_near_wall_seconds": 3.9
+        },
+        {
+          "seed": 102,
+          "near_wall_fraction": 0.4241666666666667,
+          "constraint_ticks": 10,
+          "min_speed": 3.9403611303915813,
+          "max_slip_degrees": 168.57573408870132,
+          "max_yaw_rad_s": 21.947847957599624,
+          "max_step_px": 3.2000000000000455,
+          "longest_below_40_seconds": 0.2,
+          "longest_near_wall_seconds": 4.5
+        },
+        {
+          "seed": 103,
+          "near_wall_fraction": 0.4345,
+          "constraint_ticks": 4,
+          "min_speed": 3.7653297362499494,
+          "max_slip_degrees": 174.38946850519693,
+          "max_yaw_rad_s": 22.05659197231918,
+          "max_step_px": 3.2000000000000455,
+          "longest_below_40_seconds": 0.18,
+          "longest_near_wall_seconds": 4.14
+        },
+        {
+          "seed": 104,
+          "near_wall_fraction": 0.3898333333333333,
+          "constraint_ticks": 1,
+          "min_speed": 46.441634623050696,
+          "max_slip_degrees": 93.13958274415013,
+          "max_yaw_rad_s": 23.405577560740053,
+          "max_step_px": 3.2000000000000455,
+          "longest_below_40_seconds": 0.0,
+          "longest_near_wall_seconds": 7.18
+        }
+      ],
+      "near_wall_fraction": 0.4112
+    },
+    {
+      "arena": "GAME",
+      "seconds_per_seed": 120,
+      "trials": [
+        {
+          "seed": 17,
+          "near_wall_fraction": 0.11216666666666666,
+          "constraint_ticks": 1,
+          "min_speed": 163.29471349255977,
+          "max_slip_degrees": 69.46426394486701,
+          "max_yaw_rad_s": 23.462168346667198,
+          "max_step_px": 4.319936706277555,
+          "longest_below_40_seconds": 0.0,
+          "longest_near_wall_seconds": 2.96
+        },
+        {
+          "seed": 101,
+          "near_wall_fraction": 0.08966666666666667,
+          "constraint_ticks": 0,
+          "min_speed": 176.35361088465248,
+          "max_slip_degrees": 72.19423428842302,
+          "max_yaw_rad_s": 23.679364976288646,
+          "max_step_px": 4.319937582453599,
+          "longest_below_40_seconds": 0.0,
+          "longest_near_wall_seconds": 2.2
+        },
+        {
+          "seed": 102,
+          "near_wall_fraction": 0.11133333333333334,
+          "constraint_ticks": 0,
+          "min_speed": 176.2164806357052,
+          "max_slip_degrees": 68.45476157843785,
+          "max_yaw_rad_s": 23.207929926849676,
+          "max_step_px": 4.498803823318371,
+          "longest_below_40_seconds": 0.0,
+          "longest_near_wall_seconds": 3.16
+        },
+        {
+          "seed": 103,
+          "near_wall_fraction": 0.06383333333333334,
+          "constraint_ticks": 0,
+          "min_speed": 181.81650262025957,
+          "max_slip_degrees": 68.67088186075397,
+          "max_yaw_rad_s": 23.389771632007356,
+          "max_step_px": 4.433938837927739,
+          "longest_below_40_seconds": 0.0,
+          "longest_near_wall_seconds": 1.26
+        },
+        {
+          "seed": 104,
+          "near_wall_fraction": 0.11383333333333333,
+          "constraint_ticks": 0,
+          "min_speed": 159.76104674174448,
+          "max_slip_degrees": 76.10033089924055,
+          "max_yaw_rad_s": 23.5447720938398,
+          "max_step_px": 4.319940643884611,
+          "longest_below_40_seconds": 0.0,
+          "longest_near_wall_seconds": 2.4
+        }
+      ],
+      "near_wall_fraction": 0.09816666666666668
+    }
+  ],
+  "recording_run": "artifacts\\m1-5\\encounters\\runs\\20260919T182446-eaff70b8",
+  "wall_seconds": 21.34309419999994,
+  "limitations": "Finite scripted conditions, not a population estimate or a human difficulty score. No optimizer or training."
+}
