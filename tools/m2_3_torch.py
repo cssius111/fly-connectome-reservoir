@@ -643,7 +643,7 @@ def ppo_train(train_seed, H, out, iterations=None, proto=None, proto_sha=None):
                         'observation_schema_sha256': proto['observation_schema_sha256'],
                         'action_schema_sha256': proto['action_schema_sha256'], 'reward_v2_sha256': proto['reward_v2_sha256'],
                         'constraints_sha256': proto['constraints_sha256'], 'lambda_u': lam_u, 'lambda_p': lam_p,
-                        'beta_kl': beta, 'entropy_coef': ent_coef, 'torch': torch.__version__, 'cuda': torch.version.cuda}
+                        'beta_kl': beta, 'entropy_coef': ent_coef, 'torch': str(torch.__version__), 'cuda': str(torch.version.cuda)}
                 meta['checkpoint_sha256'] = save_checkpoint(path, policy, meta)
                 save_checkpoint(out / ('critic_it%03d.pt' % it), critic)
                 (out / ('ckpt_it%03d.json' % it)).write_text(json.dumps(meta, indent=1) + '\n', encoding='utf-8')

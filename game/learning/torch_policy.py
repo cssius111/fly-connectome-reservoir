@@ -188,7 +188,9 @@ def save_checkpoint(path, module: nn.Module, meta: dict | None = None) -> str:
 
 
 def load_checkpoint(path, cls=TorchPolicy, expected_sha256=None, map_location='cpu'):
-    blob = torch.load(path, map_location=map_location, weights_only=True)
+    # TorchVersion (a str subclass) appears in the metadata of the official M2.3 PPO checkpoints.
+    with torch.serialization.safe_globals([torch.torch_version.TorchVersion]):
+        blob = torch.load(path, map_location=map_location, weights_only=True)
     if blob['arch'] != cls.arch:
         raise ValueError('checkpoint architecture mismatch')
     m = cls()
