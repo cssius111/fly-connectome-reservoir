@@ -4,7 +4,7 @@ This file is an operational handoff for future sessions. It is not a scientific 
 a runtime artifact. Evidence lives in the milestone reports listed below. Update it at the
 end of every substantial milestone.
 
-Last updated: 2026-09-25, M1.8-N4B7 long-window DNp01 readout complete (research only): **L1 not recommended** (fails free-flight category B). Runtime baseline: M1.8-N4B5R (`363a1a9`), unchanged. Frozen alternative in force: keep the runtime and document the slow-approach limitation.
+Last updated: 2026-09-25, M1.8-N4B8 long-mode pathway feasibility complete (research only): **outcome C, no useful long-mode signal**. Runtime baseline: M1.8-N4B5R (`363a1a9`), unchanged. Slow-approach insensitivity is documented as an accepted model limitation of the current architecture.
 
 ## Start of a new session
 
@@ -49,7 +49,7 @@ Earlier frozen milestones (see `AGENTS.md`): M1.7.1 swatter dynamics and M1.8-A 
 
 | Branch | HEAD | Role |
 |---|---|---|
-| `wip/m1-4-enclosure` | the N4B7 research commit (see `git log -1`); N4B7 freeze `8fee28a`, N4B6 `b203b46` (preregistration `987b2a9`), N4B5R state `81b213e`, N4B5 `0e9d2d9`, N4B4 `6b5c4ce`, N4B3 `d09dac4`, N4B2 `5be0aea` | research branch; research-only commits |
+| `wip/m1-4-enclosure` | the N4B8 research commit (see `git log -1`); N4B8 freeze `ecb86d3`, N4B7 `c61dbd3` (freeze `8fee28a`), N4B6 `b203b46` (preregistration `987b2a9`), N4B5R state `81b213e`, N4B5 `0e9d2d9`, N4B4 `6b5c4ce`, N4B3 `d09dac4`, N4B2 `5be0aea` | research branch; research-only commits |
 | `feature/m1-8-n4b5r-geometry` | `363a1a9` | **current accepted runtime** (N4B1C + G3 geometry); **do not modify** |
 | `feature/m1-8-n4b1c-runtime` | `e3c55b3` | previous accepted runtime (decoder layer); **do not modify** |
 | `archive/m1-8-n2b-rejected` | `2c306174d7bdb4e74b6c5517519ae695bd90cf44` | rejected N2b runtime snapshot; **never merge** |
@@ -90,29 +90,24 @@ Do not call C or D "false triggers".
 
 ## Current research milestone
 
-**M1.8-N4B7: long-timescale DNp01 slow-approach readout** (research only): **complete.
-The primary candidate L1 (N4B1C OR same-side >= 4 DNp01 spikes in 1.0 s) is NOT
-recommended.**
+**M1.8-N4B8: biological long-mode escape pathway feasibility** (research only):
+**complete. Outcome C: no useful long-mode signal among the literature-motivated candidates
+(DNp02, DNp11, DNp03, DNp07, DNp10).**
 
-- Fresh-holdout outcome:
-  - 130 units/s approaches: 100 % against 6.9 % (pass);
-  - fixed-fly N0: 3 events in 336 min (pass);
-  - fresh committed strikes: unchanged (pass);
-  - **free flight: 9 -> 167 escapes in 240 min, category B 44 (upper 0.24/min): FAIL;**
-  - repetition: FAIL.
-- Cause: the fly's own flight toward the parked paddle produces the same slow-expansion
-  stimulus. A DNp01-only readout cannot separate them (the N4B3 information limit).
-- Report: `game/M1_8_N4B7_LONG_DNP01_READOUT.md` (read the short answer, then sections 5.4,
-  6, 7 and 9).
+- The self-motion mirror test gives bit-identical Retina input and identical spikes in
+  every candidate (48 / 48 seeds). The brain cannot distinguish external from
+  self-generated approach, because its only input is relative geometry.
+- The landing DNs (DNp07 / DNp10) and DNp03 depend on visual projection types and
+  flight-state inputs the simulator does not model.
+- Report: `game/M1_8_N4B8_LONG_MODE_PATHWAY_FEASIBILITY.md` (read the short answer, then
+  sections 2, 4, 6.1, 7 and 9).
 - Tools:
-  - `tools/n4b7_candidates.py`: frozen, sha256 `6b69a447...`; committed before any holdout
-    as `8fee28a`;
-  - `tools/n4b7_long_readout.py`: dev / freeze / holdouts / analyze.
-- Artifacts: `artifacts/m1_8_n4b7/` (git-ignored): `preregistration.json`,
-  `holdout.json`, `dev_*.json`, and the holdout trial records.
-- Uses the accepted runtime read-only from `artifacts/worktrees/n4b5r-geometry`, which must
-  stay clean at `363a1a9`.
+  - `tools/n4b8_candidates.py`: frozen, sha256 `9d0e99c5...`; committed before any N4B8
+    simulation as `ecb86d3`;
+  - `tools/n4b8_long_mode.py`.
+- Artifacts: `artifacts/m1_8_n4b8/` (git-ignored).
 - Previous milestones:
+  - N4B7: `game/M1_8_N4B7_LONG_DNP01_READOUT.md` (L1 rejected; tools `tools/n4b7_*.py`);
   - N4B6: `game/M1_8_N4B6_CONTROLLED_SLOW_APPROACH.md` (tools `tools/n4b6_*.py`, artifacts
     `artifacts/m1_8_n4b6/`);
   - N4B5: `game/M1_8_N4B5_PADDLE_VISUAL_GEOMETRY.md` (tools `tools/n4b5_*.py`, artifacts
@@ -180,6 +175,14 @@ recommended.**
   - **The same foreshortening term produced the episode-5 slow-close signal** (610-613: all
     of the expansion from apparent size, with the range receding).
   - Metric split: adopted as categories A-D above.
+- N4B8 (literature-first, preregistered candidate set):
+  - biology supports a GF-independent long-mode takeoff via the LC4-glomerulus DNs
+    (DNp02 / DNp04 / DNp11); in real flies, looming is routed to landing, evasion or takeoff
+    by flight / locomotor state, not by a visual predator-versus-self code;
+  - in MaleCNS the long-mode DNs share the fast pathway's LC4 input with lower gain;
+  - the landing and evasion DNs lack modelled input;
+  - a mirror test proves identical brain input for external and self-generated approach;
+  - **no readout-level fix exists under the current representation.**
 - N4B7 (preregistered, fresh holdouts): N4B1C OR [same-side >= 4 DNp01 spikes in 1 s]:
   - recovers 130 units/s approaches (100 %, lead 1.4 s);
   - fixed fly: silent (3 in 336 min);
@@ -228,7 +231,9 @@ recommended.**
   of N0. N4B1C's <= 60 ms / trace >= 2.1 rules do not read it. At 50 units/s the encoder
   itself is insufficient. **N4B7:** a 1 s same-side DNp01 count recovers it (100 %) but
   fails free flight (category B 0.18/min, from self-approach). A DNp01-only fix is ruled
-  out under the current inputs.
+  out under the current inputs. **N4B8:** no alternative DN pathway helps either. The
+  brain's input cannot distinguish external from self-generated approach. This is now an
+  accepted model limitation of the current architecture.
 - **Stop-rotation transient (N4B6, category C):** when the paddle stops after sideways
   motion, the accepted controller rotates it by about 90 deg during overshoot correction.
   Through the tilt term this gives 0.35 rad/s of apparent expansion at constant range.
@@ -249,22 +254,24 @@ recommended.**
 
 ## Next permitted actions
 
-**Default in force: keep the accepted runtime (N4B5R) unchanged and document the
-slow-approach limitation (N4B6 / N4B7).** Nothing needs approval to stay here.
+**Default in force: keep the accepted runtime (N4B5R) unchanged and treat slow-approach
+insensitivity as a documented model limitation** (N4B6 / N4B7 / N4B8). Nothing needs
+approval to stay here.
 
-Options that remain, all needing explicit user direction:
+Any further slow-approach work needs **new input information** and therefore explicit
+approval of an architecture change, each with its own preregistered study:
 
-- **A. Stationary-fly-restricted long path (research).** A new preregistered candidate
-  that gates LONG by the already policy-observable MotionState, analogous to the N4B3
-  stationary-fly DNp04 path. It would help only a stationary / perched fly. The whitelist
-  is unchanged, but the candidate is new.
-- **B. Stop-rotation transient review.** This touches the frozen M1.7.1 controller or the
-  N4B5R tilt term, so it needs recorded-play evidence first.
-- **C. A biological long-mode channel** (new DN channels, encoder or Retina changes). This
-  is an architectural / biological-model change.
+- (a) behavioural-state gating of looming pathways (flight versus perched; biology: DNp07 /
+  DNp10 / DNp03);
+- (b) self-motion cues in the visual model (wide-field optic flow) or an efference-copy
+  signal;
+- (c) the missing looming VPN channels (LPLC1, LPLC4, LC22).
 
-Not recommended: adopting L1 / L2 / L3; DNp04 for slow approach; tuning on the N4B7
-holdouts.
+Separately pending (also needs approval): the stop-rotation transient review (M1.7.1
+controller / N4B5R tilt term).
+
+Not recommended: DNp01 temporal readouts (N4B7); DNp02 / DNp11 / DNp03 / DNp07 / DNp10 /
+DNp04 readouts under the current representation (N4B8).
 
 The M1.8-B activity-budget and flight-kinematics work remains planning only.
 
