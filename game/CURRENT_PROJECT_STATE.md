@@ -4,7 +4,7 @@ This file is an operational handoff for future sessions. It is not a scientific 
 a runtime artifact. Evidence lives in the milestone reports listed below. Update it at the
 end of every substantial milestone.
 
-Last updated: 2026-09-25, M1.8-N4B8 long-mode pathway feasibility complete (research only): **outcome C, no useful long-mode signal**. Runtime baseline: M1.8-N4B5R (`363a1a9`), unchanged. Slow-approach insensitivity is documented as an accepted model limitation of the current architecture.
+Last updated: 2026-09-25. **The M1 slow-approach research line is CLOSED** (N4B8 accepted as its final conclusion). Runtime baseline: M1.8-N4B5R (`363a1a9`), unchanged. Current milestone: **M2.0, learning infrastructure and baseline benchmark** (see below).
 
 ## Start of a new session
 
@@ -222,23 +222,37 @@ Do not call C or D "false triggers".
   - Caveat: the frozen "every direct strike fires" criterion failed as written (38 / 39).
     G0 itself is 38 / 39 in 3 of 4 other noise realizations.
 
-## Known open questions
+## Accepted architectural limitation of M1 (closed research line)
 
-- **Slow approach (N4B6):** a hover-height approach at 130 units/s (human p25) is detected in
-  time by N4B1C in 0-6 % of seeds. It is marginal at 300 units/s (29 %) and reliable at 800
-  units/s. The encoder exceeds N0 in time in 100 % of seeds at 130 units/s. DNp01 rises to
-  about 4 spikes/s, and a per-side count of >= 4 spikes in 1 s is almost absent from 840 min
-  of N0. N4B1C's <= 60 ms / trace >= 2.1 rules do not read it. At 50 units/s the encoder
-  itself is insufficient. **N4B7:** a 1 s same-side DNp01 count recovers it (100 %) but
-  fails free flight (category B 0.18/min, from self-approach). A DNp01-only fix is ruled
-  out under the current inputs. **N4B8:** no alternative DN pathway helps either. The
-  brain's input cannot distinguish external from self-generated approach. This is now an
-  accepted model limitation of the current architecture.
-- **Stop-rotation transient (N4B6, category C):** when the paddle stops after sideways
-  motion, the accepted controller rotates it by about 90 deg during overshoot correction.
-  Through the tilt term this gives 0.35 rad/s of apparent expansion at constant range.
-  N4B1C responded in 17 / 48 orbit-control trials and DNp04 in 47 / 48. How often it
-  happens in real play is unknown.
+**Slow / gradual approach ambiguity (accepted 2026-09-25; N4B6 -> N4B7 -> N4B8).**
+
+- M1.8-N4B8 concludes:
+  - external gradual approach and self-generated approach can be **input-identical** in the
+    current sensory representation;
+  - so **no decoder / readout-only fix is possible**.
+- Evidence:
+  - the Retina carries relative geometry only (theta, theta_dot, azimuth), and a
+    self-motion mirror gives bit-identical brain input and identical spikes in every
+    candidate DN;
+  - N4B6: N4B1C detects 130 units/s approaches in time in 0-6 %;
+  - N4B7: a 1 s DNp01 count recovers them but fails free flight;
+  - N4B8: no literature-motivated DN (DNp02, DNp11, DNp03, DNp07, DNp10) is more selective.
+- **This line is closed.** Per the user's decision, do NOT add:
+  - new visual projection populations;
+  - flight-state gating;
+  - efference copy;
+  - optic-flow channels;
+  - new long-window DNp01 rules;
+  - DNp04 runtime input.
+
+Other known open item (not scheduled): **stop-rotation transient** (N4B6, category C).
+
+- When the paddle stops after sideways motion, the accepted controller rotates it by about
+  90 deg during overshoot correction.
+- Through the tilt term this gives 0.35 rad/s of apparent expansion at constant range.
+- N4B1C responded in 17 / 48 orbit-control trials.
+- How often it happens in real play is unknown.
+- Any change needs recorded-play evidence and explicit approval.
 
 ## Do not reopen
 
@@ -251,27 +265,18 @@ Do not call C or D "false triggers".
 - Frozen experiment artifacts in `artifacts/m1-2/protected-before.json`.
 - The N4B2 and N4B3 frozen criteria, and the design of new criteria on any used holdout
   listed above.
+- **The M1 slow-approach research line (N4B6-N4B8)**, and every channel excluded above.
 
 ## Next permitted actions
 
-**Default in force: keep the accepted runtime (N4B5R) unchanged and treat slow-approach
-insensitivity as a documented model limitation** (N4B6 / N4B7 / N4B8). Nothing needs
-approval to stay here.
+**M2.0: learning infrastructure and baseline benchmark** (infrastructure and research only;
+started 2026-09-25).
 
-Any further slow-approach work needs **new input information** and therefore explicit
-approval of an architecture change, each with its own preregistered study:
-
-- (a) behavioural-state gating of looming pathways (flight versus perched; biology: DNp07 /
-  DNp10 / DNp03);
-- (b) self-motion cues in the visual model (wide-field optic flow) or an efference-copy
-  signal;
-- (c) the missing looming VPN channels (LPLC1, LPLC4, LC22).
-
-Separately pending (also needs approval): the stop-rotation transient review (M1.7.1
-controller / N4B5R tilt term).
-
-Not recommended: DNp01 temporal readouts (N4B7); DNp02 / DNp11 / DNp03 / DNp07 / DNp10 /
-DNp04 readouts under the current representation (N4B8).
+- It must not replace the accepted runtime policy and must not modify
+  `feature/m1-8-n4b5r-geometry`.
+- Actual learned-policy training that would change runtime behaviour needs explicit
+  approval.
+- See the M2.0 section once the milestone report exists.
 
 The M1.8-B activity-budget and flight-kinematics work remains planning only.
 
