@@ -1,0 +1,118 @@
+{
+ "label": "M2.3 behaviour-cloning dataset manifest",
+ "config": {
+  "dataset_train": "TRAIN-OPT seeds: 12 threat groups (4 families x 3 attackers) x 50 trials + 4 background families x 30 episodes; seeds drawn by numpy default_rng(2300 + group) from [20e6, 25e6) excluding the M2.1 development seeds",
+  "dataset_val": "the M2.2 TRAIN-VAL specification (96 threat trials, 24 background episodes)",
+  "teacher": "accepted N4B1C FixedEscapePolicy mapped to the 11 maneuvers (game/learning/teacher.py); the mapped maneuver is executed",
+  "none_keep_fraction": 0.05,
+  "none_subsample_seed": 2301,
+  "prior_correction": "log(1 / none_keep_fraction) added to the NONE logit (training loss uses it, so the learned logits stay calibrated to the natural distribution)",
+  "init_seed": 2303,
+  "optimizer": "Adam (0.9, 0.999, 1e-8)",
+  "learning_rate": 0.001,
+  "batch_size": 1024,
+  "epochs": 40,
+  "shuffle_seed": 2304,
+  "grad_clip_norm": 1.0,
+  "checkpoint_selection": "epoch with the lowest cross-entropy on the natural-distribution TRAIN-VAL BC set"
+ },
+ "mapping_rule": "(fixed before any BC training; precedence escape > saccade > turn > none):\n    escape:  abs(lateral) < 0.3 -> ESCAPE_FORWARD\n             lateral < 0 -> ESCAPE_LEFT (strength >= 0.75) or ESCAPE_LEFT_HALF (strength < 0.75)\n             lateral > 0 -> ESCAPE_RIGHT / ESCAPE_RIGHT_HALF\n    saccade (alert, no escape): sign -> ALERT_SACCADE_LEFT / ALERT_SACCADE_RIGHT\n    turn:    abs(turn) >= 0.25 -> TURN_LEFT / TURN_RIGHT\n    else:    NONE",
+ "train": {
+  "samples": 522651,
+  "sha256": "362fcdcccb2bfb31ffd2ee59a8bc2448e6e0e593d2a92b1212999ded5ebdbf1c",
+  "class_counts": {
+   "NONE": 507487,
+   "TURN_LEFT": 5350,
+   "TURN_RIGHT": 6026,
+   "ALERT_SACCADE_LEFT": 1045,
+   "ALERT_SACCADE_RIGHT": 922,
+   "ESCAPE_LEFT": 187,
+   "ESCAPE_RIGHT": 178,
+   "ESCAPE_FORWARD": 170,
+   "ESCAPE_BACKWARD": 0,
+   "ESCAPE_LEFT_HALF": 693,
+   "ESCAPE_RIGHT_HALF": 593
+  },
+  "threat_window_samples": 43846,
+  "threat_window_class_counts": [
+   33709,
+   4164,
+   4216,
+   331,
+   283,
+   126,
+   119,
+   105,
+   0,
+   444,
+   349
+  ],
+  "background_class_counts": [
+   176168,
+   879,
+   1619,
+   408,
+   416,
+   44,
+   42,
+   44,
+   0,
+   175,
+   205
+  ],
+  "episodes": 720,
+  "seed_range": [
+   20004750,
+   24961746
+  ]
+ },
+ "val": {
+  "samples": 85550,
+  "sha256": "b073f91e7212bda4f7040ae6f4d4cd464a08ecd6dc1cb1e6d7583df39e7947d3",
+  "class_counts": {
+   "NONE": 83146,
+   "TURN_LEFT": 879,
+   "TURN_RIGHT": 904,
+   "ALERT_SACCADE_LEFT": 188,
+   "ALERT_SACCADE_RIGHT": 132,
+   "ESCAPE_LEFT": 32,
+   "ESCAPE_RIGHT": 26,
+   "ESCAPE_FORWARD": 35,
+   "ESCAPE_BACKWARD": 0,
+   "ESCAPE_LEFT_HALF": 115,
+   "ESCAPE_RIGHT_HALF": 93
+  },
+  "threat_window_samples": 6836,
+  "threat_window_class_counts": [
+   5229,
+   675,
+   652,
+   50,
+   41,
+   20,
+   18,
+   16,
+   0,
+   75,
+   60
+  ],
+  "background_class_counts": [
+   35371,
+   166,
+   213,
+   91,
+   61,
+   11,
+   8,
+   17,
+   0,
+   33,
+   29
+  ],
+  "episodes": 120,
+  "seed_range": [
+   25010419,
+   29909319
+  ]
+ }
+}

@@ -1,0 +1,106 @@
+{
+ "gate": {
+  "hit_probability_max": "TRAIN-VAL N4B1C hit probability + 0.05",
+  "unnecessary_escapes_per_min_max": 5.36,
+  "perches_per_min_min": 0.275,
+  "admissible": true,
+  "threat_window_escape_min": "0.5 x the mapped teacher's TRAIN-VAL escape-in-window fraction",
+  "no_collapse": "escape probability at a strong one-sided DNp01 frame (L = 3, R = 0) >= 0.2 and >= 10 x the escape probability at a quiet frame (L = R = 0)"
+ },
+ "checks": {
+  "hit_close_to_n4b1c": true,
+  "unnecessary_within_budget": true,
+  "perch_participation": true,
+  "admissible_no_flags": true,
+  "threat_window_escape": true,
+  "no_collapse": true
+ },
+ "pass": true,
+ "bc_checkpoint_sha256": "4cf390eb7bd12cc79631dc7cb8d0025fe5f9ca5ddafbfdb508a91ae19806d1bd",
+ "bc": {
+  "hit_probability": 0.6770833333333334,
+  "hit_by_attacker": {
+   "easy": 0.4375,
+   "nominal": 0.625,
+   "hard": 0.96875
+  },
+  "escape_in_window": 0.78125,
+  "median_escape_latency_s": 0.1,
+  "unnecessary_per_min": 5.166666666666667,
+  "perches_per_min": 0.5,
+  "admissible": true,
+  "flags": [],
+  "violations": [],
+  "category_counts": {
+   "SACCADE": 131,
+   "NONE": 35304,
+   "ESCAPE_LEFT": 44,
+   "TURN_LEFT": 196,
+   "TURN_RIGHT": 260,
+   "ESCAPE_RIGHT": 52,
+   "ESCAPE_FORWARD": 11,
+   "ESCAPE_BACKWARD": 2
+  }
+ },
+ "teacher_mapped": {
+  "hit_probability": 0.6770833333333334,
+  "hit_by_attacker": {
+   "easy": 0.46875,
+   "nominal": 0.59375,
+   "hard": 0.96875
+  },
+  "escape_in_window": 0.75,
+  "median_escape_latency_s": 0.08,
+  "unnecessary_per_min": 5.666666666666667,
+  "perches_per_min": 1.0833333333333333,
+  "admissible": false,
+  "flags": [],
+  "violations": [
+   "unnecessary_escapes_per_min"
+  ],
+  "category_counts": {
+   "NONE": 35371,
+   "SACCADE": 152,
+   "ESCAPE_LEFT": 44,
+   "TURN_LEFT": 166,
+   "ESCAPE_RIGHT": 37,
+   "TURN_RIGHT": 213,
+   "ESCAPE_FORWARD": 17
+  }
+ },
+ "n4b1c": {
+  "hit_probability": 0.6458333333333334,
+  "hit_by_attacker": {
+   "easy": 0.40625,
+   "nominal": 0.5625,
+   "hard": 0.96875
+  },
+  "escape_in_window": 0.7395833333333334,
+  "median_escape_latency_s": 0.08,
+  "unnecessary_per_min": 4.916666666666667,
+  "perches_per_min": 0.5833333333333334,
+  "admissible": true,
+  "flags": [],
+  "violations": [],
+  "category_counts": {
+   "NONE": 35518,
+   "SACCADE": 165,
+   "ESCAPE_FORWARD": 15,
+   "ESCAPE_LEFT": 37,
+   "ESCAPE_RIGHT": 46,
+   "TURN_RIGHT": 146,
+   "TURN_LEFT": 73
+  }
+ },
+ "escape_response": {
+  "escape_prob_quiet": 2.132468465577173e-06,
+  "escape_prob_strong_left": 0.5740871462155592,
+  "escape_prob_by_dnp01_left": [
+   2.132468465577173e-06,
+   0.00467032917824053,
+   0.23246070280745953,
+   0.5740871462155592,
+   0.8377917004971815
+  ]
+ }
+}
