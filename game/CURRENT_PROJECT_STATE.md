@@ -4,7 +4,7 @@ This file is an operational handoff for future sessions. It is not a scientific 
 a runtime artifact. Evidence lives in the milestone reports listed below. Update it at the
 end of every substantial milestone.
 
-Last updated: 2026-09-26. **M2.2 first constrained PPO training complete: NO-GO for human testing** (all 5 seeds collapsed to a no-escape policy; optimisation failure). Runtime baseline: M1.8-N4B5R (`363a1a9`), unchanged; no learned policy integrated. The M1 slow-approach line is closed.
+Last updated: 2026-09-26. **M2.3 PyTorch BC + KL-anchored constrained PPO complete: NO-GO for human testing** (conditional escape preserved in all 5 seeds, but EVAL hit 0.592 vs N4B1C 0.617 is not a meaningful improvement; class C). Runtime baseline: M1.8-N4B5R (`363a1a9`), unchanged; no learned policy integrated. The M1 slow-approach line is closed.
 
 ## Start of a new session
 
@@ -51,7 +51,7 @@ Earlier frozen milestones (see `AGENTS.md`): M1.7.1 swatter dynamics and M1.8-A 
 |---|---|---|
 | `wip/m1-4-enclosure` | the N4B8 research commit (see `git log -1`); N4B8 freeze `ecb86d3`, N4B7 `c61dbd3` (freeze `8fee28a`), N4B6 `b203b46` (preregistration `987b2a9`), N4B5R state `81b213e`, N4B5 `0e9d2d9`, N4B4 `6b5c4ce`, N4B3 `d09dac4`, N4B2 `5be0aea` | research branch; research-only commits |
 | `feature/m1-8-n4b5r-geometry` | `363a1a9` | **current accepted runtime** (N4B1C + G3 geometry); **do not modify** |
-| `feature/m2-0-learning-infra` | `41c65b5` | M2 learning line (from `363a1a9`): M2.0 infrastructure (`b53f9a9`), M2.1 benchmark v2 / reward v2 (freeze `66b286e`), M2.2 PPO training (protocol `63dbeb6`, candidate `2e454a9`); no accepted runtime file changed; pushed, not merged |
+| `feature/m2-0-learning-infra` | `f723375` | M2 learning line (from `363a1a9`): M2.0 infrastructure (`b53f9a9`), M2.1 benchmark v2 / reward v2 (freeze `66b286e`), M2.2 PPO training (protocol `63dbeb6`, candidate `2e454a9`), M2.3 PyTorch BC + PPO (BC `f65c995`, protocol `76ad1f4`, candidate `5ce0095`, report `f723375`); no accepted runtime file changed; pushed, not merged |
 | `feature/m1-8-n4b1c-runtime` | `e3c55b3` | previous accepted runtime (decoder layer); **do not modify** |
 | `archive/m1-8-n2b-rejected` | `2c306174d7bdb4e74b6c5517519ae695bd90cf44` | rejected N2b runtime snapshot; **never merge** |
 | `main` | `309abd9` | untouched |
@@ -93,40 +93,56 @@ Do not call C or D "false triggers".
 
 ## Current milestone
 
-**M2.2: constrained learned dodge policy** (approved training; research only):
-**complete. Result: NO-GO for human testing.**
+**M2.3: PyTorch behaviour cloning + KL-anchored constrained PPO** (approved training; research
+only): **complete. Result: NO-GO for human testing (class C).**
 
-- **Branch:** `feature/m2-0-learning-infra` @ `41c65b5`.
-- **Report:** `game/M2_2_CONSTRAINED_LEARNED_POLICY.md` (read sections 3, 6, 7, 9 and 10).
-- **Frozen protocol:** `game/learning/m2_2_protocol.json` (sha256 `15350d0a...`, committed
-  before training as `63dbeb6`):
-  - numpy PPO on the frozen 2,315-parameter MLP with a NONE prior of 0.97;
-  - Adam 3e-4, gamma 0.99, GAE lambda 0.95, clip 0.2, entropy 0.01;
-  - Lagrangian dual ascent on unnecessary escapes and perch rate;
-  - 100 iterations x about 22k decisions per seed; 5 seeds;
-  - TRAIN-OPT / TRAIN-VAL split (sha256 `48f5fe26...`).
-- **Outcome:**
-  - all 5 seeds collapsed within 10-20 iterations: an early lambda_u overshoot (about 2)
-    suppressed every escape, entropy went to about 0, and nothing recovered after lambda
-    returned to 0;
-  - no conditioning on DNp01 was learned;
-  - 23 of 25 checkpoints are eligible on TRAIN-VAL, with hit 0.667-0.729 (baseline 0.646);
-  - selected candidate: `seed_2/ckpt_it100` (parameter sha256 `7297eef3...`, archived at
-    `game/learning/checkpoints/m2_2_candidate.npz`).
-- **One-shot EVAL:**
-  - candidate: hit 0.738, never escapes in the threat window, 0.05 unnecessary / min,
-    perches 0.90 / min, admissible, no flags;
-  - N4B1C: 0.617 / 5.15;
-  - no_escape: 0.721.
-  - Success criterion C fails, so NO-GO.
-- **Failure class:** optimisation (premature exploration collapse under early Lagrangian
-  pressure plus sparse credit assignment). Not information, action space, capacity or
-  benchmark: N4B1C and the fixed rule do better with the same inputs and actions.
-- **Play command (inspection only):** `tools/m2_play_learned.py`, in the M2 worktree.
-- Tests: 466 / 466.
+- **Branch:** `feature/m2-0-learning-infra` @ `f723375` (worktree `artifacts/worktrees/m2-learning`).
+- **Report:** `game/M2_3_PYTORCH_BC_CONSTRAINED_PPO.md` (read sections 1, 3, 6, 8, 10 and 11).
+- **Learner audit:**
+  - the BC and PPO draft at `7b28591` used handwritten NumPy gradients;
+  - they are kept as development evidence only;
+  - the official learner is PyTorch (`game/learning/torch_policy.py`, `tools/m2_3_torch.py`):
+    torch 2.13.0+cu132, CUDA 13.2, RTX 4060 Laptop, the same 2,315-parameter MLP.
+- **PyTorch BC** (`f65c995`):
+  - retrained on CUDA from the unchanged teacher dataset;
+  - state_dict sha256 `c6c21c23...`;
+  - the frozen gate passes: TRAIN-VAL hit 0.677, threat-window escape 0.78, 5.17 unnecessary
+    escapes / min, 0.50 perches / min;
+  - balanced accuracy 0.43, and escape probability 2e-5 at low DNp01 vs 0.06 at high.
+- **Frozen protocol:** `game/learning/m2_3/torch_ppo_protocol.json`, sha256 `3f56c198...`,
+  pushed as `76ad1f4` before the official runs:
+  - lr 3e-4, chosen from TRAIN-only smokes on seeds 101 / 102;
+  - KL anchor to BC, beta 1.0 -> 0.1 between iterations 15 and 45;
+  - an adaptive entropy target;
+  - a gated dual warm-up;
+  - a 1 : 6 background : threat mixture;
+  - 60 iterations per seed; seeds 1-5.
+- **Runs:**
+  - all 5 seeds stayed conditional, with no collapse and no non-finite gradients;
+  - lambda_u stayed <= 0.11;
+  - 24 of 30 checkpoints are TRAIN-VAL eligible.
+- **Selected candidate:** `seed_4/ckpt_it060` (sha256 `b545583e...`, TRAIN-VAL hit 0.490).
+- **One-shot EVAL** (the second and last planned use of the M2.1 v2 EVAL set):
+  - hit 0.592 (N4B1C 0.617, fixed_maneuver 0.475, no_escape 0.721);
+  - threat-window escape 0.86, 3.02 unnecessary escapes / min, 0.78 perches / min;
+  - admissible, no flags;
+  - paired difference vs N4B1C -0.025, 95 % CI [-0.090, +0.040], p = 0.53. **Not
+    meaningful, so NO-GO.**
+- **Classification:** C, PPO preserved the BC policy safely but produced no confirmed
+  improvement. Sparse strike credit limits sample efficiency: about 800 decisions per strike
+  and about 3 % of samples with a meaningful advantage.
+- **Timing:** rollout 43.6 s vs GPU update 0.37 s per iteration. The GPU does not accelerate
+  MaleCNS or the game.
+- **Inspection command (not a GO), in the M2 worktree:**
+  `python tools/m2_play_learned.py --checkpoint game/learning/checkpoints/m2_3_candidate.npz --arena room --no-record`.
+- Tests: 492 / 492.
 
-**Previous milestone:** M2.0, learning infrastructure (NO-GO because of reward v1 exploits);
-report `game/M2_0_LEARNING_INFRASTRUCTURE.md`.
+**Previous milestones:**
+
+- M2.2: first constrained PPO. NO-GO because of a no-escape collapse.
+  - Report `game/M2_2_CONSTRAINED_LEARNED_POLICY.md`.
+  - Candidate `2e454a9`: EVAL hit 0.738, never escapes.
+- M2.0 / M2.1: infrastructure, and benchmark v2 / reward v2.
 
 ## Previous research milestone
 
@@ -298,15 +314,13 @@ Other known open item (not scheduled): **stop-rotation transient** (N4B6, catego
 
 ## Next permitted actions
 
-- **M2.3 (training method only; no reward, benchmark or contract change), when requested:**
-  - behaviour-clone N4B1C into the frozen MLP, then constrained PPO with a KL penalty to the
-    cloned policy;
-  - dual warm-up / lower dual gain;
-  - an adaptive entropy target;
-  - threat-dense rollouts.
-  - It needs a new preregistered protocol; TRAIN / VAL only; EVAL once per frozen candidate.
-  - A decision-rate / maneuver-persistence change would alter the action contract and needs
-    explicit approval.
+- **After M2.3 (each option needs an explicit user decision):**
+  1. The same M2.3 method with a much larger rollout budget. This needs a new preregistration
+     and a **fresh EVAL set**, because the M2.1 v2 EVAL set has been used twice.
+  2. M2.4 temporal abstraction: a lower decision rate, action persistence or macro-actions.
+     This changes the action contract and needs approval.
+  3. A criterion change that would accept "hit equal to N4B1C with fewer unnecessary escapes".
+  - Do not change the reward first.
 - **Replacing the accepted runtime policy with a learned one requires explicit approval and
   a human test.**
 
