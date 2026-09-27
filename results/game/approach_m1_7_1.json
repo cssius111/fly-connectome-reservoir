@@ -1,0 +1,132 @@
+{
+  "controlled_fixtures": {
+    "slow": {
+      "physical_speed": {
+        "n": 35,
+        "mean": 100.77056627005753,
+        "p50": 106.84786672615401,
+        "p75": 126.14591855347979,
+        "p90": 134.16918572986285,
+        "max": 136.16625524516022,
+        "fraction_at_95pct_of_1800": 0.0
+      },
+      "maximum_target_error": 9.047553781563465
+    },
+    "moderate": {
+      "physical_speed": {
+        "n": 35,
+        "mean": 604.6233976203408,
+        "p50": 641.0872003569265,
+        "p75": 756.8755113208624,
+        "p90": 805.015114379156,
+        "max": 816.9975314709392,
+        "fraction_at_95pct_of_1800": 0.0
+      },
+      "maximum_target_error": 54.28532268937602
+    },
+    "sudden_burst": {
+      "physical_speed": {
+        "n": 35,
+        "mean": 1509.352008140941,
+        "p50": 1779.171617403076,
+        "p75": 1798.6768105667177,
+        "p90": 1799.7544786274743,
+        "max": 1799.9215233874568,
+        "fraction_at_95pct_of_1800": 0.6285714285714286
+      },
+      "maximum_target_error": 355.62303279154094
+    },
+    "initial_large_error_stationary_target": {
+      "physical_speed": {
+        "n": 160,
+        "mean": 524.336545147619,
+        "p50": 837.6043559196162,
+        "p75": 899.9995169863811,
+        "p90": 899.9999998301694,
+        "max": 899.9999999991561,
+        "fraction_at_95pct_of_1800": 0.0
+      }
+    }
+  },
+  "fixed_human_input": {
+    "source_session": "20260920T200809.608987Z-32182677",
+    "old_paddle_ticks_exact": 15039,
+    "mask": "historical post-step-alive APPROACH ticks, identical for both controllers",
+    "pointer_speed": {
+      "n": 5205,
+      "mean": 1178.456197291151,
+      "p50": 761.5773105863908,
+      "p75": 1615.549442140351,
+      "p90": 2973.2137494637013,
+      "max": 10532.093808925176,
+      "fraction_at_95pct_of_1800": 0.2336215177713737
+    },
+    "old_approach": {
+      "n": 5270,
+      "mean": 1364.7399987715328,
+      "p50": 1672.6437613956055,
+      "p75": 1791.3848457340775,
+      "p90": 1798.8822283008537,
+      "max": 1799.9940001853543,
+      "fraction_at_95pct_of_1800": 0.46925996204933584
+    },
+    "new_approach": {
+      "n": 5270,
+      "mean": 1134.3985635743832,
+      "p50": 1142.7570018659812,
+      "p75": 1563.2715987036547,
+      "p90": 1731.9905245173152,
+      "max": 1798.2663980488894,
+      "fraction_at_95pct_of_1800": 0.12239089184060721
+    },
+    "old_target_error": {
+      "n": 5270,
+      "mean": 356.9513491341993,
+      "p50": 297.33827291094565,
+      "p75": 531.1827778909878,
+      "p90": 746.7375858232072,
+      "max": 2027.454522301302
+    },
+    "new_target_error": {
+      "n": 5270,
+      "mean": 480.65598914885584,
+      "p50": 448.3701985191265,
+      "p75": 669.3995254119544,
+      "p90": 900.5787892857143,
+      "max": 2481.6299445796553
+    },
+    "pointer_bands": [
+      {
+        "pointer_band": "stationary",
+        "n": 825,
+        "old_near_cap_fraction": 0.4084848484848485,
+        "new_near_cap_fraction": 0.0012121212121212121
+      },
+      {
+        "pointer_band": "slow",
+        "n": 620,
+        "old_near_cap_fraction": 0.43870967741935485,
+        "new_near_cap_fraction": 0.0
+      },
+      {
+        "pointer_band": "moderate",
+        "n": 1416,
+        "old_near_cap_fraction": 0.4484463276836158,
+        "new_near_cap_fraction": 0.06638418079096045
+      },
+      {
+        "pointer_band": "fast",
+        "n": 1185,
+        "old_near_cap_fraction": 0.5324894514767933,
+        "new_near_cap_fraction": 0.25991561181434597
+      },
+      {
+        "pointer_band": "above_cap",
+        "n": 1159,
+        "old_near_cap_fraction": 0.5159620362381363,
+        "new_near_cap_fraction": 0.2088006902502157
+      }
+    ],
+    "scope": "paddle-only fixed consumed input and accepted-click schedule; historical masks; no new fly, neural or hit-rate prediction"
+  }
+}
