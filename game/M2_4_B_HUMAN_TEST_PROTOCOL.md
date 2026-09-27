@@ -1,6 +1,6 @@
 # M2.4-B: blind human gameplay acceptance: protocol
 
-Status: **preregistered; infrastructure ready; no session played yet.** This is human validation only. Nothing is
+Status: **preregistered (`f048ba6`), amended before any session (amendment 1, blinding: `game/M2_4_B_BLINDING_AMENDMENT.md`); infrastructure ready; no session played yet.** This is human validation only. Nothing is
 trained, and neither policy is modified. The accepted runtime (`363a1a9`, default policy N4B1C) is not changed or
 replaced, and nothing is merged. The results report will be `game/M2_4_B_HUMAN_GAMEPLAY_ACCEPTANCE.md`, written after
 all sessions.
@@ -38,9 +38,12 @@ policy object passed to `Session`.
   - no policy name is shown;
   - the neural HUD (H key) is disabled, because its diagnostics differ by policy class;
   - the gameplay HUD (time, strikes, hits, escapes) is the normal game HUD.
-- **Reveal:** identity is shown only after that session's ratings are saved.
-  - Consequence: the player learns the identity of every completed session. Later ratings may be influenced by cues
-    learned this way. This is a limitation of per-session reveal, and the analysis reports order effects.
+- **Reveal (amendment 1):** identity is never shown after individual sessions. After all 30 sessions are rated,
+  `reveal` does three things: it locks the ratings (hashes + read-only), verifies the key and every commitment, and
+  decodes the assignments. The original per-session reveal was removed before session 1: a block holds one A and one
+  B, so revealing one session would reveal its partner.
+- Game-process output (stdout / stderr, warnings, errors) goes to a private log. Session files hold only the
+  commitment. Labels are neutral ("Session 07 / 30").
 
 ## 3. Session procedure
 
@@ -56,8 +59,8 @@ policy object passed to `Session`.
    - overly random / twitchy (higher = worse);
    - constant escaping for no reason (higher = worse);
    - then broken / stuck / exploitable (y / n) and an optional note.
-5. Ratings are saved, then the identity is revealed. The launcher asks whether to continue; sessions can be spread
-   over several sittings.
+5. The response is saved and the launcher shows only "Response saved. Policy identity remains blinded." It then asks
+   whether to continue; sessions can be spread over several sittings.
 6. All 30 sessions are completed. There is no early stopping, and no tuning of either policy.
 
 ## 4. Objective metrics (per session, from the unchanged tick events)
@@ -82,7 +85,7 @@ policy object passed to `Session`.
 - **Recordings:** the recorder schema and semantics are unchanged. Recordings go to `artifacts/m2_4_b/recordings/`.
   Learned-policy recordings cannot be verified by `game.replay`, which rebuilds N4B1C.
 
-## 5. Analysis (`tools/m2_4_b_analyze.py`; refuses a partial set)
+## 5. Analysis (`tools/m2_4_b_analyze.py`; refuses a partial set and runs only after `reveal`)
 
 - **Pairing:** by block.
 - **Objective:**
@@ -122,8 +125,10 @@ Per-session results, ratings, notes, recordings, the analysis output and the key
 ## 8. Commands (from the M2 worktree `artifacts/worktrees/m2-learning`)
 
 ```
-python tools/m2_4_b_blind_ab.py play       # next unplayed session; ratings; then reveal; asks to continue
+python tools/m2_4_b_blind_ab.py play       # next unplayed session; ratings; identity stays blinded; asks to continue
 python tools/m2_4_b_blind_ab.py status     # progress only
-python tools/m2_4_b_blind_ab.py analyze    # after all 30 sessions
+python tools/m2_4_b_blind_ab.py reveal     # only after 30 / 30 rated sessions: lock, verify, decode
+python tools/m2_4_b_blind_ab.py analyze    # after reveal
+python tools/m2_4_b_blind_smoke.py         # blinding smoke test in a synthetic sandbox (done: all pass)
 python tools/m2_4_b_blind_ab.py smoke      # headless check of both policy paths (done: both pass, HUD blocked)
 ```

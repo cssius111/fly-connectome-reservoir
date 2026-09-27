@@ -12,7 +12,7 @@ Unit of pairing: the block (one A and one B session with the same world seed, ad
 Outputs artifacts/m2_4_b/analysis.json (git-ignored; it contains aggregated subjective ratings and per-block
 differences). Nothing here is committed unless the user asks.
 
-    python tools/m2_4_b_analyze.py
+    python tools/m2_4_b_analyze.py        (after `m2_4_b_blind_ab.py reveal`)
 """
 from __future__ import annotations
 
@@ -65,10 +65,19 @@ def main():
     done = B.completed_sessions()
     if len(done) != len(rows):
         raise SystemExit('analysis refuses a partial set: %d of %d sessions complete (no early stopping)' % (len(done), len(rows)))
+    if not (B.LOCK_FILE.exists() and B.REVEAL_FILE.exists()):
+        raise SystemExit('run reveal first (ratings lock + verified assignments)')
+    lock = json.loads(B.LOCK_FILE.read_text(encoding='utf-8'))
+    rev = json.loads(B.REVEAL_FILE.read_text(encoding='utf-8'))
+    decoded = {x['session']: x['policy'] for x in rev['sessions']}
     for r in rows:
+        f = B.SESSIONS / ('session_%02d.json' % r['session'])
+        if hashlib.sha256(f.read_bytes()).hexdigest() != lock['files'][f.name]:
+            raise SystemExit('session %d changed after the ratings lock' % r['session'])
         d = done[r['session']]
-        if d['policy'] != r['policy'] or d['commitment'] != B._commit(key, r['session'], r['policy']) or d['world_seed'] != r['world_seed']:
+        if decoded[r['session']] != r['policy'] or d['commitment'] != B._commit(key, r['session'], r['policy'])                 or d['world_seed'] != r['world_seed']:
             raise SystemExit('session %d does not match the manifest' % r['session'])
+        d['policy'] = r['policy']       # decoded only here, after the lock
     proto = json.loads(B.PROTOCOL.read_text(encoding='utf-8'))
     rng = np.random.default_rng(RNG)
     A_s = [done[r['session']] for r in rows if r['policy'] == 'A']

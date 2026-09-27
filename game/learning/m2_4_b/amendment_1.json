@@ -1,0 +1,81 @@
+{
+ "label": "M2.4-B protocol amendment 1: blinding (reveal timing) - made before any human session",
+ "amended_utc": "2026-09-27T17:29:18Z",
+ "original_preregistration_commit": "f048ba6",
+ "original_protocol_sha256": "51f3974fc475ace751f2f4035a2b5ea87ba0c64e97b60eef00ff5a33629c9483",
+ "randomization_manifest_sha256": "67fcfa9a5d6024b6abca0a7f7013a1a250bef9a62df93d7606d4797867e8b9c0",
+ "sessions_played_at_amendment": 0,
+ "flaw": "the original launcher revealed the policy after each session once its ratings were saved; every block holds exactly one A and one B, so revealing one session makes its partner known, and per-session feedback lets the player learn behavioural signatures for later sessions",
+ "new_reveal_rule": "no identity is shown after individual sessions; the player sees only \"Response saved. Policy identity remains blinded.\"; after 30 / 30 rated sessions `reveal` locks the ratings (sha256 per session file + read-only), verifies the key against the manifest and every commitment, then decodes the assignments; analysis refuses to run before the lock and reveal",
+ "additional_blinding_changes": [
+  "all stdout / stderr of the game process (Python and C level, including warnings and error text) goes to a private per-attempt log",
+  "session files store only the commitment, never the policy",
+  "player-visible labels are neutral (\"Session 07 / 30\")",
+  "the per-session strikes / hits summary is no longer printed",
+  "error details are never printed; only a neutral \"ended early or error\" message"
+ ],
+ "unchanged": [
+  "30-session manifest and assignments (not regenerated)",
+  "15 paired blocks, same world seed per block",
+  "secret-key assignment and commitment hashes",
+  "policies A / B",
+  "session length and completion rule",
+  "objective metrics and definitions",
+  "rating items",
+  "analysis plan",
+  "acceptance checks A-E",
+  "privacy rule",
+  "runtime boundary"
+ ],
+ "visible_channel_audit": {
+  "window_title": "\"MaleCNS fly-swatter\" for both policies (recorded by the smoke test)",
+  "hud": "gameplay HUD identical for both policies (time, strikes, hits, misses, escapes, rates, REC dot, key hints); neural HUD forced off by a read-only property; an injected H key leaves it off",
+  "startup_messages": "splash texts \"Loading MaleCNS connectome ...\" / \"Compiling simulation kernels ...\" identical",
+  "terminal_stdout_stderr": "game output redirected to a private log; launcher text neutral; scanned for identity tokens",
+  "checkpoint_filename_path": "never printed (loaded inside the private-output block)",
+  "policy_class_name": "never printed in the play flow (only the developer `smoke` mode prints it, on a synthetic seed)",
+  "recorder_names": "directory = UTC timestamp + random uuid; fixed file names; the recorder manifest (policy_class) is a private artifact under artifacts/m2_4_b/",
+  "session_summary": "removed",
+  "crash_error_messages": "private log only",
+  "rating_prompt_and_continue_prompt": "neutral; scanned",
+  "status_command": "counts only; scanned",
+  "inherent_channel": "the fly behaviour itself (the thing being evaluated)"
+ },
+ "identity_tokens_scanned": [
+  "N4B1C",
+  "FixedEscapePolicy",
+  "ManeuverPolicy",
+  "learned",
+  "baseline",
+  "checkpoint",
+  "candidate",
+  ".npz",
+  "M2.4-A",
+  "m2_4_a",
+  "policy A/B",
+  "seed_2",
+  "ckpt",
+  "standalone A / B"
+ ],
+ "smoke_test": {
+  "tool": "tools/m2_4_b_blind_smoke.py",
+  "sandbox": "temporary directory, synthetic key, synthetic scripted inputs; never the real manifest; no real human response created",
+  "results": {
+   "1_session_1_completes": true,
+   "2_ratings_saved": true,
+   "3_hidden_after_save": true,
+   "4_session_2_start_reveals_nothing": true,
+   "5_not_via_hud_or_console": true,
+   "5b_status_output_neutral": true,
+   "6_reveal_refuses_before_30": true,
+   "7_reveal_succeeds_only_when_complete": true,
+   "console_leak_tokens": []
+  },
+  "note": "sandbox block 1 holds one A and one B session, so both policy paths were scanned"
+ },
+ "code_after_amendment": {
+  "launcher_sha256": "e425fc9488bedb721fa4a367a03137a47a7867e1702f8aa84ffc8407d1dfadf4",
+  "analysis_sha256": "0abcac73a084a4d3e4fe89ebc9a4a090c291ac94196afad83c7921948b4b8728",
+  "smoke_sha256": "284963d94acf2b1c0e66dabff1254d13cbb05dd3abd5c0ebc61dd7834c877b0c"
+ }
+}

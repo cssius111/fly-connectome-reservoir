@@ -19,15 +19,27 @@ Blinding and randomisation (preregistered in `game/learning/m2_4_b/protocol.json
 - The public manifest (`game/learning/m2_4_b/randomization_manifest.json`) holds the seeds, sha256(key) and per-session
   commitments sha256(key | session | policy). The key stays in `artifacts/m2_4_b/blind_key.json` (git-ignored) until
   all sessions are complete. Publishing it later lets anyone regenerate and verify every assignment.
-- The player is told the policy of a session only after that session's ratings are saved.
+- Amendment 1 (before any session): policy identity is NOT revealed after individual sessions. Each block holds one
+  A and one B, so revealing one session would reveal its partner, and per-session feedback lets the player learn
+  behavioural signatures. Identity stays hidden until all 30 sessions are rated; `reveal` then locks the ratings
+  (hashes + read-only), verifies the key and every commitment and decodes the assignments.
+- Player-visible output is neutral ("Session 07 / 30"). Everything the game process writes to stdout / stderr
+  (including warnings and error text) goes to a private per-attempt log; session files store only the commitment,
+  never the policy.
 
-Private outputs (git-ignored, under artifacts/m2_4_b/): the key, per-session results with ratings, and the recordings.
+Private outputs (git-ignored, under artifacts/m2_4_b/): the key, per-session results with ratings, logs, recordings,
+the ratings lock and the reveal record.
 
     python tools/m2_4_b_blind_ab.py manifest     (one-time; creates the key and the public manifest)
-    python tools/m2_4_b_blind_ab.py play         (plays the next unplayed session; asks for ratings; then reveals)
+    python tools/m2_4_b_blind_ab.py play         (next unplayed session; ratings; "Response saved. Policy identity
+                                                  remains blinded."; asks whether to continue)
     python tools/m2_4_b_blind_ab.py status       (progress only; never shows assignments)
-    python tools/m2_4_b_blind_ab.py analyze      (after all sessions; refuses a partial set)
+    python tools/m2_4_b_blind_ab.py reveal       (only after 30 / 30 rated sessions: lock, verify, decode)
+    python tools/m2_4_b_blind_ab.py analyze      (after reveal; refuses a partial set)
     python tools/m2_4_b_blind_ab.py smoke        (headless check of both policy paths; does not touch the manifest)
+
+Test-only options: --sandbox DIR relocates the manifest and every private file to DIR (synthetic key; never the real
+manifest); --headless-seconds S (sandbox only) runs sessions headless for S seconds of active play.
 """
 from __future__ import annotations
 
@@ -52,6 +64,10 @@ PRIVATE = ROOT / 'artifacts/m2_4_b'
 KEY_FILE = PRIVATE / 'blind_key.json'
 SESSIONS = PRIVATE / 'sessions'
 RECORDINGS = PRIVATE / 'recordings'
+LOGS = PRIVATE / 'logs'
+LOCK_FILE = PRIVATE / 'ratings_lock.json'
+REVEAL_FILE = PRIVATE / 'reveal.json'
+HEADLESS_SECONDS = None
 CANDIDATE_NPZ = ROOT / 'game/learning/checkpoints/m2_4_a_candidate.npz'
 CANDIDATE_PARAM_SHA256 = '0692117af68e9a3d93ed0b2a966c9ab103c5b1d80f6a9f3cf2df900b555e2e66'
 CANDIDATE_STATE_DICT_SHA256 = 'a8f78d393e7554e8a83c164279a055e85873ff0bfc80926da8edebafde8f84a6'
@@ -120,8 +136,8 @@ def make_manifest():
         s['commitment'] = _commit(key, r['session'], r['policy'])
         del s['commitment_A'], s['commitment_B']
     MANIFEST.write_text(json.dumps(man, indent=1) + '\n', encoding='utf-8')
-    print('manifest written:', MANIFEST.relative_to(ROOT), 'sha256', hashlib.sha256(MANIFEST.read_bytes()).hexdigest())
-    print('private key written to', KEY_FILE.relative_to(ROOT), '(git-ignored; do not open before the end)')
+    print('manifest written:', MANIFEST, 'sha256', hashlib.sha256(MANIFEST.read_bytes()).hexdigest())
+    print('private key written to', KEY_FILE, '(git-ignored; do not open before the end)')
 
 
 def load_key_and_rows():
@@ -272,9 +288,43 @@ class SessionMetrics:
 
 
 # ----------------------------------------------------------------- play ---
-def run_game(policy_letter, world_seed, record_dir, headless_seconds=None):
-    """One session of the unchanged ROOM game with the chosen policy. Returns (metrics, recording path, error)."""
-    if headless_seconds is not None:
+class _PrivateOutput:
+    """Send everything written to stdout / stderr (Python and C level) to a private log while the game runs."""
+
+    def __init__(self, path):
+        self.path = Path(path)
+
+    def __enter__(self):
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        sys.stdout.flush()
+        sys.stderr.flush()
+        self.f = open(self.path, 'a', encoding='utf-8')
+        self.saved = (os.dup(1), os.dup(2), sys.stdout, sys.stderr)
+        os.dup2(self.f.fileno(), 1)
+        os.dup2(self.f.fileno(), 2)
+        sys.stdout = sys.stderr = self.f
+        return self
+
+    def __exit__(self, *exc):
+        if exc[0] is not None:
+            import traceback
+            traceback.print_exception(*exc, file=self.f)
+        self.f.flush()
+        d1, d2, so, se = self.saved
+        os.dup2(d1, 1)
+        os.dup2(d2, 2)
+        os.close(d1)
+        os.close(d2)
+        sys.stdout, sys.stderr = so, se
+        self.f.close()
+        return True             # never propagate: an error message could name the policy
+
+
+def run_game(policy_letter, world_seed, record_dir, active_seconds=ACTIVE_SECONDS, headless=False, press_h=False):
+    """One session of the unchanged ROOM game with the chosen policy.
+
+    Returns (metrics, recording path, error text, blind audit). Must be called inside _PrivateOutput for real play."""
+    if headless:
         os.environ.setdefault('SDL_VIDEODRIVER', 'dummy')
     import pygame
     import game.app as app_module
@@ -289,7 +339,8 @@ def run_game(policy_letter, world_seed, record_dir, headless_seconds=None):
         return original_session(cfg, policy=policy, **kw) if policy is not None else original_session(cfg, **kw)
 
     class BlindApp(app_module.App):
-        # The neural HUD shows policy-class-specific diagnostics; it stays off for the blind test.
+        # The neural HUD shows policy-class-specific diagnostics; it stays off for the whole blind test. Assignments
+        # from the H key (or anything else) are ignored.
         show_neural = property(lambda self: False, lambda self, value: None)
 
         def _restart(self):
@@ -297,17 +348,20 @@ def run_game(policy_letter, world_seed, record_dir, headless_seconds=None):
             super()._restart()
 
     recorder = HumanSessionRecorder(record_dir, config_file=config_path) if record_dir is not None else None
-    app = None
-    err = None
+    app, err, audit = None, None, {}
     app_module.Session = session_factory
     try:
-        app = BlindApp(config, fullscreen=headless_seconds is None, seed=world_seed, mode='play', recorder=recorder,
+        app = BlindApp(config, fullscreen=not headless, seed=world_seed, mode='play', recorder=recorder,
                        ecology_enabled=None)
-        app._metrics = SessionMetrics(app.session, ACTIVE_SECONDS if headless_seconds is None else headless_seconds)
-        app.show_neural = True                      # the H key does this; it must have no effect
-        run_game.last_check = {'policy_class': type(app.session.policy).__name__, 'neural_hud_visible': app.show_neural}
-        app.run(max_seconds=None if headless_seconds is None else headless_seconds * 4)
-    except Exception as e:      # an infrastructure failure is recorded, never hidden
+        app._metrics = SessionMetrics(app.session, active_seconds)
+        caption = pygame.display.get_caption()[0]
+        if press_h:              # test only: the H key is the normal way to open the neural HUD
+            pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_h, scancode=pygame.KSCAN_H, mod=0,
+                                                 unicode='h', repeat=False))
+        app.run(max_seconds=None if not headless else active_seconds * 6 + 30)
+        audit = {'window_caption': caption,
+                 'neural_hud_visible_at_end': bool(app.show_neural), 'h_key_injected': press_h}
+    except Exception as e:      # recorded privately, never shown to the player
         err = '%s: %s' % (type(e).__name__, e)
     finally:
         app_module.Session = original_session
@@ -315,8 +369,10 @@ def run_game(policy_letter, world_seed, record_dir, headless_seconds=None):
             app.session.close()
         pygame.quit()
     metrics = app._metrics.summary() if app is not None and hasattr(app, '_metrics') else None
-    path = None if recorder is None else str(Path(recorder.path).relative_to(ROOT)).replace('\\', '/')
-    return metrics, path, err
+    path = None if recorder is None else str(Path(recorder.path)).replace('\\', '/')
+    if app is not None:
+        run_game.last_check = {'policy_class': type(app.session.policy).__name__, **audit}
+    return metrics, path, err, audit
 
 
 def ask_int(prompt):
@@ -328,7 +384,7 @@ def ask_int(prompt):
 
 
 def ask_ratings():
-    print('\nRatings for this session (the policy identity is revealed only after they are saved).\n')
+    print('\nPlease rate this session.\n')
     r = {k: ask_int(q) for k, q in RATINGS}
     while True:
         v = input('  Did anything look broken, stuck or exploitable?  (y / n)\n  > ').strip().lower()
@@ -339,46 +395,59 @@ def ask_ratings():
     return r
 
 
+def _utc(t=None):
+    return time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(t))
+
+
 def play():
+    if LOCK_FILE.exists() or REVEAL_FILE.exists():
+        raise SystemExit('The ratings are locked; no further sessions can be played.')
     man, key, rows = load_key_and_rows()
-    SESSIONS.mkdir(parents=True, exist_ok=True)
-    RECORDINGS.mkdir(parents=True, exist_ok=True)
+    for d in (SESSIONS, RECORDINGS, LOGS):
+        d.mkdir(parents=True, exist_ok=True)
+    total = len(rows)
     while True:
         done = completed_sessions()
         nxt = next((r for r in rows if r['session'] not in done), None)
         if nxt is None:
-            print('All %d sessions are complete. Run:  python tools/m2_4_b_blind_ab.py analyze' % len(rows))
+            print('All %d sessions are complete and rated. Next step:  python tools/m2_4_b_blind_ab.py reveal' % total)
             return
-        attempts = sorted(SESSIONS.glob('session_%02d_attempt_*.json' % nxt['session']))
-        attempt = len(attempts) + 1
-        print('\n=== Blind session %d of %d (block %d, attempt %d) ===' % (nxt['session'], len(rows), nxt['block'], attempt))
-        print('Play normally. The session ends by itself after %.0f s of play with a live fly '
-              '(R restarts after a splat; Esc leaves fullscreen / quits early).' % ACTIVE_SECONDS)
+        attempt = len(list(SESSIONS.glob('session_%02d_attempt_*.json' % nxt['session']))) + 1
+        label = 'Session %02d / %d' % (nxt['session'], total)
+        print('\n=== %s%s ===' % (label, '' if attempt == 1 else '  (attempt %d)' % attempt))
+        print('Play normally. The session ends by itself after %.0f s of play with a live fly.' % (
+            HEADLESS_SECONDS or ACTIVE_SECONDS))
+        print('R restarts after a splat. Esc leaves fullscreen; Esc again quits early (an early quit is not counted).')
         input('Press Enter to start ...')
         t0 = time.time()
-        metrics, rec, err = run_game(nxt['policy'], nxt['world_seed'], RECORDINGS)
-        complete = err is None and metrics is not None and metrics['active_seconds'] >= MIN_COMPLETE_FRACTION * ACTIVE_SECONDS
+        log = LOGS / ('session_%02d_attempt_%d.log' % (nxt['session'], attempt))
+        result = [None, None, 'launcher error', {}]
+        with _PrivateOutput(log):
+            result = list(run_game(nxt['policy'], nxt['world_seed'], RECORDINGS,
+                                   active_seconds=HEADLESS_SECONDS or ACTIVE_SECONDS, headless=HEADLESS_SECONDS is not None,
+                                   press_h=HEADLESS_SECONDS is not None))
+        metrics, rec, err, audit = result
+        target = HEADLESS_SECONDS or ACTIVE_SECONDS
+        complete = err is None and metrics is not None and metrics['active_seconds'] >= MIN_COMPLETE_FRACTION * target
         base = {'session': nxt['session'], 'block': nxt['block'], 'position_in_block': nxt['position_in_block'],
-                'world_seed': nxt['world_seed'], 'attempt': attempt, 'started_utc': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(t0)),
-                'wall_seconds': time.time() - t0, 'recording': rec, 'error': err, 'complete': complete,
-                'metrics': metrics, 'policy': nxt['policy'], 'policy_label': POLICIES[nxt['policy']],
-                'commitment': _commit(key, nxt['session'], nxt['policy']),
-                'candidate_param_sha256': CANDIDATE_PARAM_SHA256 if nxt['policy'] == 'B' else None}
+                'world_seed': nxt['world_seed'], 'attempt': attempt, 'started_utc': _utc(t0),
+                'wall_seconds': time.time() - t0, 'active_seconds_target': target, 'recording': rec,
+                'private_log': str(log).replace('\\', '/'), 'error': err, 'complete': complete, 'metrics': metrics,
+                'commitment': man['sessions'][nxt['session'] - 1]['commitment'], 'blind_audit': audit,
+                'synthetic_test_session': HEADLESS_SECONDS is not None}
         if not complete:
             (SESSIONS / ('session_%02d_attempt_%d.json' % (nxt['session'], attempt))).write_text(
                 json.dumps(dict(base, ratings=None), indent=1, default=float) + '\n', encoding='utf-8')
-            print('\nSession ended early (%s). It was NOT counted; the same session will be offered again. '
-                  'No policy identity is shown.' % (err or '%.0f s of %.0f s played' % ((metrics or {}).get('active_seconds', 0), ACTIVE_SECONDS)))
+            print('\nThe session ended before %.0f %% of the play time, or an error occurred (details were saved '
+                  'privately). It is not counted and will be offered again.' % (100 * MIN_COMPLETE_FRACTION))
         else:
             ratings = ask_ratings()
-            out = dict(base, ratings=ratings, ratings_saved_utc=time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()))
-            (SESSIONS / ('session_%02d.json' % nxt['session'])).write_text(json.dumps(out, indent=1, default=float) + '\n',
-                                                                            encoding='utf-8')
-            print('\nRatings saved.')
-            print('This session\'s fly was policy %s: %s' % (nxt['policy'], POLICIES[nxt['policy']]))
-            print('(strikes %d, hits %d)' % (metrics['committed_strikes'], metrics['hits']))
+            out = dict(base, ratings=ratings, ratings_saved_utc=_utc())
+            f = SESSIONS / ('session_%02d.json' % nxt['session'])
+            f.write_text(json.dumps(out, indent=1, default=float) + '\n', encoding='utf-8')
+            print('\nResponse saved. Policy identity remains blinded.')
         if input('\nContinue with the next session? (y / n)\n> ').strip().lower() != 'y':
-            print('Stopped. Re-run the same command to continue with the next unplayed session.')
+            print('Stopped. Run the same command again to continue with the next unplayed session.')
             return
 
 
@@ -386,26 +455,86 @@ def status():
     man = json.loads(MANIFEST.read_text(encoding='utf-8'))
     done = completed_sessions() if SESSIONS.exists() else {}
     inc = len(list(SESSIONS.glob('session_*_attempt_*.json'))) if SESSIONS.exists() else 0
-    print('completed %d of %d sessions; incomplete attempts %d; next session %s' % (
-        len(done), len(man['sessions']), inc, next((s['session'] for s in man['sessions'] if s['session'] not in done), None)))
+    nxt = next((s['session'] for s in man['sessions'] if s['session'] not in done), None)
+    print('Completed and rated: %d / %d sessions. Incomplete attempts: %d. Next: %s. Ratings locked: %s.' % (
+        len(done), len(man['sessions']), inc, 'none' if nxt is None else 'Session %02d / %d' % (nxt, len(man['sessions'])),
+        'yes' if LOCK_FILE.exists() else 'no'))
+
+
+def reveal():
+    """After 30 / 30 rated sessions: lock ratings, verify key and commitments, decode assignments."""
+    man, key, rows = load_key_and_rows()
+    done = completed_sessions() if SESSIONS.exists() else {}
+    if len(done) != len(rows):
+        raise SystemExit('Reveal refused: %d / %d sessions are complete and rated. Identity stays blinded until all '
+                         'sessions are rated.' % (len(done), len(rows)))
+    if not LOCK_FILE.exists():
+        lock = {'label': 'M2.4-B ratings lock (written before any assignment was decoded)', 'locked_utc': _utc(),
+                'files': {}}
+        for r in rows:
+            f = SESSIONS / ('session_%02d.json' % r['session'])
+            lock['files'][f.name] = hashlib.sha256(f.read_bytes()).hexdigest()
+            os.chmod(f, 0o444)
+        LOCK_FILE.write_text(json.dumps(lock, indent=1) + '\n', encoding='utf-8')
+        os.chmod(LOCK_FILE, 0o444)
+    lock = json.loads(LOCK_FILE.read_text(encoding='utf-8'))
+    out = {'label': 'M2.4-B reveal record', 'revealed_utc': _utc(), 'key_hex': key.hex(),
+           'key_sha256': hashlib.sha256(key).hexdigest(), 'manifest_key_sha256': man['key_sha256'],
+           'ratings_lock_sha256': hashlib.sha256(LOCK_FILE.read_bytes()).hexdigest(), 'sessions': []}
+    for r, m in zip(rows, man['sessions']):
+        f = SESSIONS / ('session_%02d.json' % r['session'])
+        if hashlib.sha256(f.read_bytes()).hexdigest() != lock['files'][f.name]:
+            raise SystemExit('session file changed after the lock: %s' % f.name)
+        d = done[r['session']]
+        c = _commit(key, r['session'], r['policy'])
+        if not (c == m['commitment'] == d['commitment']) or d['world_seed'] != r['world_seed']:
+            raise SystemExit('commitment verification failed at session %d' % r['session'])
+        out['sessions'].append({'session': r['session'], 'block': r['block'], 'position_in_block': r['position_in_block'],
+                                'world_seed': r['world_seed'], 'policy': r['policy'], 'policy_label': POLICIES[r['policy']],
+                                'commitment_verified': True})
+    out['all_commitments_verified'] = True
+    REVEAL_FILE.write_text(json.dumps(out, indent=1) + '\n', encoding='utf-8')
+    print('Ratings locked (%d files). Key verified against the manifest. All %d commitments verified.' % (
+        len(lock['files']), len(rows)))
+    print('Assignments decoded to %s. Next step:  python tools/m2_4_b_blind_ab.py analyze' % REVEAL_FILE)
 
 
 def smoke(seconds=4.0):
-    """Headless check that both policy paths run and produce metrics (no manifest, no recording, no ratings)."""
+    """Developer check that both policy paths run and produce metrics (synthetic seed; no manifest, no recording)."""
     for letter in ('A', 'B'):
-        m, rec, err = run_game(letter, 41_999_999, None, headless_seconds=seconds)
+        m, rec, err, audit = run_game(letter, 41_999_999, None, active_seconds=seconds, headless=True, press_h=True)
         chk = getattr(run_game, 'last_check', {})
         print('smoke', letter, 'error', err, 'active_s', None if m is None else round(m['active_seconds'], 2),
               'ticks', None if m is None else m['total_ticks'], chk)
         want = 'ManeuverPolicy' if letter == 'B' else 'FixedEscapePolicy'
-        if err or m is None or m['total_ticks'] == 0 or chk.get('policy_class') != want or chk.get('neural_hud_visible'):
+        if err or m is None or m['total_ticks'] == 0 or chk.get('policy_class') != want or chk.get('neural_hud_visible_at_end'):
             raise SystemExit('smoke failed for policy %s' % letter)
+
+
+def configure_sandbox(d):
+    global MANIFEST, PRIVATE, KEY_FILE, SESSIONS, RECORDINGS, LOGS, LOCK_FILE, REVEAL_FILE, TRACK
+    d = Path(d).resolve()
+    if d == ROOT or ROOT / 'game' in d.parents or d in (ROOT / 'artifacts/m2_4_b', ROOT / 'game/learning/m2_4_b'):
+        raise SystemExit('the sandbox must be a separate test directory')
+    TRACK = d
+    MANIFEST = d / 'randomization_manifest.json'
+    PRIVATE = d / 'private'
+    KEY_FILE, SESSIONS, RECORDINGS, LOGS = PRIVATE / 'blind_key.json', PRIVATE / 'sessions', PRIVATE / 'recordings', PRIVATE / 'logs'
+    LOCK_FILE, REVEAL_FILE = PRIVATE / 'ratings_lock.json', PRIVATE / 'reveal.json'
 
 
 if __name__ == '__main__':
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('mode', nargs='?', default='play', choices=('manifest', 'play', 'status', 'analyze', 'smoke'))
+    ap.add_argument('mode', nargs='?', default='play', choices=('manifest', 'play', 'status', 'reveal', 'analyze', 'smoke'))
+    ap.add_argument('--sandbox', type=Path, help='test only: relocate the manifest and private files')
+    ap.add_argument('--headless-seconds', type=float, help='test only (requires --sandbox): headless sessions')
     a = ap.parse_args()
+    if a.sandbox is not None:
+        configure_sandbox(a.sandbox)
+    if a.headless_seconds is not None:
+        if a.sandbox is None:
+            raise SystemExit('--headless-seconds is test-only and requires --sandbox')
+        HEADLESS_SECONDS = a.headless_seconds
     if a.mode == 'analyze':
         import importlib.util
         spec = importlib.util.spec_from_file_location('m2_4_b_analyze', ROOT / 'tools/m2_4_b_analyze.py')
@@ -413,4 +542,4 @@ if __name__ == '__main__':
         spec.loader.exec_module(mod)
         mod.main()
     else:
-        {'manifest': make_manifest, 'play': play, 'status': status, 'smoke': smoke}[a.mode]()
+        {'manifest': make_manifest, 'play': play, 'status': status, 'reveal': reveal, 'smoke': smoke}[a.mode]()
