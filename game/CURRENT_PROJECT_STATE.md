@@ -4,7 +4,7 @@ This file is an operational handoff for future sessions. It is not a scientific 
 a runtime artifact. Evidence lives in the milestone reports listed below. Update it at the
 end of every substantial milestone.
 
-Last updated: 2026-09-26. **M2.3 PyTorch BC + KL-anchored constrained PPO complete: NO-GO for human testing** (conditional escape preserved in all 5 seeds, but EVAL hit 0.592 vs N4B1C 0.617 is not a meaningful improvement; class C). Runtime baseline: M1.8-N4B5R (`363a1a9`), unchanged; no learned policy integrated. The M1 slow-approach line is closed.
+Last updated: 2026-09-26. **M2.4-R0 temporal action abstraction feasibility complete: keep 50 Hz, NO-GO for an action-contract change.** M2.3 remains a valid NO-GO (candidate: promising but unconfirmed improvement). Runtime baseline: M1.8-N4B5R (`363a1a9`), unchanged; no learned policy integrated. The M1 slow-approach line is closed.
 
 ## Start of a new session
 
@@ -51,7 +51,7 @@ Earlier frozen milestones (see `AGENTS.md`): M1.7.1 swatter dynamics and M1.8-A 
 |---|---|---|
 | `wip/m1-4-enclosure` | the N4B8 research commit (see `git log -1`); N4B8 freeze `ecb86d3`, N4B7 `c61dbd3` (freeze `8fee28a`), N4B6 `b203b46` (preregistration `987b2a9`), N4B5R state `81b213e`, N4B5 `0e9d2d9`, N4B4 `6b5c4ce`, N4B3 `d09dac4`, N4B2 `5be0aea` | research branch; research-only commits |
 | `feature/m1-8-n4b5r-geometry` | `363a1a9` | **current accepted runtime** (N4B1C + G3 geometry); **do not modify** |
-| `feature/m2-0-learning-infra` | `f723375` | M2 learning line (from `363a1a9`): M2.0 infrastructure (`b53f9a9`), M2.1 benchmark v2 / reward v2 (freeze `66b286e`), M2.2 PPO training (protocol `63dbeb6`, candidate `2e454a9`), M2.3 PyTorch BC + PPO (BC `f65c995`, protocol `76ad1f4`, candidate `5ce0095`, report `f723375`); no accepted runtime file changed; pushed, not merged |
+| `feature/m2-0-learning-infra` | `12468bd` | M2 learning line (from `363a1a9`): M2.0 infrastructure (`b53f9a9`), M2.1 benchmark v2 / reward v2 (freeze `66b286e`), M2.2 PPO training (protocol `63dbeb6`, candidate `2e454a9`), M2.3 PyTorch BC + PPO (BC `f65c995`, protocol `76ad1f4`, candidate `5ce0095`, report `f723375`), M2.4-R0 temporal feasibility (preregistration `a671876`, report `12468bd`); no accepted runtime file changed; pushed, not merged |
 | `feature/m1-8-n4b1c-runtime` | `e3c55b3` | previous accepted runtime (decoder layer); **do not modify** |
 | `archive/m1-8-n2b-rejected` | `2c306174d7bdb4e74b6c5517519ae695bd90cf44` | rejected N2b runtime snapshot; **never merge** |
 | `main` | `309abd9` | untouched |
@@ -93,7 +93,41 @@ Do not call C or D "false triggers".
 
 ## Current milestone
 
-**M2.3: PyTorch behaviour cloning + KL-anchored constrained PPO** (approved training; research
+**M2.4-R0: temporal action abstraction feasibility** (research only; no training): **complete.
+Outcome A: keep 50 Hz. NO-GO for an action-contract change.**
+
+- **Report:** `game/M2_4_R0_TEMPORAL_ACTION_FEASIBILITY.md`.
+- **Results:** `game/learning/m2_4_r0/r0_results.json`.
+- **Preregistration:** `r0_protocol.json`, sha256 `4f268fb8...`, pushed as `a671876` before
+  any comparison.
+- **Data:** 240 fresh TRAIN-range episodes (192 threat + 48 background) for:
+  - the accepted N4B1C;
+  - the mapped teacher;
+  - the PyTorch BC;
+  - the M2.3 candidate;
+  - the teacher at hypothetical 40 / 100 / 200 ms cadences (sampled / latched hold).
+- **Findings:**
+  - teacher escapes and saccades are single-tick events whose duration comes from the
+    actuator; turns last a median of 100 ms (40-260); NONE runs are long;
+  - sampled cadences lose 49-89 % of escapes;
+  - latched 40 / 100 ms cadences preserve threat response (T1-T6) but inflate turning
+    (T7 / O3);
+  - no cadence passes the preregistered tolerances.
+- **Credit:** the M2.3 rollouts carry about 1 effective independent advantage sample per
+  strike at every cadence (0.80 at 20 ms, 1.05 at 200 ms). Abstraction removes redundancy but
+  adds no signal: the limit is the strike count, not the decision rate.
+- **M2.3 status (conclusion unchanged):** the candidate is a *promising but unconfirmed
+  improvement*:
+  - EVAL 0.592 vs 0.617, CI [-0.090, +0.040], p = 0.53;
+  - unnecessary escapes 5.15 -> 3.02 / min;
+  - on the R0 episodes it is only -0.010 below its BC parent (p = 0.86).
+- **M2-EVAL-v3 is defined, not generated:**
+  - seeds 3,900,000 + 1000 g + k (40 per threat group, 20 per background group);
+  - it must be frozen before any M2.4 training;
+  - the M2.1 v2 EVAL set is no longer a future holdout.
+- Tests: 500 / 500.
+
+**Previous milestone:** M2.3: PyTorch behaviour cloning + KL-anchored constrained PPO** (approved training; research
 only): **complete. Result: NO-GO for human testing (class C).**
 
 - **Branch:** `feature/m2-0-learning-infra` @ `f723375` (worktree `artifacts/worktrees/m2-learning`).
@@ -314,11 +348,12 @@ Other known open item (not scheduled): **stop-rotation transient** (N4B6, catego
 
 ## Next permitted actions
 
-- **After M2.3 (each option needs an explicit user decision):**
+- **After M2.3 / M2.4-R0 (each option needs an explicit user decision; M2.4-R0 says keep the 50 Hz action contract):**
   1. The same M2.3 method with a much larger rollout budget. This needs a new preregistration
      and a **fresh EVAL set**, because the M2.1 v2 EVAL set has been used twice.
-  2. M2.4 temporal abstraction: a lower decision rate, action persistence or macro-actions.
-     This changes the action contract and needs approval.
+  2. (M2.4-R0: not recommended.) Temporal abstraction: a lower decision rate or macro-actions.
+     R0 found no credit benefit.
+  - Any future M2.4 candidate must use M2-EVAL-v3, frozen before training.
   3. A criterion change that would accept "hit equal to N4B1C with fewer unnecessary escapes".
   - Do not change the reward first.
 - **Replacing the accepted runtime policy with a learned one requires explicit approval and
