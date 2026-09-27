@@ -1,0 +1,85 @@
+{
+ "label": "M2.4-R0 temporal action abstraction feasibility: preregistration (research only)",
+ "frozen_utc": "2026-09-27T00:19:42Z",
+ "question": "does the 50 Hz per-tick decision create unnecessary temporal credit-assignment difficulty, and what action-persistence timescale does the existing behaviour justify?",
+ "policies": {
+  "A": "accepted N4B1C (FixedEscapePolicy, continuous Action; categorised by the teacher mapping)",
+  "B": "mapped N4B1C teacher (11 maneuvers, 50 Hz)",
+  "C": "frozen PyTorch BC policy (torch_bc_checkpoint.pt, stochastic)",
+  "D": "selected M2.3 PPO candidate (torch_candidate.pt, stochastic)"
+ },
+ "cadences_ticks": [
+  1,
+  2,
+  5,
+  10
+ ],
+ "variants": [
+  "sampled",
+  "latched"
+ ],
+ "tolerances": {
+  "reference": "mapped N4B1C teacher at 50 Hz (period 1) on the same R0 development episodes (paired seeds)",
+  "closed_loop": {
+   "T1_threat_window_escape": "escape-in-window fraction >= reference - 0.05",
+   "T2_escape_latency": "median escape latency after the click <= reference + 0.04 s",
+   "T3_hit": "hit probability <= reference + 0.05",
+   "T4_unnecessary": "|unnecessary escapes / min - reference| <= max(1.0, 0.2 x reference)",
+   "T5_perch": "perches / min >= max(0.275, 0.8 x reference)",
+   "T6_wall_speed": "wall-contact fraction <= reference + 0.01 and max-speed fraction <= reference + 0.01",
+   "T7_no_new_pathology": "no M2.1 anti-cheat flag absent from the reference (anti-cheat reference = the accepted N4B1C on the same episodes); turn-active fraction within +/- 20 % of the reference"
+  },
+  "open_loop": {
+   "O1_escape_event_recall": "fraction of teacher escape events reproduced (same side / strength) by the held stream within the decision interval that contains them >= 0.95",
+   "O2_escape_delay": "mean delay of reproduced escapes <= 0.04 s",
+   "O3_turn_agreement": "fraction of teacher TURN ticks where the held stream shows the same turn >= 0.80"
+  },
+  "selection": "the COARSEST cadence for which one variant passes every T and O criterion is recommended (outcome B). If none coarser than 20 ms passes: outcome C if the natural maneuver durations cluster into a small set, otherwise outcome A (keep 50 Hz). Benchmark score is not a selection criterion.",
+  "observation_constraint": "the unchanged observation carries the current frame + 4 history frames (5 ticks = 100 ms); a cadence coarser than 5 ticks leaves ticks that no decision observation contains. This is reported, not used to relax any tolerance."
+ },
+ "dev_episodes": {
+  "n_threat": 192,
+  "n_background": 48,
+  "rule": "TRAIN range [25e6, 30e6) minus M2.1 dev and M2.2/M2.3 TRAIN-VAL seeds; numpy default_rng(2400 + group); 16 per threat group, 12 per background family",
+  "sha256": "662c14b95793f3f4b29c71c1c45338fac63ccd5dcbf2648051728302471f46e1"
+ },
+ "credit_rollouts": {
+  "rule": "21 units x (1 background + 6 threat), default_rng(2450), same pool, disjoint from the dev episodes; M2.3 candidate + its frozen seed-4 iteration-60 critic",
+  "sha256": "898e41947db204a269ae17dea8afedd5293ff46a70e53c90fa9aef51992dac4a"
+ },
+ "windows": {
+  "threat_response_window": "click - 25 .. click + 25 ticks (+/- 0.5 s)",
+  "switch_horizons_ms": [
+   20,
+   40,
+   60,
+   100,
+   150,
+   200,
+   300
+  ],
+  "contexts": "exclusive precedence: threat_window > perched (TOUCHDOWN / PERCHED) > lifecycle transition > wall (contact or near-wall) > threat_other > background_flight"
+ },
+ "eval_v3_design": {
+  "name": "M2-EVAL-v3",
+  "status": "DEFINED ONLY in M2.4-R0; not generated, not run, never inspected during M2.4 hyperparameter selection",
+  "philosophy": "unchanged M2.1 benchmark v2: exposure-controlled threat trials (4 families x 3 attacker levels, frozen attacker distributions, benchmark_definition sha256 127de798...) + background episodes (4 families); same metrics, constraints, anti-cheat flags, reward v2",
+  "seeds": "threat group g (0..11, M2.1 order): 3_900_000 + 1000 x g + k, k = 1..40; background group g (12..15): 3_900_000 + 1000 x g + k, k = 1..20 (inside the registered EVAL range (3e6, 4e6); disjoint from EVAL v1 3.1e6-3.7e6 and v2 3_800_001-3_815_020, including their brain-noise seeds seed + 977)",
+  "size": "480 threat trials + 80 background episodes per policy (2 x the v2 threat count, for a paired 95 % CI of about +/- 0.045 instead of +/- 0.065 at the M2.3 effect size); the size increase is part of this preregistration",
+  "baselines": "accepted N4B1C, no_escape, fixed_maneuver, random_legal and the three probes run once on v3 when it is frozen, before any M2.4 candidate exists",
+  "freeze_rule": "seed manifest + sha256 of the definition committed and pushed BEFORE M2.4 full training; the M2.4 candidate is frozen (hash committed) before its single v3 run",
+  "m2_1_eval_status": "M2.1 v2 EVAL observed by M2.2 and M2.3: valid historical evidence, not a future holdout"
+ },
+ "unchanged": [
+  "observation contract",
+  "11 maneuvers",
+  "reward v2",
+  "attacker distributions",
+  "MaleCNS",
+  "Retina / encoder",
+  "physics",
+  "lifecycle",
+  "accepted runtime",
+  "M2.3 artifacts"
+ ]
+}
