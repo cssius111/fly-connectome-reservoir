@@ -51,7 +51,7 @@ Earlier frozen milestones (see `AGENTS.md`): M1.7.1 swatter dynamics and M1.8-A 
 |---|---|---|
 | `wip/m1-4-enclosure` | the N4B8 research commit (see `git log -1`); N4B8 freeze `ecb86d3`, N4B7 `c61dbd3` (freeze `8fee28a`), N4B6 `b203b46` (preregistration `987b2a9`), N4B5R state `81b213e`, N4B5 `0e9d2d9`, N4B4 `6b5c4ce`, N4B3 `d09dac4`, N4B2 `5be0aea` | research branch; research-only commits |
 | `feature/m1-8-n4b5r-geometry` | `363a1a9` | **current accepted runtime** (N4B1C + G3 geometry); **do not modify** |
-| `feature/m2-0-learning-infra` | `8a5eb2b` | M2 learning line (from `363a1a9`): M2.0 infrastructure (`b53f9a9`), M2.1 benchmark v2 / reward v2 (freeze `66b286e`), M2.2 PPO training (protocol `63dbeb6`, candidate `2e454a9`), M2.3 PyTorch BC + PPO (BC `f65c995`, protocol `76ad1f4`, candidate `5ce0095`, report `f723375`), M2.4-R0 temporal feasibility (preregistration `a671876`, report `12468bd`), M2.4-A strike-centric PPO (EVAL-v3 freeze `660911a`, protocol `a4cb584`, candidate `497a990`, report `8a5eb2b`); no accepted runtime file changed; pushed, not merged |
+| `feature/m2-0-learning-infra` | `b1b34d3` | M2 learning line (from `363a1a9`): M2.0 infrastructure (`b53f9a9`), M2.1 benchmark v2 / reward v2 (freeze `66b286e`), M2.2 PPO training (protocol `63dbeb6`, candidate `2e454a9`), M2.3 PyTorch BC + PPO (BC `f65c995`, protocol `76ad1f4`, candidate `5ce0095`, report `f723375`), M2.4-R0 temporal feasibility (preregistration `a671876`, report `12468bd`), M2.4-A strike-centric PPO (EVAL-v3 freeze `660911a`, protocol `a4cb584`, candidate `497a990`, report `8a5eb2b`); no accepted runtime file changed; pushed, not merged |
 | `feature/m1-8-n4b1c-runtime` | `e3c55b3` | previous accepted runtime (decoder layer); **do not modify** |
 | `archive/m1-8-n2b-rejected` | `2c306174d7bdb4e74b6c5517519ae695bd90cf44` | rejected N2b runtime snapshot; **never merge** |
 | `main` | `309abd9` | untouched |
@@ -128,6 +128,7 @@ Result: GO for human testing. The runtime is not replaced.**
   - the easy-attacker hit rate is still 0.29.
 - **Human test (next step; research launcher only; M2 worktree):**
   `python tools/m2_play_learned.py --checkpoint game/learning/checkpoints/m2_4_a_candidate.npz --expected-sha256 0692117af68e9a3d93ed0b2a966c9ab103c5b1d80f6a9f3cf2df900b555e2e66 --arena room --no-record`
+- **Runner amendment:** `game/M2_4_A_EVAL_EXECUTION_AMENDMENT.md` (`b1b34d3`) documents a post-freeze pickling fix to the M2-EVAL-v3 baseline worker (`bfd5c42`), hash provenance A-E and a full OLD / NEW equivalence proof (identical on instrumented TRAIN episodes, via a spawn pool, and against the historical M2.2 records). The proof was completed after the one-shot EVAL had already run, and this ordering deviation is stated there. Acceptance of the GO given that deviation is a human decision.
 - **Do not** integrate the learned policy into the runtime or merge anything without an explicit decision.
 - Tests: 513 / 513; protected files 20 / 20.
 
