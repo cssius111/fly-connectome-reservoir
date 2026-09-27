@@ -1,0 +1,230 @@
+{
+ "label": "M2.4-A baseline pool worker amendment: semantic-equivalence evidence (TRAIN only)",
+ "old_worker": "tools/m2_2_train.py::_baseline_worker_init / baseline_task",
+ "old_file_sha256": "f69270ca4f87eae207ab6a992297b5aef48bce5a41946c4fa868eef638e0576f",
+ "new_worker": "game/learning/baseline_eval.py::worker_init / baseline_task",
+ "new_file_sha256": "83751654b09aadf433b2363947239f6425e7b01aef3f6bc63c56e1998f2b4cab",
+ "policies": [
+  "baseline_n4b1c",
+  "no_escape",
+  "fixed_maneuver"
+ ],
+ "fixed_set_rng": 4343,
+ "fixed_set": [
+  [
+   "threat",
+   "direct",
+   "easy",
+   23643747
+  ],
+  [
+   "threat",
+   "direct",
+   "easy",
+   23055903
+  ],
+  [
+   "threat",
+   "direct",
+   "nominal",
+   23220446
+  ],
+  [
+   "threat",
+   "direct",
+   "nominal",
+   21462963
+  ],
+  [
+   "threat",
+   "direct",
+   "hard",
+   23958384
+  ],
+  [
+   "threat",
+   "direct",
+   "hard",
+   23360240
+  ],
+  [
+   "threat",
+   "hover",
+   "easy",
+   22107310
+  ],
+  [
+   "threat",
+   "hover",
+   "easy",
+   24071410
+  ],
+  [
+   "threat",
+   "hover",
+   "nominal",
+   24047911
+  ],
+  [
+   "threat",
+   "hover",
+   "nominal",
+   23147609
+  ],
+  [
+   "threat",
+   "hover",
+   "hard",
+   24223949
+  ],
+  [
+   "threat",
+   "hover",
+   "hard",
+   20313289
+  ],
+  [
+   "threat",
+   "wall",
+   "easy",
+   24764867
+  ],
+  [
+   "threat",
+   "wall",
+   "easy",
+   24608046
+  ],
+  [
+   "threat",
+   "wall",
+   "nominal",
+   23556982
+  ],
+  [
+   "threat",
+   "wall",
+   "nominal",
+   23666142
+  ],
+  [
+   "threat",
+   "wall",
+   "hard",
+   21462474
+  ],
+  [
+   "threat",
+   "wall",
+   "hard",
+   20924325
+  ],
+  [
+   "threat",
+   "perched_or_fallback",
+   "easy",
+   20603398
+  ],
+  [
+   "threat",
+   "perched_or_fallback",
+   "easy",
+   20492234
+  ],
+  [
+   "threat",
+   "perched_or_fallback",
+   "nominal",
+   20022044
+  ],
+  [
+   "threat",
+   "perched_or_fallback",
+   "nominal",
+   21381150
+  ],
+  [
+   "threat",
+   "perched_or_fallback",
+   "hard",
+   20604069
+  ],
+  [
+   "threat",
+   "perched_or_fallback",
+   "hard",
+   21669304
+  ],
+  [
+   "background",
+   "free_flight",
+   null,
+   24371166
+  ],
+  [
+   "background",
+   "glancing_pass",
+   null,
+   24920524
+  ],
+  [
+   "background",
+   "aborted_approach",
+   null,
+   24110059
+  ],
+  [
+   "background",
+   "hover_only",
+   null,
+   23249624
+  ]
+ ],
+ "part_a": {
+  "baseline_n4b1c": {
+   "episodes": 28,
+   "records_sha256": "5944d818dad94d1ab79451620c7bf5fdda2a9aebe6f8678b16c5c286dcb14299",
+   "instrumentation_sha256": "b8484959c82ed71ce62f3d1ab112f626c57babb0eafc64015fe3cb42eab567a6",
+   "neural_seed_is_seed_plus_977": true,
+   "setups_recorded": 24,
+   "brain_loop_steps": 19295,
+   "hits": 12
+  },
+  "no_escape": {
+   "episodes": 28,
+   "records_sha256": "d4a08545a06b2447040c0b402dc0e5d9a19c1a8ae0f07ee5ec298e53b5a7e513",
+   "instrumentation_sha256": "915512053d707eb9f7145f77b02b45ba5d225ce374f260383688a9950afd4b1d",
+   "neural_seed_is_seed_plus_977": true,
+   "setups_recorded": 24,
+   "brain_loop_steps": 19869,
+   "hits": 19
+  },
+  "fixed_maneuver": {
+   "episodes": 28,
+   "records_sha256": "3198ef37467406b4ad11871df103393a1d4465c24821360baeefbb97b8be34df",
+   "instrumentation_sha256": "99a38bda2bef21e1ad0495003a682002d6a5e0dc7243b169e170e23b986a8174",
+   "neural_seed_is_seed_plus_977": true,
+   "setups_recorded": 24,
+   "brain_loop_steps": 20015,
+   "hits": 11
+  }
+ },
+ "part_a_differences": [],
+ "part_b": {
+  "spawn_pool_workers": 7,
+  "start_method": "spawn",
+  "differences": [],
+  "records_sha256": {
+   "baseline_n4b1c": "5944d818dad94d1ab79451620c7bf5fdda2a9aebe6f8678b16c5c286dcb14299",
+   "no_escape": "d4a08545a06b2447040c0b402dc0e5d9a19c1a8ae0f07ee5ec298e53b5a7e513",
+   "fixed_maneuver": "3198ef37467406b4ad11871df103393a1d4465c24821360baeefbb97b8be34df"
+  }
+ },
+ "part_c": {
+  "set": "M2.2 TRAIN-VAL (96 threat + 24 background)",
+  "episodes_per_policy": 120,
+  "old_records_file_sha256": "683dedcfb4bd7b8cfb653e24f251944ebbae8aaac8dc818896b174cceb2d1e5c",
+  "differences": []
+ },
+ "identical": true
+}

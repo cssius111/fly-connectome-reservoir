@@ -352,3 +352,9 @@ Software incidents:
   final policy.
 - `confirm` initially failed on a spawn-pool pickling defect. It was fixed in `bfd5c42` before any checkpoint
   confirmation; `m2_eval_v3.run_once` carried the same defect and was fixed before the one-shot EVAL.
+
+**Post-freeze runner amendment:** `game/M2_4_A_EVAL_EXECUTION_AMENDMENT.md` documents the baseline-worker pickling
+fix (`bfd5c42`) applied to the frozen M2-EVAL-v3 runner, with hash provenance A-E. It also records a full
+semantic-equivalence proof, produced after the EVAL: OLD vs NEW worker identical on 3 x 28 instrumented TRAIN
+episodes, through a spawn pool, and against the historical M2.2 OLD-worker records (360 episodes). The amendment and
+the full proof were requested before EVAL execution but arrived after it; the ordering deviation is stated there.
