@@ -1,0 +1,207 @@
+{
+ "label": "M2.4-A TRAIN-only development comparison (not official seeds; no EVAL touched)",
+ "rule": "revised before any C_window result was visible (window already frozen = engage from the B_strike TRAIN rollouts). A variant V in {B_strike, C_window} is ELIGIBLE if (i) no collapse over its development run (NONE share < 0.995 and synthetic strong-DNp01 escape probability >= 0.2 at every iteration); (ii) statistical efficiency vs A_ref: mean post-warm-up (iterations 4+) cross-half actor-gradient cosine >= that of A_ref AND mean effective strikes per update (Kish, actor weights) >= 2 x A_ref; (iii) its final policy on TRAIN-VAL is M2.1-admissible (unnecessary <= 5.36 / min, perches >= 0.275 / min, movement constraints, no anti-cheat flag) with threat-window escape >= 0.3. Choice: prefer the simpler B_strike when eligible; choose C_window instead only if C is eligible AND shows a clear advantage over B: (a) TRAIN-VAL hit lower than B with non-overlapping Wilson 95 % intervals, or (b) post-warm-up cross-half cosine >= B + 0.05 AND post-warm-up minibatch relative gradient variance <= 0.75 x B. If B is not eligible, C_window if eligible. If neither is eligible: development NO-GO, no official training budget is spent. Rollout hit rate and scalar reward are reported but never used for the choice.",
+ "runs": {
+  "A_ref_seed_201": {
+   "iterations": 20,
+   "strikes_per_iteration": 42.0,
+   "seconds_per_iteration": 40.33830407857895,
+   "strikes_per_hour": 3748.298384222169,
+   "decisions_per_iteration": 35668.45,
+   "actor_ticks_per_iteration": 35668.45,
+   "effective_strikes_kish_weight": 20.797993981954715,
+   "effective_strikes_kish_grad": 36.00343990325928,
+   "cross_half_cosine_mean": -0.06683301389217375,
+   "cross_half_cosine_after_warmup": -0.0721371734295698,
+   "minibatch_rel_variance_mean": 10.425657820701598,
+   "minibatch_rel_variance_after_warmup": 10.960212398977841,
+   "cross_half_cosine_after_warmup_sd": 0.2532451202093605,
+   "threat_trial_escape_min": 1.0,
+   "rollout_unnecessary_per_min_mean": 6.715161309278956,
+   "rollout_perch_per_min_mean": 0.7158576717400248,
+   "minibatch_pairwise_cosine_mean": -0.013436055111898377,
+   "unit_grad_share_top10pct_mean": 0.17197088226675988,
+   "advantage_lag1_autocorrelation_mean": 0.9696634104304392,
+   "effective_independent_actor_samples_mean": 381.2731603478348,
+   "none_share_max": 0.9811539817137644,
+   "esc_L3_min": 0.4636656518178539,
+   "esc_L3_end": 0.4636656518178539,
+   "kl_bc_end": 0.0002947533212136477,
+   "lambda_u_max": 0.0399963439489928,
+   "nonfinite": 0,
+   "rollout_hit_first5": 0.6476190476190476,
+   "rollout_hit_last5": 0.6095238095238095,
+   "trainval": {
+    "hit_probability": 0.65625,
+    "hit_by_attacker": {
+     "easy": 0.46875,
+     "nominal": 0.5625,
+     "hard": 0.9375
+    },
+    "escape_in_window": 0.8229166666666666,
+    "median_escape_latency_s": 0.1,
+    "unnecessary_per_min": 4.333333333333333,
+    "perches_per_min": 0.5,
+    "admissible": true,
+    "flags": [],
+    "violations": [],
+    "category_counts": {
+     "SACCADE": 131,
+     "NONE": 35332,
+     "ESCAPE_LEFT": 41,
+     "TURN_LEFT": 147,
+     "TURN_RIGHT": 297,
+     "ESCAPE_RIGHT": 44,
+     "ESCAPE_BACKWARD": 1,
+     "ESCAPE_FORWARD": 7
+    },
+    "hit_wilson95": [
+     0.5568784424044507,
+     0.7435975115065444
+    ]
+   }
+  },
+  "B_strike_seed_201": {
+   "iterations": 20,
+   "strikes_per_iteration": 98.0,
+   "seconds_per_iteration": 99.01129962205887,
+   "strikes_per_hour": 3563.229665166411,
+   "decisions_per_iteration": 49153.1,
+   "actor_ticks_per_iteration": 49153.1,
+   "effective_strikes_kish_weight": 78.35141214090939,
+   "effective_strikes_kish_grad": 76.00420875549317,
+   "cross_half_cosine_mean": -0.05150961341336367,
+   "cross_half_cosine_after_warmup": -0.04999001269393107,
+   "minibatch_rel_variance_mean": 8.551863193511963,
+   "minibatch_rel_variance_after_warmup": 8.417778912712546,
+   "cross_half_cosine_after_warmup_sd": 0.14477765484394764,
+   "threat_trial_escape_min": 1.0,
+   "rollout_unnecessary_per_min_mean": 5.6617715617715625,
+   "rollout_perch_per_min_mean": 0.523123543123543,
+   "minibatch_pairwise_cosine_mean": -0.005226889585277864,
+   "unit_grad_share_top10pct_mean": 0.21746281385421753,
+   "advantage_lag1_autocorrelation_mean": 0.9671311234634816,
+   "effective_independent_actor_samples_mean": 637.8658777684079,
+   "none_share_max": 0.9639650224064719,
+   "esc_L3_min": 0.5055634866464407,
+   "esc_L3_end": 0.5147714143149517,
+   "kl_bc_end": 0.0004391426919028163,
+   "lambda_u_max": 0.03409566055689289,
+   "nonfinite": 0,
+   "rollout_hit_first5": 0.616326530612245,
+   "rollout_hit_last5": 0.5877551020408164,
+   "trainval": {
+    "hit_probability": 0.6458333333333334,
+    "hit_by_attacker": {
+     "easy": 0.4375,
+     "nominal": 0.53125,
+     "hard": 0.96875
+    },
+    "escape_in_window": 0.8020833333333334,
+    "median_escape_latency_s": 0.1,
+    "unnecessary_per_min": 4.333333333333333,
+    "perches_per_min": 0.5833333333333334,
+    "admissible": true,
+    "flags": [],
+    "violations": [],
+    "category_counts": {
+     "TURN_RIGHT": 356,
+     "NONE": 35228,
+     "SACCADE": 127,
+     "ESCAPE_LEFT": 42,
+     "TURN_LEFT": 186,
+     "ESCAPE_RIGHT": 46,
+     "ESCAPE_FORWARD": 12,
+     "ESCAPE_BACKWARD": 3
+    },
+    "hit_wilson95": [
+     0.546241158747365,
+     0.734203064902897
+    ]
+   }
+  },
+  "C_window_seed_201": {
+   "iterations": 20,
+   "strikes_per_iteration": 98.0,
+   "seconds_per_iteration": 47.374030685424806,
+   "strikes_per_hour": 7447.118070714283,
+   "decisions_per_iteration": 48008.55,
+   "actor_ticks_per_iteration": 22959.35,
+   "effective_strikes_kish_weight": 78.99783340679141,
+   "effective_strikes_kish_grad": 51.78578939437866,
+   "cross_half_cosine_mean": 0.022223407793790107,
+   "cross_half_cosine_after_warmup": 0.035133474736529224,
+   "minibatch_rel_variance_mean": 7.820429909229278,
+   "minibatch_rel_variance_after_warmup": 7.289120491813211,
+   "cross_half_cosine_after_warmup_sd": 0.26527736897761184,
+   "threat_trial_escape_min": 1.0,
+   "rollout_unnecessary_per_min_mean": 5.832727272727274,
+   "rollout_perch_per_min_mean": 0.516037296037296,
+   "minibatch_pairwise_cosine_mean": 0.0017792387025630386,
+   "unit_grad_share_top10pct_mean": 0.32524264603853226,
+   "advantage_lag1_autocorrelation_mean": 0.9672015657034733,
+   "effective_independent_actor_samples_mean": 199.3691742232366,
+   "none_share_max": 0.9624329478017571,
+   "esc_L3_min": 0.3984276464693085,
+   "esc_L3_end": 0.6082842407017977,
+   "kl_bc_end": 0.000584737048484385,
+   "lambda_u_max": 0.019689274936440595,
+   "nonfinite": 0,
+   "rollout_hit_first5": 0.6020408163265307,
+   "rollout_hit_last5": 0.6204081632653061,
+   "trainval": {
+    "hit_probability": 0.65625,
+    "hit_by_attacker": {
+     "easy": 0.375,
+     "nominal": 0.59375,
+     "hard": 1.0
+    },
+    "escape_in_window": 0.7916666666666666,
+    "median_escape_latency_s": 0.1,
+    "unnecessary_per_min": 4.416666666666667,
+    "perches_per_min": 0.5,
+    "admissible": true,
+    "flags": [],
+    "violations": [],
+    "category_counts": {
+     "NONE": 35266,
+     "SACCADE": 127,
+     "ESCAPE_LEFT": 39,
+     "TURN_RIGHT": 328,
+     "ESCAPE_RIGHT": 51,
+     "TURN_LEFT": 179,
+     "ESCAPE_FORWARD": 10
+    },
+    "hit_wilson95": [
+     0.5568784424044507,
+     0.7435975115065444
+    ]
+   }
+  }
+ },
+ "checks": {
+  "B_strike": {
+   "i_no_collapse": true,
+   "ii_cosine_ge_A_ref": true,
+   "ii_effective_strikes_ge_2x_A_ref": true,
+   "iii_trainval_admissible": true,
+   "iii_threat_window_escape_ge_0.3": true,
+   "eligible": true
+  },
+  "C_window": {
+   "i_no_collapse": true,
+   "ii_cosine_ge_A_ref": true,
+   "ii_effective_strikes_ge_2x_A_ref": true,
+   "iii_trainval_admissible": true,
+   "iii_threat_window_escape_ge_0.3": true,
+   "eligible": true
+  },
+  "C_over_B": {
+   "a_trainval_hit_non_overlapping_lower": false,
+   "b_cosine_plus_0.05": true,
+   "b_relvar_le_0.75x": false,
+   "clear_advantage": false
+  }
+ },
+ "method": "B_strike"
+}

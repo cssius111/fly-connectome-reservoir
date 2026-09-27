@@ -743,6 +743,10 @@ def freeze():
              'window_selection': json.loads((TRACK / 'window_selection.json').read_text(encoding='utf-8')),
              'development_summary_sha256': MT.sha_file(TRACK / 'dev_summary.json'),
              'worker_allocation_audit_sha256': MT.sha_file(audit),
+             'worker_allocation_audit_commit': 'c67f5d2',
+             'window_selection_commit': 'adb9ca9 (engage locked from B_strike TRAIN rollouts before any C_window result; '
+                                        'used only by C_window; the selected method uses its own actor_window)',
+             'development_rule': DEV_RULE, 'development_rule_commit': 'adb9ca9',
              'bc_checkpoint_state_dict_sha256': gate['bc_checkpoint_state_dict_sha256'],
              'split': p22['split'], 'split_sha256': p22['split_sha256'],
              'train_confirm_sha256': hashlib.sha256(json.dumps(confirm_specs()).encode()).hexdigest(),
