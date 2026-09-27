@@ -1,0 +1,107 @@
+{
+ "label": "M2.4-A frozen candidate",
+ "selected_utc": "2026-09-27T10:03:09Z",
+ "selection": {
+  "eligibility": "on the evaluation set used: M2.1 admissible (unnecessary <= 5.36 / min, perches >= 0.275 / min, movement constraints, no hard anti-cheat flag incl. constant_turning / pre_emptive_perpetual_escape / repeated_maneuver_cycling) AND threat-window escape >= 0.3 AND synthetic strong-DNp01 escape probability >= 0.2 and >= 10 x quiet AND NONE share of background decisions < 0.995 AND neural conditioning (escape probability at max DNp01 >= 2 >= 10 x that at < 0.25 on TRAIN-VAL BC states)",
+  "stage1_screen": "every checkpoint on the M2.2 TRAIN-VAL set (96 threat, 24 background episodes = 12 min); screen-eligible checkpoints ranked by hit, then unnecessary escapes",
+  "stage2_confirm": "the 6 best screen-eligible checkpoints re-evaluated on the fresh TRAIN-CONFIRM set (384 threat trials, 64 background episodes = 32 min background >= the 30 min minimum exposure); references N4B1C, PyTorch BC and the M2.3 candidate on the same set",
+  "final": "lowest TRAIN-CONFIRM hit among confirm-eligible checkpoints; if the best two differ by < 0.02, the one with fewer unnecessary escapes; Wilson 95 % intervals and paired differences vs BC / N4B1C recorded; the screen estimate is never used for the final ranking (winner's-curse control)",
+  "min_background_minutes_for_approval": 30
+ },
+ "protocol_sha256": "62795c2560b0e15ded9acb302c59fbea289fe30b502a3c981f1e13d26b042d93",
+ "screen_top6": [
+  "seed_2/ckpt_it060",
+  "seed_2/ckpt_it040",
+  "seed_3/ckpt_it060",
+  "seed_4/ckpt_it050",
+  "seed_1/ckpt_it060",
+  "seed_5/ckpt_it060"
+ ],
+ "confirm_eligible": [
+  "seed_2/ckpt_it060",
+  "seed_1/ckpt_it060",
+  "seed_3/ckpt_it060",
+  "seed_5/ckpt_it060",
+  "seed_4/ckpt_it050",
+  "seed_2/ckpt_it040"
+ ],
+ "candidate": "seed_2/ckpt_it060",
+ "checkpoint_sha256": "a8f78d393e7554e8a83c164279a055e85873ff0bfc80926da8edebafde8f84a6",
+ "checkpoint_file_sha256": "dd2ee45d7d88aa4c312b0f1da6af54a4f1d02ef6c5bb792fbd4fad6cafebabd5",
+ "numpy_export": "game/learning/checkpoints/m2_4_a_candidate.npz",
+ "numpy_export_param_sha256": "0692117af68e9a3d93ed0b2a966c9ab103c5b1d80f6a9f3cf2df900b555e2e66",
+ "bc_parent_sha256": "c6c21c23e639f89d6dcb7d98662b19320961f2ceb00cad610830a1e9a56dba4b",
+ "training_seed": 2,
+ "iteration": 60,
+ "env_steps": 2857449,
+ "committed_strikes_seen": 5880,
+ "torch": "2.13.0+cu132",
+ "cuda": "13.2",
+ "observation_schema_sha256": "a53b963997c8207ddd1c53a5205f6b48b6bada28db933762f02d68454519b080",
+ "action_schema_sha256": "8848a9c7d4bf0e5377d71e85775717a4873fc41e2bc83478ae3e54b43937a6a0",
+ "reward_v2_sha256": "e5d9106b09219c601ad9e3e560375cb3be45ead2531d4832dcf6fbaa2460db1d",
+ "constraints_sha256": "69c189978613285f1c02a617fce3786598404ddadcb9af94a650513ec316a822",
+ "confirm_summary": {
+  "hit_probability": 0.5286458333333334,
+  "hit_by_attacker": {
+   "easy": 0.3046875,
+   "nominal": 0.3984375,
+   "hard": 0.8828125
+  },
+  "escape_in_window": 0.8385416666666666,
+  "median_escape_latency_s": 0.1,
+  "unnecessary_per_min": 3.59375,
+  "perches_per_min": 0.78125,
+  "admissible": true,
+  "flags": [],
+  "violations": [],
+  "category_counts": {
+   "NONE": 94201,
+   "SACCADE": 408,
+   "TURN_RIGHT": 744,
+   "ESCAPE_RIGHT": 86,
+   "TURN_LEFT": 443,
+   "ESCAPE_LEFT": 76,
+   "ESCAPE_FORWARD": 40,
+   "ESCAPE_BACKWARD": 2
+  },
+  "hit_wilson95": [
+   0.47868089830955174,
+   0.5780432901220142
+  ],
+  "background_minutes": 32.0
+ },
+ "confirm_paired_vs_n4b1c": {
+  "n": 384,
+  "difference": -0.0625,
+  "ci95": [
+   -0.11424316678523182,
+   -0.010756833214768183
+  ],
+  "only_first_hit": 40,
+  "only_second_hit": 64,
+  "mcnemar_p": 0.023645635749768138
+ },
+ "confirm_paired_vs_bc": {
+  "n": 384,
+  "difference": -0.059895833333333336,
+  "ci95": [
+   -0.10773665544354527,
+   -0.012055011223121394
+  ],
+  "only_first_hit": 33,
+  "only_second_hit": 56,
+  "mcnemar_p": 0.01918660866014698
+ },
+ "confirm_paired_vs_m2_3": {
+  "n": 384,
+  "difference": -0.020833333333333332,
+  "ci95": [
+   -0.06818323282956716,
+   0.026516566162900494
+  ],
+  "only_first_hit": 39,
+  "only_second_hit": 47,
+  "mcnemar_p": 0.45054757600159084
+ }
+}
