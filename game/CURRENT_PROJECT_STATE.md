@@ -108,7 +108,7 @@ the human sessions. No session has been played.**
 - **Private data:** the key, results, ratings and recordings are in `artifacts/m2_4_b/` (git-ignored; do not open
   before the end; do not commit without the user's permission).
 - **Launch (PowerShell):**
-  `Set-Location D:\Projectslybrain-labrtifacts\worktrees\m2-learning; & D:\Projectslybrain-lab\.venv\Scripts\python.exe tools\m2_4_b_blind_ab.py play`
+  `Set-Location D:\Projects\flybrain-lab\artifacts\worktrees\m2-learning; & D:\Projects\flybrain-lab\.venv\Scripts\python.exe tools\m2_4_b_blind_ab.py play`
   Progress: `... tools\m2_4_b_blind_ab.py status`. After all 30 sessions: `analyze`, then write
   `game/M2_4_B_HUMAN_GAMEPLAY_ACCEPTANCE.md`.
 - **Boundary:** even on GO, the default policy is not replaced. Runtime integration needs a separate explicit approval.
