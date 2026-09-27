@@ -16,6 +16,7 @@ Changed (training only):
 - strike-grouped actor minibatches, a critic trained on all ticks with extra critic-only epochs.
 
     python tools/m2_4_a_strike_ppo.py dev --variant A_ref|B_strike|C_window --seed 201 [--iters 20]
+    python tools/m2_4_a_strike_ppo.py dev-eval --variant V --seed 201   (TRAIN-VAL of a finished dev run)
     python tools/m2_4_a_strike_ppo.py window-select      (TRAIN-only; preregistered rule)
     python tools/m2_4_a_strike_ppo.py dev-summary
     python tools/m2_4_a_strike_ppo.py freeze
@@ -105,7 +106,7 @@ VARIANTS = {
               'critic': {'epochs': 4, 'minibatch': 4096}, 'kl_entropy_samples': 'same minibatch'},
     'B_strike': {'sampling': {'mode': 'threat_dense', 'workers': 7, 'threat_per_worker': 14, 'background_per_worker': 1,
                               'family_shares': {'direct': 0.3, 'hover': 0.3, 'wall': 0.3, 'perched_or_fallback': 0.1},
-                              'attacker': 'uniform'},
+                              'attacker': 'uniform', 'balance_workers': True},
                  'weighting': {'mode': 'strike_balanced', 'background_actor_share': 0.25, 'family_importance': True},
                  'actor_window': 'full', 'actor_minibatch': {'mode': 'unit_groups', 'groups': 4},
                  'critic': {'epochs': 8, 'minibatch': 4096}, 'kl_entropy_samples': 'uniform random 4096 of all ticks'},
@@ -145,12 +146,28 @@ def worker_specs(rng, dev_seeds, S):
             out.append(u)
     else:
         p = np.array([S['family_shares'][f] for f in FAMS])
+        drawn = []
         for _ in range(S['workers']):
-            u = [('background', BGS[int(rng.integers(4))], None, seed()) for _ in range(S['background_per_worker'])]
-            u += [('threat', FAMS[int(rng.choice(4, p=p))], LEVELS[int(rng.integers(3))], seed())
-                  for _ in range(S['threat_per_worker'])]
-            out.append(u)
+            drawn += [('background', BGS[int(rng.integers(4))], None, seed()) for _ in range(S['background_per_worker'])]
+            drawn += [('threat', FAMS[int(rng.choice(4, p=p))], LEVELS[int(rng.integers(3))], seed())
+                      for _ in range(S['threat_per_worker'])]
+        if S.get('balance_workers'):
+            # Longest-processing-time assignment of the SAME drawn episodes (throughput only; the sample is unchanged).
+            load = [0.0] * S['workers']
+            out = [[] for _ in range(S['workers'])]
+            for sp in sorted(drawn, key=lambda x: -EXPECTED_TICKS[x[1]]):
+                k = int(np.argmin(load))
+                out[k].append(sp)
+                load[k] += EXPECTED_TICKS[sp[1]]
+        else:
+            n = S['background_per_worker'] + S['threat_per_worker']
+            out = [drawn[i * n:(i + 1) * n] for i in range(S['workers'])]
     return out
+
+
+# Mean ticks per episode on the R0 development episodes (mapped teacher); used only to balance worker load.
+EXPECTED_TICKS = {'direct': 289, 'hover': 284, 'wall': 231, 'perched_or_fallback': 1463, 'free_flight': 3000,
+                  'glancing_pass': 1000, 'aborted_approach': 1000, 'hover_only': 1000}
 
 
 def family_importance(S):
@@ -530,7 +547,15 @@ def dev(variant, seed, iters):
         import shutil
         shutil.rmtree(out)
     policy = train_run(seed, C, out, iterations=iters)
-    h = save_checkpoint(out / 'final.pt', policy.cpu(), {'variant': variant, 'iterations': iters})
+    save_checkpoint(out / 'final.pt', policy.cpu(), {'variant': variant, 'iterations': iters})
+    dev_eval(variant, seed)
+
+
+def dev_eval(variant, seed):
+    """TRAIN-VAL evaluation of a finished development run's final policy (informational; not a dev-rule input)."""
+    out = OUT / 'dev' / ('%s_seed_%d' % (variant, seed))
+    policy, _ = load_checkpoint(out / 'final.pt', TorchPolicy)
+    h = state_dict_sha256(policy)
     recs = BCT.eval_policy_on_val(policy.to_numpy_model().params)
     base = json.loads((ROOT / 'artifacts/m2_2/val/baselines.json').read_text(encoding='utf-8'))
     ev = M22.evaluate_records(recs, base)['candidate']
@@ -953,6 +978,6 @@ if __name__ == '__main__':
     ap.add_argument('--variant', default='B_strike')
     ap.add_argument('--iters', type=int, default=20)
     a = ap.parse_args()
-    {'dev': lambda: dev(a.variant, a.seed, a.iters), 'window-select': window_select, 'dev-summary': dev_summary,
+    {'dev': lambda: dev(a.variant, a.seed, a.iters), 'dev-eval': lambda: dev_eval(a.variant, a.seed), 'window-select': window_select, 'dev-summary': dev_summary,
      'freeze': freeze, 'train': lambda: train(a.seed), 'screen': screen, 'confirm': confirm, 'select': select,
      'compare': compare, 'eval-final': eval_final}[a.mode]()
