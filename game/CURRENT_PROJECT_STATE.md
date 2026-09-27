@@ -4,7 +4,7 @@ This file is an operational handoff for future sessions. It is not a scientific 
 a runtime artifact. Evidence lives in the milestone reports listed below. Update it at the
 end of every substantial milestone.
 
-Last updated: 2026-09-27. **M2.4-A threat-dense strike-centric PPO complete: GO for human testing** (one-shot M2-EVAL-v3: hit 0.552 vs N4B1C 0.640, paired -0.0875, p = 0.00026; all preregistered criteria pass). **The runtime policy is NOT replaced**; adoption requires an explicit decision after the human test. Runtime baseline: M1.8-N4B5R (`363a1a9`), unchanged. The M1 slow-approach line is closed.
+Last updated: 2026-09-27. **M2.4-B blind human gameplay acceptance: preregistered and ready; waiting for the human to play the 30 sessions.** M2.4-A is accepted as GO for human testing, with a documented procedural deviation (EVAL-v3 hit 0.552 vs N4B1C 0.640, -0.088, p = 0.00026). **The runtime policy is NOT replaced.** Runtime baseline: M1.8-N4B5R (`363a1a9`), unchanged. The M1 slow-approach line is closed.
 
 ## Start of a new session
 
@@ -51,7 +51,7 @@ Earlier frozen milestones (see `AGENTS.md`): M1.7.1 swatter dynamics and M1.8-A 
 |---|---|---|
 | `wip/m1-4-enclosure` | the N4B8 research commit (see `git log -1`); N4B8 freeze `ecb86d3`, N4B7 `c61dbd3` (freeze `8fee28a`), N4B6 `b203b46` (preregistration `987b2a9`), N4B5R state `81b213e`, N4B5 `0e9d2d9`, N4B4 `6b5c4ce`, N4B3 `d09dac4`, N4B2 `5be0aea` | research branch; research-only commits |
 | `feature/m1-8-n4b5r-geometry` | `363a1a9` | **current accepted runtime** (N4B1C + G3 geometry); **do not modify** |
-| `feature/m2-0-learning-infra` | `b1b34d3` | M2 learning line (from `363a1a9`): M2.0 infrastructure (`b53f9a9`), M2.1 benchmark v2 / reward v2 (freeze `66b286e`), M2.2 PPO training (protocol `63dbeb6`, candidate `2e454a9`), M2.3 PyTorch BC + PPO (BC `f65c995`, protocol `76ad1f4`, candidate `5ce0095`, report `f723375`), M2.4-R0 temporal feasibility (preregistration `a671876`, report `12468bd`), M2.4-A strike-centric PPO (EVAL-v3 freeze `660911a`, protocol `a4cb584`, candidate `497a990`, report `8a5eb2b`); no accepted runtime file changed; pushed, not merged |
+| `feature/m2-0-learning-infra` | `f048ba6` | M2 learning line (from `363a1a9`): M2.0 infrastructure (`b53f9a9`), M2.1 benchmark v2 / reward v2 (freeze `66b286e`), M2.2 PPO training (protocol `63dbeb6`, candidate `2e454a9`), M2.3 PyTorch BC + PPO (BC `f65c995`, protocol `76ad1f4`, candidate `5ce0095`, report `f723375`), M2.4-R0 temporal feasibility (preregistration `a671876`, report `12468bd`), M2.4-A strike-centric PPO (EVAL-v3 freeze `660911a`, protocol `a4cb584`, candidate `497a990`, report `8a5eb2b`, amendment `b1b34d3`), M2.4-B blind human test (preregistration `f048ba6`); no accepted runtime file changed; pushed, not merged |
 | `feature/m1-8-n4b1c-runtime` | `e3c55b3` | previous accepted runtime (decoder layer); **do not modify** |
 | `archive/m1-8-n2b-rejected` | `2c306174d7bdb4e74b6c5517519ae695bd90cf44` | rejected N2b runtime snapshot; **never merge** |
 | `main` | `309abd9` | untouched |
@@ -92,6 +92,32 @@ junction to `data/`.
 Do not call C or D "false triggers".
 
 ## Current milestone
+
+**M2.4-B: blind human gameplay acceptance** (human validation only; no training): **preregistered; waiting for
+the human sessions. No session has been played.**
+
+- **Protocol:** `game/M2_4_B_HUMAN_TEST_PROTOCOL.md` and `game/learning/m2_4_b/protocol.json` (sha256 `51f3974f...`).
+  The randomisation manifest `game/learning/m2_4_b/randomization_manifest.json` (sha256 `67fcfa9a...`) was pushed
+  in `f048ba6` before any session.
+- **Design:**
+  - A = N4B1C, B = the frozen M2.4-A candidate;
+  - ROOM, 30 sessions = 15 blocks of 2 with the same world seed per block, order from HMAC(secret key);
+  - 180 s of live-fly play per session;
+  - neural HUD disabled; identity revealed only after the ratings are saved;
+  - acceptance checks A-E preregistered.
+- **Private data:** the key, results, ratings and recordings are in `artifacts/m2_4_b/` (git-ignored; do not open
+  before the end; do not commit without the user's permission).
+- **Launch (PowerShell):**
+  `Set-Location D:\Projectslybrain-labrtifacts\worktrees\m2-learning; & D:\Projectslybrain-lab\.venv\Scripts\python.exe tools\m2_4_b_blind_ab.py play`
+  Progress: `... tools\m2_4_b_blind_ab.py status`. After all 30 sessions: `analyze`, then write
+  `game/M2_4_B_HUMAN_GAMEPLAY_ACCEPTANCE.md`.
+- **Boundary:** even on GO, the default policy is not replaced. Runtime integration needs a separate explicit approval.
+
+**Previous milestone:** M2.4-A: threat-dense strike-centric PPO. **Accepted by the human as GO for human testing,
+with a documented procedural deviation.** The candidate met the preregistered EVAL-v3 success criterion. A
+post-freeze multiprocessing / pickling repair was applied before EVAL; the complete formal amendment and the
+semantic-equivalence audit were completed after EVAL. Subsequent TRAIN-only audits demonstrated exact
+scientific-output equivalence between the old and repaired worker implementations.
 
 **M2.4-A: threat-dense, strike-centric PPO** (approved training; sampling / loss weighting only): **complete.
 Result: GO for human testing. The runtime is not replaced.**
