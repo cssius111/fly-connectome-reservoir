@@ -1,0 +1,370 @@
+{
+ "candidate": "seed_2/ckpt_it060",
+ "checkpoint_sha256": "a8f78d393e7554e8a83c164279a055e85873ff0bfc80926da8edebafde8f84a6",
+ "code_commit": "497a9908329bf2d991e753fbe6bf6ed832d70f04",
+ "protocol_sha256": "62795c2560b0e15ded9acb302c59fbea289fe30b502a3c981f1e13d26b042d93",
+ "v3_manifest_sha256": "a1e0fb418e1b27103ee184d2a2f3ab0577df71bedd90eefc337269904a2d4cce",
+ "environment": {
+  "python": "3.11.16",
+  "torch": "2.13.0+cu132",
+  "cuda_runtime": "13.2",
+  "cuda_available": true,
+  "cudnn": 92000,
+  "device": "NVIDIA GeForce RTX 4060 Laptop GPU",
+  "capability": [
+   8,
+   9
+  ],
+  "device_memory_gb": 8.0
+ },
+ "policies": {
+  "candidate": {
+   "hit_probability": 0.5520833333333334,
+   "hit_by_attacker": {
+    "easy": 0.29375,
+    "nominal": 0.475,
+    "hard": 0.8875
+   },
+   "escape_in_window": 0.8416666666666667,
+   "median_escape_latency_s": 0.1,
+   "unnecessary_per_min": 3.475,
+   "perches_per_min": 0.675,
+   "admissible": true,
+   "flags": [],
+   "violations": [],
+   "category_counts": {
+    "NONE": 117872,
+    "SACCADE": 516,
+    "ESCAPE_FORWARD": 46,
+    "ESCAPE_LEFT": 101,
+    "TURN_RIGHT": 772,
+    "TURN_LEFT": 587,
+    "ESCAPE_RIGHT": 105,
+    "ESCAPE_BACKWARD": 1
+   },
+   "hit_wilson95": [
+    0.5073575008610446,
+    0.5959821044974033
+   ],
+   "hit_by_family": {
+    "direct": 0.5916666666666667,
+    "hover": 0.5833333333333334,
+    "wall": 0.5,
+    "perched_or_fallback": 0.5333333333333333
+   },
+   "constraint_values": {
+    "unnecessary_escapes_per_min": 3.475,
+    "wall_contact_fraction": 0.00235,
+    "max_speed_fraction": 0.0022127418498060535,
+    "turn_active_fraction": 0.025612500000000003,
+    "perches_per_min": 0.675
+   }
+  },
+  "torch_bc": {
+   "hit_probability": 0.6270833333333333,
+   "hit_by_attacker": {
+    "easy": 0.33125,
+    "nominal": 0.5875,
+    "hard": 0.9625
+   },
+   "escape_in_window": 0.8020833333333334,
+   "median_escape_latency_s": 0.08,
+   "unnecessary_per_min": 5.125,
+   "perches_per_min": 0.625,
+   "admissible": true,
+   "flags": [],
+   "violations": [],
+   "category_counts": {
+    "NONE": 117581,
+    "SACCADE": 452,
+    "ESCAPE_RIGHT": 143,
+    "ESCAPE_FORWARD": 35,
+    "ESCAPE_LEFT": 139,
+    "TURN_LEFT": 744,
+    "TURN_RIGHT": 901,
+    "ESCAPE_BACKWARD": 5
+   },
+   "hit_wilson95": [
+    0.5829728535167075,
+    0.6691757835579054
+   ],
+   "hit_by_family": {
+    "direct": 0.6333333333333333,
+    "hover": 0.7,
+    "wall": 0.5416666666666666,
+    "perched_or_fallback": 0.6333333333333333
+   },
+   "constraint_values": {
+    "unnecessary_escapes_per_min": 5.125,
+    "wall_contact_fraction": 0.0025375000000000003,
+    "max_speed_fraction": 0.0014921703421508473,
+    "turn_active_fraction": 0.029245833333333332,
+    "perches_per_min": 0.625
+   }
+  },
+  "m2_3_candidate": {
+   "hit_probability": 0.6145833333333334,
+   "hit_by_attacker": {
+    "easy": 0.33125,
+    "nominal": 0.5625,
+    "hard": 0.95
+   },
+   "escape_in_window": 0.825,
+   "median_escape_latency_s": 0.1,
+   "unnecessary_per_min": 2.9,
+   "perches_per_min": 0.675,
+   "admissible": true,
+   "flags": [],
+   "violations": [],
+   "category_counts": {
+    "NONE": 117678,
+    "SACCADE": 390,
+    "ESCAPE_RIGHT": 112,
+    "TURN_LEFT": 738,
+    "TURN_RIGHT": 970,
+    "ESCAPE_LEFT": 86,
+    "ESCAPE_FORWARD": 23,
+    "ESCAPE_BACKWARD": 3
+   },
+   "hit_wilson95": [
+    0.5702969520246648,
+    0.6570501797639205
+   ],
+   "hit_by_family": {
+    "direct": 0.6083333333333333,
+    "hover": 0.6916666666666667,
+    "wall": 0.55,
+    "perched_or_fallback": 0.6083333333333333
+   },
+   "constraint_values": {
+    "unnecessary_escapes_per_min": 2.9,
+    "wall_contact_fraction": 0.0017625000000000002,
+    "max_speed_fraction": 0.0012546183095068803,
+    "turn_active_fraction": 0.028358333333333336,
+    "perches_per_min": 0.675
+   }
+  },
+  "baseline_n4b1c": {
+   "hit_probability": 0.6395833333333333,
+   "hit_by_attacker": {
+    "easy": 0.375,
+    "nominal": 0.56875,
+    "hard": 0.975
+   },
+   "escape_in_window": 0.7833333333333333,
+   "median_escape_latency_s": 0.08,
+   "unnecessary_per_min": 4.975,
+   "perches_per_min": 0.55,
+   "admissible": true,
+   "flags": [],
+   "violations": [],
+   "category_counts": {
+    "NONE": 118322,
+    "SACCADE": 538,
+    "ESCAPE_LEFT": 138,
+    "ESCAPE_FORWARD": 41,
+    "TURN_LEFT": 377,
+    "TURN_RIGHT": 449,
+    "ESCAPE_RIGHT": 135
+   },
+   "hit_wilson95": [
+    0.5956792716294282,
+    0.681270870731212
+   ],
+   "hit_by_family": {
+    "direct": 0.6083333333333333,
+    "hover": 0.7083333333333334,
+    "wall": 0.6166666666666667,
+    "perched_or_fallback": 0.625
+   },
+   "constraint_values": {
+    "unnecessary_escapes_per_min": 4.975,
+    "wall_contact_fraction": 0.0038999999999999994,
+    "max_speed_fraction": 6.25e-05,
+    "turn_active_fraction": 0.020733333333333333,
+    "perches_per_min": 0.55
+   }
+  },
+  "no_escape": {
+   "hit_probability": 0.7270833333333333,
+   "hit_by_attacker": {
+    "easy": 0.4625,
+    "nominal": 0.71875,
+    "hard": 1.0
+   },
+   "escape_in_window": 0.0,
+   "median_escape_latency_s": null,
+   "unnecessary_per_min": 0.0,
+   "perches_per_min": 0.9,
+   "admissible": true,
+   "flags": [],
+   "violations": [],
+   "category_counts": {
+    "NONE": 120000
+   },
+   "hit_wilson95": [
+    0.6855466245596488,
+    0.765014054803184
+   ],
+   "hit_by_family": {
+    "direct": 0.7333333333333333,
+    "hover": 0.775,
+    "wall": 0.6583333333333333,
+    "perched_or_fallback": 0.7416666666666667
+   },
+   "constraint_values": {
+    "unnecessary_escapes_per_min": 0.0,
+    "wall_contact_fraction": 8.333333333333334e-06,
+    "max_speed_fraction": 0.0,
+    "turn_active_fraction": 0.0,
+    "perches_per_min": 0.9
+   }
+  },
+  "fixed_maneuver": {
+   "hit_probability": 0.51875,
+   "hit_by_attacker": {
+    "easy": 0.33125,
+    "nominal": 0.5,
+    "hard": 0.725
+   },
+   "escape_in_window": 0.8416666666666667,
+   "median_escape_latency_s": 0.08,
+   "unnecessary_per_min": 11.175,
+   "perches_per_min": 0.575,
+   "admissible": false,
+   "flags": [],
+   "violations": [
+    "unnecessary_escapes_per_min"
+   ],
+   "category_counts": {
+    "NONE": 119341,
+    "ESCAPE_LEFT": 326,
+    "ESCAPE_RIGHT": 333
+   },
+   "hit_wilson95": [
+    0.4740794716459186,
+    0.5631227862831227
+   ],
+   "hit_by_family": {
+    "direct": 0.44166666666666665,
+    "hover": 0.6,
+    "wall": 0.5666666666666667,
+    "perched_or_fallback": 0.4666666666666667
+   },
+   "constraint_values": {
+    "unnecessary_escapes_per_min": 11.175,
+    "wall_contact_fraction": 0.016587499999999998,
+    "max_speed_fraction": 0.009908563631869973,
+    "turn_active_fraction": 0.007979166666666667,
+    "perches_per_min": 0.575
+   }
+  }
+ },
+ "candidate_neural_conditioning": {
+  "by_dnp01": [
+   {
+    "dnp01_max": [
+     0.0,
+     0.25
+    ],
+    "samples": 64391,
+    "mean_escape_prob": 9.751925784814629e-06
+   },
+   {
+    "dnp01_max": [
+     0.25,
+     1.0
+    ],
+    "samples": 14725,
+    "mean_escape_prob": 0.0013132976482924184
+   },
+   {
+    "dnp01_max": [
+     1.0,
+     2.0
+    ],
+    "samples": 5677,
+    "mean_escape_prob": 0.021440574128517863
+   },
+   {
+    "dnp01_max": [
+     2.0,
+     null
+    ],
+    "samples": 757,
+    "mean_escape_prob": 0.09757580870062489
+   }
+  ],
+  "low": 9.751925784814629e-06,
+  "high": 0.09757580870062489,
+  "ratio": 10005.798942047597,
+  "ok": true
+ },
+ "paired": {
+  "torch_bc": {
+   "n": 480,
+   "difference": -0.075,
+   "ci95": [
+    -0.11654491327548414,
+    -0.033455086724515866
+   ],
+   "only_first_hit": 35,
+   "only_second_hit": 71,
+   "mcnemar_p": 0.0006060762772090588
+  },
+  "m2_3_candidate": {
+   "n": 480,
+   "difference": -0.0625,
+   "ci95": [
+    -0.09816410656203904,
+    -0.02683589343796096
+   ],
+   "only_first_hit": 24,
+   "only_second_hit": 54,
+   "mcnemar_p": 0.0009010035205219422
+  },
+  "baseline_n4b1c": {
+   "n": 480,
+   "difference": -0.0875,
+   "ci95": [
+    -0.13307712536237695,
+    -0.04192287463762304
+   ],
+   "only_first_hit": 43,
+   "only_second_hit": 85,
+   "mcnemar_p": 0.00025852659726827056
+  },
+  "no_escape": {
+   "n": 480,
+   "difference": -0.175,
+   "ci95": [
+    -0.2188916946916936,
+    -0.1311083053083064
+   ],
+   "only_first_hit": 23,
+   "only_second_hit": 107,
+   "mcnemar_p": 3.7937066234622226e-14
+  },
+  "fixed_maneuver": {
+   "n": 480,
+   "difference": 0.03333333333333333,
+   "ci95": [
+    -0.021120203369765708,
+    0.08778687003643237
+   ],
+   "only_first_hit": 97,
+   "only_second_hit": 81,
+   "mcnemar_p": 0.2608293352608441
+  }
+ },
+ "success_criterion": "GO for human testing only if on M2-EVAL-v3: constraints pass (unnecessary <= 5.36 / min, perches >= 0.275 / min, movement constraints), no anti-cheat flag, genuine conditional escape (threat-window escape >= 0.3, neural conditioning), AND candidate hit < N4B1C hit on the same 480 v3 threat trials with exact two-sided McNemar p < 0.05 (i.e. the paired 95 % CI of the difference lies below 0)",
+ "criteria": {
+  "A_constraints": true,
+  "B_no_anti_cheat": true,
+  "C_conditional_escape": true,
+  "D_hit_lower_than_n4b1c": true,
+  "E_paired_significant": true,
+  "F_unnecessary_within_budget": true
+ },
+ "GO": true
+}

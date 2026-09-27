@@ -8,6 +8,7 @@ sampling). World physics, flight, walls, lifecycle and brain stepping are unchan
 
     python tools/m2_play_learned.py --arena room --record --record-dir results/game/sessions
     python tools/m2_play_learned.py --smoke 3 --no-record        (headless check)
+    python tools/m2_play_learned.py --checkpoint PATH [--expected-sha256 PARAM_SHA256] ...   (another frozen candidate)
 
 All other arguments are passed to `game.app` unchanged. Note: a recording made here cannot be
 verified by `game.replay`, which rebuilds the accepted FixedEscapePolicy.
@@ -37,13 +38,17 @@ def main(argv=None):
         ckpt = Path(argv[i + 1])
         del argv[i:i + 2]
         expected = None
+        if '--expected-sha256' in argv:
+            j = argv.index('--expected-sha256')
+            expected = argv[j + 1]
+            del argv[j:j + 2]
     else:
         expected = json.loads(record_file.read_text(encoding='utf-8'))['checkpoint_sha256']
     model = MLPPolicyModel.load(ckpt, expected_sha256=expected)
     config = load_config(ROOT / 'game_room_config.json')
     policy = ManeuverPolicy(ModelDecision(model, stochastic=True), float(config['sim']['tick_seconds']),
                             float(config['policy']['refractory_seconds']), seed=20260926)
-    print('M2.2 learned policy: checkpoint %s (parameter sha256 %s, file sha256 %s)' % (
+    print('Learned policy: checkpoint %s (parameter sha256 %s, file sha256 %s)' % (
         ckpt.name, model.param_hash(), hashlib.sha256(ckpt.read_bytes()).hexdigest()), flush=True)
     original = app_module.Session
 
