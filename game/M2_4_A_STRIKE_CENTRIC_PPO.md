@@ -1,6 +1,10 @@
 # M2.4-A: threat-dense, strike-centric PPO
 
-Status: **complete. Result: GO for human testing** under the preregistered criterion. The runtime is
+Status: **complete. Accepted by the human reviewer (2026-09-27) as GO for human testing, with a documented procedural deviation.**
+
+The candidate met the preregistered EVAL-v3 success criterion (hit rate 0.552 vs N4B1C 0.640, absolute difference -0.088, paired McNemar p = 0.00026). A post-freeze multiprocessing / pickling repair was applied before EVAL. The complete formal amendment and the semantic-equivalence audit were completed after EVAL (see `game/M2_4_A_EVAL_EXECUTION_AMENDMENT.md`). Subsequent TRAIN-only audits demonstrated exact scientific-output equivalence between the old and repaired worker implementations. The run is therefore not procedurally perfect, and this is disclosed rather than corrected after the fact.
+
+The runtime is
 **not** replaced. The accepted runtime (`feature/m1-8-n4b5r-geometry` @ `363a1a9`, N4B1C decoder) is
 unchanged, and no learned policy is integrated. The next step is a human test through the research launcher (section 13).
 
