@@ -47,7 +47,7 @@ import numpy as np  # noqa: E402
 import torch  # noqa: E402
 from torch.distributions import Categorical  # noqa: E402
 
-from game.learning import strike_training, training, trials  # noqa: E402
+from game.learning import baseline_eval, strike_training, training, trials  # noqa: E402
 from game.learning.contracts import MANEUVERS, N_MANEUVERS  # noqa: E402
 from game.learning.reward_v2 import RewardV2  # noqa: E402
 from game.learning.torch_policy import (TorchPolicy, default_device, gae, init_critic, kl_to_reference,  # noqa: E402
@@ -846,8 +846,8 @@ def confirm():
     res = json.loads(path.read_text(encoding='utf-8')) if path.exists() else {}
     _, va, _ = MT.load_dataset()
     if 'baseline_n4b1c' not in res.get('_records', {}):
-        with mp.get_context('spawn').Pool(WORKERS, initializer=M22._baseline_worker_init) as pool:
-            recs = {n: [r for ch in pool.map(M22.baseline_task, [(n, c, 'TRAIN') for c in chunks]) for r in ch]
+        with mp.get_context('spawn').Pool(WORKERS, initializer=baseline_eval.worker_init) as pool:
+            recs = {n: [r for ch in pool.map(baseline_eval.baseline_task, [(n, c, 'TRAIN') for c in chunks]) for r in ch]
                     for n in ('baseline_n4b1c', 'no_escape', 'fixed_maneuver')}
         res['_records'] = recs
         path.write_text(json.dumps(res, default=float) + '\n', encoding='utf-8')

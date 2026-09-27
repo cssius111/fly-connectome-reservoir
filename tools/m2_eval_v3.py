@@ -108,12 +108,11 @@ def specs():
 
 def run_once(candidate_params, extra_mlp=None, baselines=('baseline_n4b1c', 'no_escape', 'fixed_maneuver')):
     """Candidate (+ optional extra frozen MLPs) and baselines on v3; refuses a second run."""
-    from game.learning import training
+    from game.learning import baseline_eval, training
     OUT.mkdir(parents=True, exist_ok=True)
     done = OUT / 'records.json'
     if done.exists():
         raise SystemExit('M2-EVAL-v3 has already been run')
-    m22 = _load('m2_2_train')
     sp = specs()
     chunks = [sp[i::WORKERS] for i in range(WORKERS)]
     recs = {}
@@ -121,9 +120,9 @@ def run_once(candidate_params, extra_mlp=None, baselines=('baseline_n4b1c', 'no_
         for name, params in [('candidate', candidate_params)] + list((extra_mlp or {}).items()):
             recs[name] = [r for ch in pool.map(training.eval_task, [(params, c, 'EVAL') for c in chunks]) for r in ch]
             print('v3', name, len(recs[name]), flush=True)
-    with mp.get_context('spawn').Pool(WORKERS, initializer=m22._baseline_worker_init) as pool:
+    with mp.get_context('spawn').Pool(WORKERS, initializer=baseline_eval.worker_init) as pool:
         for name in baselines:
-            recs[name] = [r for ch in pool.map(m22.baseline_task, [(name, c, 'EVAL') for c in chunks]) for r in ch]
+            recs[name] = [r for ch in pool.map(baseline_eval.baseline_task, [(name, c, 'EVAL') for c in chunks]) for r in ch]
             print('v3', name, len(recs[name]), flush=True)
     done.write_text(json.dumps(recs, default=float) + '\n', encoding='utf-8')
     return recs

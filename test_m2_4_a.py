@@ -147,3 +147,28 @@ class AntiLeakage(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class BaselineEvalCopy(unittest.TestCase):
+    """game.learning.baseline_eval is a verbatim importable copy of the M2.2 baseline pool worker."""
+    SPECS = [('threat', 'direct', 'nominal', 20_000_123), ('threat', 'wall', 'hard', 20_000_457)]
+
+    def test_identical_records_to_the_m2_2_worker(self):
+        import importlib.util
+        from game.learning import baseline_eval
+        spec = importlib.util.spec_from_file_location('m2_2_train_copycheck', ROOT / 'tools/m2_2_train.py')
+        m22 = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m22)
+        m22._baseline_worker_init()
+        baseline_eval.worker_init()
+        for name in ('baseline_n4b1c', 'no_escape'):
+            a = m22.baseline_task((name, self.SPECS, 'TRAIN'))
+            b = baseline_eval.baseline_task((name, self.SPECS, 'TRAIN'))
+            self.assertEqual(json.dumps(a, sort_keys=True, default=float), json.dumps(b, sort_keys=True, default=float))
+
+    def test_spawn_pool_can_pickle_the_worker(self):
+        import multiprocessing as mp
+        from game.learning import baseline_eval
+        with mp.get_context('spawn').Pool(1, initializer=baseline_eval.worker_init) as pool:
+            r = pool.map(baseline_eval.baseline_task, [('no_escape', self.SPECS[:1], 'TRAIN')])
+        self.assertEqual(r[0][0]['seed'], self.SPECS[0][3])
