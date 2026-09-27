@@ -1,0 +1,222 @@
+{
+ "label": "M2.4-B blind A/B randomisation manifest (public; assignments hidden by commitments)",
+ "created_utc": "2026-09-27T16:49:01Z",
+ "design": "15 blocks x 2 sessions; one A and one B per block, same world seed within a block; order from HMAC-SHA256(key, \"block:<b>\") first byte parity (even -> AB, odd -> BA)",
+ "key_sha256": "62b9e483c75a2c31976319a2b08b8e39efbb511810f8fa34c882836d29d6501a",
+ "policies": {
+  "A": "N4B1C (accepted runtime policy)",
+  "B": "M2.4-A learned candidate (seed_2/ckpt_it060)"
+ },
+ "sessions": [
+  {
+   "session": 1,
+   "block": 1,
+   "position_in_block": 1,
+   "world_seed": 41001000,
+   "commitment": "57f6f2a96ae0c348ef682811180c63c42eb378d565ebe5bc0c26fd0c1cc56567"
+  },
+  {
+   "session": 2,
+   "block": 1,
+   "position_in_block": 2,
+   "world_seed": 41001000,
+   "commitment": "0c6b891af08a515d037e90be42ecf35721e24231391f2edbdb6681d7bcbea799"
+  },
+  {
+   "session": 3,
+   "block": 2,
+   "position_in_block": 1,
+   "world_seed": 41002000,
+   "commitment": "d19636a8de4df0eddad0bfa7ac711def8f80ca18d8af237065b292bdca275bf8"
+  },
+  {
+   "session": 4,
+   "block": 2,
+   "position_in_block": 2,
+   "world_seed": 41002000,
+   "commitment": "221a0d2dfeb0c29b6a54b358f18c38c6517868bfacff51192588b99bc70b549c"
+  },
+  {
+   "session": 5,
+   "block": 3,
+   "position_in_block": 1,
+   "world_seed": 41003000,
+   "commitment": "5d0825a8d9f6bd32dcd716924a490e1edc2cb06f47f57528b05c3af938a36675"
+  },
+  {
+   "session": 6,
+   "block": 3,
+   "position_in_block": 2,
+   "world_seed": 41003000,
+   "commitment": "1899a86821ae7990e96a165adfd0a07facf831e2e39e514b0cf6b084cd9da57c"
+  },
+  {
+   "session": 7,
+   "block": 4,
+   "position_in_block": 1,
+   "world_seed": 41004000,
+   "commitment": "6fccbf79a04ec0c4bfc611ff1f4d700af48d240ba0dff29bd007b92b1c0c350b"
+  },
+  {
+   "session": 8,
+   "block": 4,
+   "position_in_block": 2,
+   "world_seed": 41004000,
+   "commitment": "40b110935c5b87649d1d9c374b30a898d3c4cc211f0fd576a7767ed5c181bda8"
+  },
+  {
+   "session": 9,
+   "block": 5,
+   "position_in_block": 1,
+   "world_seed": 41005000,
+   "commitment": "3997cefef05233f044e3f5c781fa088bcf1589766e8fd6fbb0380d864471ad30"
+  },
+  {
+   "session": 10,
+   "block": 5,
+   "position_in_block": 2,
+   "world_seed": 41005000,
+   "commitment": "a77b3e0bcb2c708fb16cb3c99feedf4b023a26a9b2a42543f22a46371ceb8edd"
+  },
+  {
+   "session": 11,
+   "block": 6,
+   "position_in_block": 1,
+   "world_seed": 41006000,
+   "commitment": "0e6eede8e8a42999c2657c33f694a9fae98d93d208884392cc1ccac5d6a92da0"
+  },
+  {
+   "session": 12,
+   "block": 6,
+   "position_in_block": 2,
+   "world_seed": 41006000,
+   "commitment": "650e53a36b854667e8ad8fc4fa12c89a2555df59136031847e30c1b81ec65e80"
+  },
+  {
+   "session": 13,
+   "block": 7,
+   "position_in_block": 1,
+   "world_seed": 41007000,
+   "commitment": "ce7b3119c62a3c023a859f3fb19030c2c37348dd57eaa1c6af19c6f966eaa12b"
+  },
+  {
+   "session": 14,
+   "block": 7,
+   "position_in_block": 2,
+   "world_seed": 41007000,
+   "commitment": "bd4e0020f6a027f34afd3eb8993aadd054fc10a12816f4a827c33cc9f6c3d496"
+  },
+  {
+   "session": 15,
+   "block": 8,
+   "position_in_block": 1,
+   "world_seed": 41008000,
+   "commitment": "6e3a43cd484b398e7f00df7cf9895124de4d8e1748621cfc05d7310f5c5950e8"
+  },
+  {
+   "session": 16,
+   "block": 8,
+   "position_in_block": 2,
+   "world_seed": 41008000,
+   "commitment": "2d00226cc8dc3e12fcac05761220bffd5a3df87258a4a9d2a2786044c086da1d"
+  },
+  {
+   "session": 17,
+   "block": 9,
+   "position_in_block": 1,
+   "world_seed": 41009000,
+   "commitment": "d296867896715115ddc6e1addb4ba71924ae37ed7c017a9c35dd0d80d415a3ca"
+  },
+  {
+   "session": 18,
+   "block": 9,
+   "position_in_block": 2,
+   "world_seed": 41009000,
+   "commitment": "be6ad645e7cd505f8a9af1b24a8fa2599ba05f8ecc581fa329ebdaaac1490d8c"
+  },
+  {
+   "session": 19,
+   "block": 10,
+   "position_in_block": 1,
+   "world_seed": 41010000,
+   "commitment": "12fe469aaffa849284cc2e103732892c8cdc8c4eabb136cef301750f02e01110"
+  },
+  {
+   "session": 20,
+   "block": 10,
+   "position_in_block": 2,
+   "world_seed": 41010000,
+   "commitment": "a6dd4987550792ddb529a71f47a536e547781c369f71f4d98170587c954e1701"
+  },
+  {
+   "session": 21,
+   "block": 11,
+   "position_in_block": 1,
+   "world_seed": 41011000,
+   "commitment": "0a4b431fbc6615610088da6d095c671bb95e43de9108331aa3f4051cfeaaab1e"
+  },
+  {
+   "session": 22,
+   "block": 11,
+   "position_in_block": 2,
+   "world_seed": 41011000,
+   "commitment": "27b231e272e277b8b68d6b9e2e7179dc5ee1a21fb2fbf97a87bb2af8affaf80a"
+  },
+  {
+   "session": 23,
+   "block": 12,
+   "position_in_block": 1,
+   "world_seed": 41012000,
+   "commitment": "725fd6b4f6ea1d6ec9001d4eaeea307a01ad34f5f5eaa7648097b8d81d778719"
+  },
+  {
+   "session": 24,
+   "block": 12,
+   "position_in_block": 2,
+   "world_seed": 41012000,
+   "commitment": "3fc210e496d9bf90c840a8b7f561858db2a0de46ec2841107296386d78bc6728"
+  },
+  {
+   "session": 25,
+   "block": 13,
+   "position_in_block": 1,
+   "world_seed": 41013000,
+   "commitment": "74473419529698909954ba612aedeae84d58e9acfa5b122524b7fd190ef38bb2"
+  },
+  {
+   "session": 26,
+   "block": 13,
+   "position_in_block": 2,
+   "world_seed": 41013000,
+   "commitment": "5af035e022f946f49e0b9a5573a82bb0d19d022145153c528ed12d9781b80fa0"
+  },
+  {
+   "session": 27,
+   "block": 14,
+   "position_in_block": 1,
+   "world_seed": 41014000,
+   "commitment": "4611ef92d6b8ca6558112eeba1ab6ef7392eac81989800350c9e518d0d0c3597"
+  },
+  {
+   "session": 28,
+   "block": 14,
+   "position_in_block": 2,
+   "world_seed": 41014000,
+   "commitment": "38b0447ec3cde61bb0402ceedbe441afb486b92865662b7ac9bbec8eb0477683"
+  },
+  {
+   "session": 29,
+   "block": 15,
+   "position_in_block": 1,
+   "world_seed": 41015000,
+   "commitment": "f59a4372cc57a85ed137afbf2edf186ef1b4dd54ba6536bb9328cf1a2796d330"
+  },
+  {
+   "session": 30,
+   "block": 15,
+   "position_in_block": 2,
+   "world_seed": 41015000,
+   "commitment": "2509b113642d312cde719ba79d55a5a054c91d4c13788684c530bad062767ea8"
+  }
+ ]
+}

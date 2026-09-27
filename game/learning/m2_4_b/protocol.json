@@ -1,0 +1,70 @@
+{
+ "label": "M2.4-B blind human gameplay acceptance: preregistered protocol (human validation only; no training)",
+ "frozen_utc": "2026-09-27T16:49:01Z",
+ "policies": {
+  "A": "accepted N4B1C runtime policy (FixedEscapePolicy, lateral_dual_path_v1), built by the unchanged Session",
+  "B": "frozen M2.4-A candidate seed_2/ckpt_it060 (state_dict a8f78d39..., numpy export parameter sha256 0692117a..., verified at load) in the unchanged ManeuverPolicy adapter, stochastic sampling seeded with world_seed + 104729"
+ },
+ "arena": "ROOM (game_room_config.json), play mode, fullscreen, unchanged world / physics / lifecycle / brain / recorder",
+ "design": {
+  "sessions": 30,
+  "blocks": 15,
+  "per_block": "one A and one B session, same world seed, randomised order",
+  "order_rule": "HMAC-SHA256(secret key, \"block:<b>\") first byte parity: even -> AB, odd -> BA",
+  "world_seed": "41,000,000 + 1000 x block (disjoint from all M2 TRAIN / EVAL seeds)",
+  "blinding": "identity hidden during play; neural HUD disabled (its diagnostics differ by policy class); identity revealed only after the session ratings are saved; public manifest carries only sha256 commitments; the key is published only after all sessions",
+  "max_run_of_one_policy": 2
+ },
+ "session": {
+  "length": "180 s of active play (ticks with a live fly); pauses and post-splat time do not count; the session ends automatically",
+  "restart": "R after a splat (unchanged game control); restarts continue the same session",
+  "completion_rule": "an attempt with < 90 % of the active time (early quit or crash) is not counted; the same session (same policy and seed) is offered again; incomplete attempts are logged",
+  "no_early_stopping": "all 30 sessions are completed; analysis refuses a partial set",
+  "no_tuning": "neither policy is changed during or after the sessions"
+ },
+ "objective_metrics": {
+  "committed_strike": "swatter phase enters {commit, fast_swing, active_contact, follow_through, recovery} from outside",
+  "hit / resolution": "unchanged TickEvents.hit / strike_resolved while that strike is open",
+  "successful_escape": "resolved non-hit strike with a policy escape action between strike start and resolution",
+  "escape_latency": "strike start -> first escape action during the strike",
+  "unnecessary_escape": "escape action while no strike is committed and horizontal swatter distance > 310 units (benchmark v2 definition)",
+  "wall_contact": "rising edge of wall or object contact",
+  "perch_event": "lifecycle mode enters TOUCHDOWN",
+  "lifecycle_failures": "airborne stalls (AIRBORNE / LAND_APPROACH below 5 % of cruise speed for >= 2 s) and perch bouts >= 60 s",
+  "action_distribution": "benchmark metrics.category per live tick",
+  "also_recorded": "seed, duration, takeoffs, deaths, recorder session path"
+ },
+ "subjective_ratings": {
+  "scale": "1-7, asked after each session before the identity is revealed",
+  "items": [
+   "difficulty to hit",
+   "naturalness of movement",
+   "apparent reaction to the swatter",
+   "overly random / twitchy (higher = worse)",
+   "constant escaping for no reason (higher = worse)"
+  ],
+  "extra": "broken / stuck / exploitable (y / n); optional free-text note"
+ },
+ "analysis": {
+  "pairing": "block (A and B sessions with the same seed, adjacent)",
+  "objective": "pooled per-strike rates with block-cluster bootstrap 95 % CI of B - A (20,000 resamples); session-level paired block differences with bootstrap CI and exact Wilcoxon signed-rank; order-aware: B - A by within-block order (AB vs BA) and a descriptive session-index trend",
+  "subjective": "paired block differences per item (mean, median, bootstrap CI, Wilcoxon)",
+  "caveat": "one player, 30 sessions: descriptive, low power; no claim beyond consistency with M2-EVAL-v3"
+ },
+ "acceptance": {
+  "A_not_broken_or_exploitative": "B sessions flagged broken / exploitable <= A flags + 2, median naturalness(B) >= 3, no B session with an infrastructure error",
+  "B_no_major_twitchiness_or_pathology": "paired mean (B - A) twitchiness <= +1.0 and needless-escaping <= +1.0; pooled unnecessary escapes / min (B) <= 5.36 or <= A; turning / saccade action fraction (B) <= A + 0.05; wall contacts / min (B) <= 1.5 x A + 0.5",
+  "C_no_major_lifecycle_regression": "perch events / min (B) >= 0.5 x A; lifecycle failures (B) <= A + 3",
+  "D_objective_consistent_with_benchmark": "pooled human hit probability per resolved committed strike (B) <= A (point estimate; CI reported, significance not required)",
+  "E_experience_acceptable": "A-D pass AND paired mean naturalness (B - A) >= -1.0 AND responsiveness (B - A) >= -1.0",
+  "recommendation": "GO for OPTIONAL runtime integration only if A-E all pass; otherwise NO-GO. Even on GO, the accepted default policy is NOT replaced; integration needs a separate explicit approval"
+ },
+ "privacy": "per-session results, ratings, notes, recordings and the key stay under artifacts/m2_4_b/ (git-ignored) and are not committed unless the user explicitly asks",
+ "code": {
+  "launcher_sha256": "0546f9ecd82bada0a1cd3c0cbe3a5ba52803dd0314fea808c528f87cdf66477a",
+  "analysis_sha256": "696fcdd7566a4a41e15a990b2e53a42a19bf17c809495c5ef44def98012fd2d8",
+  "candidate_npz_sha256": "06b10d2170869ada4761721ce886e8e268837f17c0dd83947e88409f66de2b76",
+  "room_config_sha256": "053bc8212105f45b6b81f73e83633c6c4ef560400ebaf9c7c78bf51b84b84595"
+ },
+ "runtime_boundary": "accepted runtime 363a1a9 unchanged; no merge; stop after the human-test report"
+}
