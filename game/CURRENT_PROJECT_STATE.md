@@ -51,7 +51,7 @@ Earlier frozen milestones (see `AGENTS.md`): M1.7.1 swatter dynamics and M1.8-A 
 |---|---|---|
 | `wip/m1-4-enclosure` | the N4B8 research commit (see `git log -1`); N4B8 freeze `ecb86d3`, N4B7 `c61dbd3` (freeze `8fee28a`), N4B6 `b203b46` (preregistration `987b2a9`), N4B5R state `81b213e`, N4B5 `0e9d2d9`, N4B4 `6b5c4ce`, N4B3 `d09dac4`, N4B2 `5be0aea` | research branch; research-only commits |
 | `feature/m1-8-n4b5r-geometry` | `363a1a9` | **current accepted runtime** (N4B1C + G3 geometry); **do not modify** |
-| `feature/m2-0-learning-infra` | `f048ba6` | M2 learning line (from `363a1a9`): M2.0 infrastructure (`b53f9a9`), M2.1 benchmark v2 / reward v2 (freeze `66b286e`), M2.2 PPO training (protocol `63dbeb6`, candidate `2e454a9`), M2.3 PyTorch BC + PPO (BC `f65c995`, protocol `76ad1f4`, candidate `5ce0095`, report `f723375`), M2.4-R0 temporal feasibility (preregistration `a671876`, report `12468bd`), M2.4-A strike-centric PPO (EVAL-v3 freeze `660911a`, protocol `a4cb584`, candidate `497a990`, report `8a5eb2b`, amendment `b1b34d3`), M2.4-B blind human test (preregistration `f048ba6`); no accepted runtime file changed; pushed, not merged |
+| `feature/m2-0-learning-infra` | `9201c24` | M2 learning line (from `363a1a9`): M2.0 infrastructure (`b53f9a9`), M2.1 benchmark v2 / reward v2 (freeze `66b286e`), M2.2 PPO training (protocol `63dbeb6`, candidate `2e454a9`), M2.3 PyTorch BC + PPO (BC `f65c995`, protocol `76ad1f4`, candidate `5ce0095`, report `f723375`), M2.4-R0 temporal feasibility (preregistration `a671876`, report `12468bd`), M2.4-A strike-centric PPO (EVAL-v3 freeze `660911a`, protocol `a4cb584`, candidate `497a990`, report `8a5eb2b`, amendment `b1b34d3`), M2.4-B blind human test (preregistration `f048ba6`, blinding amendment `9201c24`); no accepted runtime file changed; pushed, not merged |
 | `feature/m1-8-n4b1c-runtime` | `e3c55b3` | previous accepted runtime (decoder layer); **do not modify** |
 | `archive/m1-8-n2b-rejected` | `2c306174d7bdb4e74b6c5517519ae695bd90cf44` | rejected N2b runtime snapshot; **never merge** |
 | `main` | `309abd9` | untouched |
@@ -103,13 +103,14 @@ the human sessions. No session has been played.**
   - A = N4B1C, B = the frozen M2.4-A candidate;
   - ROOM, 30 sessions = 15 blocks of 2 with the same world seed per block, order from HMAC(secret key);
   - 180 s of live-fly play per session;
-  - neural HUD disabled; identity revealed only after the ratings are saved;
+  - neural HUD disabled;
+  - **amendment 1 (`9201c24`, before any session): no per-session reveal.** The player sees only "Response saved. Policy identity remains blinded." After 30 / 30 rated sessions, `reveal` locks the ratings, verifies the key and commitments and decodes the assignments; `analyze` requires this. Game output goes to a private log. Blinding smoke test `tools/m2_4_b_blind_smoke.py`: 7 / 7 pass. Record: `game/M2_4_B_BLINDING_AMENDMENT.md`;
   - acceptance checks A-E preregistered.
 - **Private data:** the key, results, ratings and recordings are in `artifacts/m2_4_b/` (git-ignored; do not open
   before the end; do not commit without the user's permission).
 - **Launch (PowerShell):**
   `Set-Location D:\Projects\flybrain-lab\artifacts\worktrees\m2-learning; & D:\Projects\flybrain-lab\.venv\Scripts\python.exe tools\m2_4_b_blind_ab.py play`
-  Progress: `... tools\m2_4_b_blind_ab.py status`. After all 30 sessions: `analyze`, then write
+  Progress: `... tools\m2_4_b_blind_ab.py status`. After all 30 sessions: `reveal`, then `analyze`, then write
   `game/M2_4_B_HUMAN_GAMEPLAY_ACCEPTANCE.md`.
 - **Boundary:** even on GO, the default policy is not replaced. Runtime integration needs a separate explicit approval.
 
