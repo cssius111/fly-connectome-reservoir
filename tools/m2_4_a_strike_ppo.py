@@ -116,10 +116,18 @@ WINDOW_RULE = ('TRAIN-only, from the B_strike development rollouts: among the ca
                '(engagement onset -> end), click50 (click - 1.0 s -> end), click25 (click - 0.5 s -> end), choose the '
                'window with the FEWEST retained ticks that captures >= 90 % of the within-trial |advantage| mass and '
                '>= 90 % of the within-trial escape actions; otherwise full')
-DEV_RULE = ('official method = C_window if, over the development runs, (i) no variant-C collapse (NONE < 0.995, '
-            'esc@L3 >= 0.2 throughout), (ii) mean cross-half actor-gradient cosine of C >= that of A_ref, (iii) C effective '
-            'strikes per update >= 2 x A_ref; else B_strike if B satisfies (i)-(iii); else stop (strike-centric training '
-            'invalid)')
+DEV_RULE = ('revised before any C_window result was visible (window already frozen = engage from the B_strike '
+            'TRAIN rollouts). A variant V in {B_strike, C_window} is ELIGIBLE if (i) no collapse over its development run '
+            '(NONE share < 0.995 and synthetic strong-DNp01 escape probability >= 0.2 at every iteration); (ii) '
+            'statistical efficiency vs A_ref: mean post-warm-up (iterations 4+) cross-half actor-gradient cosine >= that '
+            'of A_ref AND mean effective strikes per update (Kish, actor weights) >= 2 x A_ref; (iii) its final policy on '
+            'TRAIN-VAL is M2.1-admissible (unnecessary <= 5.36 / min, perches >= 0.275 / min, movement constraints, no '
+            'anti-cheat flag) with threat-window escape >= 0.3. Choice: prefer the simpler B_strike when eligible; choose '
+            'C_window instead only if C is eligible AND shows a clear advantage over B: (a) TRAIN-VAL hit lower than B '
+            'with non-overlapping Wilson 95 % intervals, or (b) post-warm-up cross-half cosine >= B + 0.05 AND '
+            'post-warm-up minibatch relative gradient variance <= 0.75 x B. If B is not eligible, C_window if eligible. '
+            'If neither is eligible: development NO-GO, no official training budget is spent. Rollout hit rate and '
+            'scalar reward are reported but never used for the choice.')
 
 
 def cfg(variant):
@@ -613,6 +621,11 @@ def dev_summary():
             'cross_half_cosine_mean': float(np.mean(g('cross_half_cosine'))),
             'cross_half_cosine_after_warmup': float(np.mean(g('cross_half_cosine')[3:])),
             'minibatch_rel_variance_mean': float(np.mean(g('minibatch_rel_variance'))),
+            'minibatch_rel_variance_after_warmup': float(np.mean(g('minibatch_rel_variance')[3:])),
+            'cross_half_cosine_after_warmup_sd': float(np.std(g('cross_half_cosine')[3:], ddof=1)),
+            'threat_trial_escape_min': min(r['threat_trial_any_escape'] for r in rows),
+            'rollout_unnecessary_per_min_mean': float(np.mean([r['unnecessary_per_min'] for r in rows])),
+            'rollout_perch_per_min_mean': float(np.mean([r['perch_per_min'] for r in rows])),
             'minibatch_pairwise_cosine_mean': float(np.mean(g('minibatch_pairwise_cosine'))),
             'unit_grad_share_top10pct_mean': float(np.mean(g('unit_grad_norm_share_top10pct'))),
             'advantage_lag1_autocorrelation_mean': float(np.mean(e('advantage_lag1_autocorrelation'))),
@@ -626,19 +639,43 @@ def dev_summary():
     get = lambda v: next((x for k, x in runs.items() if k.startswith(v)), None)   # noqa: E731
     A, B, Cc = get('A_ref'), get('B_strike'), get('C_window')
 
-    def ok(r):
-        return r is not None and A is not None and r['none_share_max'] < 0.995 and r['esc_L3_min'] >= 0.2 \
-            and r['cross_half_cosine_after_warmup'] >= A['cross_half_cosine_after_warmup'] \
-            and r['effective_strikes_kish_weight'] >= 2 * A['effective_strikes_kish_weight']
-    out['checks'] = {'C_window': ok(Cc), 'B_strike': ok(B)}
-    out['method'] = 'C_window' if ok(Cc) else ('B_strike' if ok(B) else None)
+    def checks(r):
+        if r is None or A is None:
+            return None
+        tv = r['trainval'] or {}
+        c = {'i_no_collapse': r['none_share_max'] < 0.995 and r['esc_L3_min'] >= 0.2,
+             'ii_cosine_ge_A_ref': r['cross_half_cosine_after_warmup'] >= A['cross_half_cosine_after_warmup'],
+             'ii_effective_strikes_ge_2x_A_ref': r['effective_strikes_kish_weight'] >= 2 * A['effective_strikes_kish_weight'],
+             'iii_trainval_admissible': bool(tv.get('admissible')) and not tv.get('flags'),
+             'iii_threat_window_escape_ge_0.3': (tv.get('escape_in_window') or 0) >= 0.3}
+        c['eligible'] = all(c.values())
+        return c
+    cb, cc = checks(B), checks(Cc)
+    adv = None
+    if cb is not None and cc is not None:
+        wb, wc = B['trainval']['hit_wilson95'], Cc['trainval']['hit_wilson95']
+        adv = {'a_trainval_hit_non_overlapping_lower': wc[1] < wb[0],
+               'b_cosine_plus_0.05': Cc['cross_half_cosine_after_warmup'] >= B['cross_half_cosine_after_warmup'] + 0.05,
+               'b_relvar_le_0.75x': Cc['minibatch_rel_variance_after_warmup'] <= 0.75 * B['minibatch_rel_variance_after_warmup']}
+        adv['clear_advantage'] = adv['a_trainval_hit_non_overlapping_lower'] or (adv['b_cosine_plus_0.05'] and adv['b_relvar_le_0.75x'])
+    out['checks'] = {'B_strike': cb, 'C_window': cc, 'C_over_B': adv}
+    if cb and cb['eligible']:
+        out['method'] = 'C_window' if (cc and cc['eligible'] and adv and adv['clear_advantage']) else 'B_strike'
+    elif cc and cc['eligible']:
+        out['method'] = 'C_window'
+    else:
+        out['method'] = None
     TRACK.mkdir(parents=True, exist_ok=True)
     (TRACK / 'dev_summary.json').write_text(json.dumps(out, indent=1, default=float) + '\n', encoding='utf-8')
     for k, v in runs.items():
         print(k, {kk: (round(vv, 4) if isinstance(vv, float) else vv) for kk, vv in v.items() if kk != 'trainval'})
-        if v['trainval']:
-            print('   TRAIN-VAL', v['trainval']['hit_probability'], v['trainval'].get('hit_wilson95'), v['trainval']['unnecessary_per_min'])
-    print('checks', out['checks'], 'method', out['method'])
+        t = v['trainval']
+        if t:
+            print('   TRAIN-VAL hit %.3f %s win %.2f U %.2f P %.2f admissible %s flags %s' % (
+                t['hit_probability'], [round(x, 3) for x in t['hit_wilson95']], t['escape_in_window'],
+                t['unnecessary_per_min'], t['perches_per_min'] or 0.0, t['admissible'], t['flags']))
+    print(json.dumps(out['checks'], indent=1))
+    print('method', out['method'])
 
 
 # ----------------------------------------------------------------- protocol ---
@@ -689,6 +726,9 @@ def freeze():
     ds = json.loads((TRACK / 'dev_summary.json').read_text(encoding='utf-8'))
     if ds['method'] is None:
         raise SystemExit('development: strike-centric training invalid; stop')
+    audit = TRACK / 'worker_allocation_audit.json'
+    if not audit.exists() or not json.loads(audit.read_text(encoding='utf-8'))['identical']:
+        raise SystemExit('worker-allocation audit missing or not identical; fix scheduling before freeze')
     gate = json.loads(MT.BC_GATE_FILE.read_text(encoding='utf-8'))
     p22 = json.loads((ROOT / 'game/learning/m2_2_protocol.json').read_text(encoding='utf-8'))
     C = cfg(ds['method'])
@@ -702,6 +742,7 @@ def freeze():
                             'background_per_worker', 1), 'environment_decisions': 'logged exactly (about 48k per iteration)'},
              'window_selection': json.loads((TRACK / 'window_selection.json').read_text(encoding='utf-8')),
              'development_summary_sha256': MT.sha_file(TRACK / 'dev_summary.json'),
+             'worker_allocation_audit_sha256': MT.sha_file(audit),
              'bc_checkpoint_state_dict_sha256': gate['bc_checkpoint_state_dict_sha256'],
              'split': p22['split'], 'split_sha256': p22['split_sha256'],
              'train_confirm_sha256': hashlib.sha256(json.dumps(confirm_specs()).encode()).hexdigest(),

@@ -1,0 +1,27 @@
+{
+ "rule": "TRAIN-only, from the B_strike development rollouts: among the candidate windows full, engage (engagement onset -> end), click50 (click - 1.0 s -> end), click25 (click - 0.5 s -> end), choose the window with the FEWEST retained ticks that captures >= 90 % of the within-trial |advantage| mass and >= 90 % of the within-trial escape actions; otherwise full",
+ "source": "dev/B_strike_seed_201 (TRAIN only), 20 iterations",
+ "windows": {
+  "full": {
+   "adv_mass_share": 1.0,
+   "tick_share": 1.0,
+   "escape_share": 1.0
+  },
+  "engage": {
+   "adv_mass_share": 0.9078551022398151,
+   "tick_share": 0.3211025970518889,
+   "escape_share": 0.9843598725601218
+  },
+  "click50": {
+   "adv_mass_share": 0.8619661436271201,
+   "tick_share": 0.18933682868952137,
+   "escape_share": 0.8673518128642671
+  },
+  "click25": {
+   "adv_mass_share": 0.7898102844095777,
+   "tick_share": 0.12469924053569292,
+   "escape_share": 0.7263719711189726
+  }
+ },
+ "selected": "engage"
+}
