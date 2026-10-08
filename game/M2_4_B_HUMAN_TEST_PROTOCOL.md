@@ -1,6 +1,6 @@
 # M2.4-B: blind human gameplay acceptance: protocol
 
-Status: **preregistered (`f048ba6`), amended before any session (amendment 1, blinding: `game/M2_4_B_BLINDING_AMENDMENT.md`); infrastructure ready; no session played yet.** This is human validation only. Nothing is
+Status: **closed early at 12 of 30 sessions by the participant's decision (2026-10-08); not unblinded, not analysed, no conclusion. See `game/M2_4_B_EARLY_TERMINATION.md`.** Preregistered as `f048ba6`, amended before any session (amendment 1, blinding: `game/M2_4_B_BLINDING_AMENDMENT.md`). This is human validation only. Nothing is
 trained, and neither policy is modified. The accepted runtime (`363a1a9`, default policy N4B1C) is not changed or
 replaced, and nothing is merged. The results report will be `game/M2_4_B_HUMAN_GAMEPLAY_ACCEPTANCE.md`, written after
 all sessions.
