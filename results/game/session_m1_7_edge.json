@@ -1,0 +1,83 @@
+{
+  "fixture": "three deterministic 8-second episodes; sweeps, pursuit, pause and between-tick clicks",
+  "session_directory": "D:\\Projects\\flybrain-lab\\results\\game\\sessions\\20260920T032052.596036Z-ea9d619b",
+  "replay": {
+    "exact": true,
+    "ticks_verified": 1200,
+    "input_operations": 1212,
+    "episodes": 3,
+    "scope": "all deterministic tick fields including compact neural readouts; presentation/wall time excluded",
+    "source_verified": true,
+    "full_brain_snapshots_compared": false,
+    "report_path": "D:\\Projects\\flybrain-lab\\results\\game\\sessions\\20260920T032052.596036Z-ea9d619b\\replays\\e96c72fb596e.json"
+  },
+  "summary": {
+    "schema_version": 2,
+    "session_id": "20260920T032052.596036Z-ea9d619b",
+    "duration_simulation_seconds": 24.0,
+    "duration_wall_seconds": 6.508201100001315,
+    "episodes": 3,
+    "ticks": 1200,
+    "strikes": 7,
+    "hits": 1,
+    "misses": 6,
+    "escapes": 3,
+    "hit_rate": 0.14285714285714285,
+    "first_strike_hit_rate": 0.3333333333333333,
+    "incomplete_strikes": 0,
+    "edge_outcomes": {
+      "hit_near_wall": 0,
+      "miss_near_wall": 0
+    },
+    "alert_count": 31,
+    "escape_count": 7,
+    "dnp01_threshold_crossings": 17,
+    "escape_latency_seconds": {
+      "n": 4,
+      "mean": 0.32,
+      "median": 0.22000000000000003,
+      "definition": "first new ESCAPE within 2 s after strike start minus neural threat onset in the indexed window (1 s before to 2 s after); unavailable/preexisting escapes excluded"
+    },
+    "speed_bl_s": {
+      "mean": 10.279616518906849,
+      "peak": 41.243985655789594
+    },
+    "threat_state_fraction": {
+      "CALM": 0.5391666666666667,
+      "ALERT": 0.09333333333333334,
+      "ESCAPE": 0.3675
+    },
+    "ecological_state_fraction": {
+      "EXPLORE": 0.16416666666666666,
+      "ALERT": 0.09333333333333334,
+      "RECOVER": 0.355,
+      "ESCAPE": 0.3675,
+      "ODOR_TRACK": 0.02
+    },
+    "wall_time_seconds": 1.6,
+    "perimeter_time_seconds": 2.98,
+    "contact_time_seconds": 0.0,
+    "odor_encounters": 1,
+    "landing_attempts": 0,
+    "attack_direction_bins_degrees": {
+      "0": 3,
+      "90": 1,
+      "180": 3
+    },
+    "full_brain_recorded": false,
+    "learning_updates": 0
+  },
+  "elapsed_seconds": 11.775719999997818,
+  "files_bytes": {
+    "episodes.jsonl": 547,
+    "events.jsonl": 12686,
+    "inputs.jsonl": 198720,
+    "manifest.json": 14774,
+    "policy_observations.jsonl": 1527063,
+    "REPORT.md": 1694,
+    "source_snapshot.zip": 61796,
+    "strikes.json": 7456,
+    "summary.json": 1517,
+    "ticks.jsonl": 5756815
+  }
+}

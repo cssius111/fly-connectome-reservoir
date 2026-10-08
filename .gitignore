@@ -8,3 +8,5 @@ __pycache__/
 .env
 *.log
 .vscode/
+# Human interaction recordings are large, private analysis data.
+results/game/sessions/

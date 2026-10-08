@@ -1,0 +1,98 @@
+{
+  "session": "20260920T030539.399439Z-cbd62f33",
+  "counts": {
+    "living_ticks": 12642,
+    "unreachable_living_ticks": 1980,
+    "unreachable_active_ticks": 43,
+    "near_wall_misses": 8
+  },
+  "example": {
+    "global_tick": 10998,
+    "episode": 2,
+    "tick": 303,
+    "fly": {
+      "x": 59.0,
+      "y": 1482.6585401043446,
+      "vx": -24.825205392858127,
+      "vy": 426.7136871635167,
+      "speed": 427.4352133779822,
+      "speed_bl_s": 17.809800557415926,
+      "heading": 2.413768521033184,
+      "velocity_heading": 1.6289084866524846,
+      "heading_velocity_mismatch": -0.7848600343806993,
+      "ax": 287.1958305308805,
+      "ay": -1022.0652459084874,
+      "alive": true
+    },
+    "swatter": {
+      "x": 240.0732662769283,
+      "y": 1335.5693786089175,
+      "target_x": 50.0,
+      "target_y": 1426.0,
+      "phase": "active_contact",
+      "phase_elapsed": 0.0,
+      "height": 90.0,
+      "face": 0.85,
+      "orientation": 9.270219485818588,
+      "attack_speed": 712.2907141880642,
+      "sweep_vx": 0.0,
+      "sweep_vy": 0.0,
+      "vx": 0.0,
+      "vy": -1036.5127866062114,
+      "ax": 0.0,
+      "ay": -1096.861312703079,
+      "angular_velocity": 5.087999999999995,
+      "attack_orientation": -1.8061312836525698,
+      "attack_acceleration": 6133.321074121057,
+      "swing_speed": 1114.3946696222843,
+      "speed": 1036.5127866062114,
+      "strike_id": 1
+    },
+    "event_flags": {
+      "threat_onset": false,
+      "alert_onset": false,
+      "escape_onset": false,
+      "threshold_crossing": false,
+      "strike_start": false,
+      "strike_active": true,
+      "hit": false,
+      "miss": false,
+      "death": false,
+      "restart": false,
+      "pause": false,
+      "odor_encounter": false
+    }
+  },
+  "source_hashes": {
+    "episodes.jsonl": "b062840c5247e398b3c2aa6b1963a1d950465071d97c236f7bd82fefdbca7ce4",
+    "events.jsonl": "60ab2b89902bc7fcdc6fefafdd6dc013ce5c787b1a8df0a89bbcc510b5be12fb",
+    "inputs.jsonl": "d8beb564cdf86cf6f09057654b4d656553af26005f52db39a22c0d0f05d19b74",
+    "manifest.json": "e7c99f7eecfb9dea4e95f80ffd7bce6db29efcbd8f24cd7dd685d409276f0db9",
+    "policy_observations.jsonl": "8e709c6e854f846be8a3d0faf6c191fb18ba141be5a0dc044220097069e97587",
+    "REPORT.md": "64cc439b34330f39eba677c2416a77d898656c8717034915098efe502db0b70f",
+    "source_snapshot.zip": "9b997eb84fa843b573ee84bc6c4c1bd061ca56459e27e20ef55c17020c6c105d",
+    "strikes.json": "1c24b3e47826eb02b4360a4817ad6e7128acdb1f86ad0bda7c2936b74f83bc19",
+    "summary.json": "bb3adc2aab89b48709b179c3c35843b1cef8dbec800b4f8a5fdc2b84366ac634",
+    "ticks.jsonl": "f744cac72d60ba1f02c2f729e725baa6c0337c02518164806b4fc22bc61c5651"
+  },
+  "old_geometry": {
+    "fly_center_bounds": [
+      59,
+      3781,
+      59,
+      2101
+    ],
+    "paddle_center_bounds": [
+      240,
+      3600,
+      240,
+      1920
+    ],
+    "head_radius": 144,
+    "combined_collision_radius": 155,
+    "straight_edge_unreachable_band_units": 26,
+    "straight_edge_unreachable_band_BL": 1.0833333333333333,
+    "corner_diagonal_axis_depth_units": 71.39844891608516,
+    "corner_distance_deficit_units": 100.97265478953022
+  }
+}
