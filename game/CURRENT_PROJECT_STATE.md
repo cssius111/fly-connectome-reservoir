@@ -4,7 +4,7 @@ This file is an operational handoff for future sessions. It is not a scientific 
 a runtime artifact. Evidence lives in the milestone reports listed below. Update it at the
 end of every substantial milestone.
 
-Last updated: 2026-09-27. **M2.4-B blind human gameplay acceptance: preregistered and ready; waiting for the human to play the 30 sessions.** M2.4-A is accepted as GO for human testing, with a documented procedural deviation (EVAL-v3 hit 0.552 vs N4B1C 0.640, -0.088, p = 0.00026). **The runtime policy is NOT replaced.** Runtime baseline: M1.8-N4B5R (`363a1a9`), unchanged. The M1 slow-approach line is closed.
+Last updated: 2026-10-08. **The M2 learning line is closed by the user's decision: no further training, no further human sessions, no runtime integration.** M2.4-B stopped early at 12 of 30 blind sessions (not unblinded, not analysed, no conclusion). M2.4-A remains GO for human testing with a documented procedural deviation (EVAL-v3 hit 0.552 vs N4B1C 0.640, p = 0.00026), never followed by a completed human test. Runtime baseline: M1.8-N4B5R (`363a1a9`), unchanged. The M1 slow-approach line is closed.
 
 ## Start of a new session
 
@@ -51,7 +51,7 @@ Earlier frozen milestones (see `AGENTS.md`): M1.7.1 swatter dynamics and M1.8-A 
 |---|---|---|
 | `wip/m1-4-enclosure` | the N4B8 research commit (see `git log -1`); N4B8 freeze `ecb86d3`, N4B7 `c61dbd3` (freeze `8fee28a`), N4B6 `b203b46` (preregistration `987b2a9`), N4B5R state `81b213e`, N4B5 `0e9d2d9`, N4B4 `6b5c4ce`, N4B3 `d09dac4`, N4B2 `5be0aea` | research branch; research-only commits |
 | `feature/m1-8-n4b5r-geometry` | `363a1a9` | **current accepted runtime** (N4B1C + G3 geometry); **do not modify** |
-| `feature/m2-0-learning-infra` | `9201c24` | M2 learning line (from `363a1a9`): M2.0 infrastructure (`b53f9a9`), M2.1 benchmark v2 / reward v2 (freeze `66b286e`), M2.2 PPO training (protocol `63dbeb6`, candidate `2e454a9`), M2.3 PyTorch BC + PPO (BC `f65c995`, protocol `76ad1f4`, candidate `5ce0095`, report `f723375`), M2.4-R0 temporal feasibility (preregistration `a671876`, report `12468bd`), M2.4-A strike-centric PPO (EVAL-v3 freeze `660911a`, protocol `a4cb584`, candidate `497a990`, report `8a5eb2b`, amendment `b1b34d3`), M2.4-B blind human test (preregistration `f048ba6`, blinding amendment `9201c24`); no accepted runtime file changed; pushed, not merged |
+| `feature/m2-0-learning-infra` | `a6c9b37` | M2 learning line (from `363a1a9`): M2.0 infrastructure (`b53f9a9`), M2.1 benchmark v2 / reward v2 (freeze `66b286e`), M2.2 PPO training (protocol `63dbeb6`, candidate `2e454a9`), M2.3 PyTorch BC + PPO (BC `f65c995`, protocol `76ad1f4`, candidate `5ce0095`, report `f723375`), M2.4-R0 temporal feasibility (preregistration `a671876`, report `12468bd`), M2.4-A strike-centric PPO (EVAL-v3 freeze `660911a`, protocol `a4cb584`, candidate `497a990`, report `8a5eb2b`, amendment `b1b34d3`), M2.4-B blind human test (preregistration `f048ba6`, blinding amendment `9201c24`, early termination `a6c9b37`); no accepted runtime file changed; pushed, not merged |
 | `feature/m1-8-n4b1c-runtime` | `e3c55b3` | previous accepted runtime (decoder layer); **do not modify** |
 | `archive/m1-8-n2b-rejected` | `2c306174d7bdb4e74b6c5517519ae695bd90cf44` | rejected N2b runtime snapshot; **never merge** |
 | `main` | `309abd9` | untouched |
@@ -93,8 +93,20 @@ Do not call C or D "false triggers".
 
 ## Current milestone
 
-**M2.4-B: blind human gameplay acceptance** (human validation only; no training): **preregistered; waiting for
-the human sessions. No session has been played.**
+**Project status: M2 learning line closed (2026-10-08, user decision).** Nothing is in progress.
+
+- **Final learned result:** M2.4-A candidate seed_2/ckpt_it060 (`497a990`), GO for human testing with a
+  documented procedural deviation (see below and `game/M2_4_A_EVAL_EXECUTION_AMENDMENT.md`).
+- **M2.4-B closed early:** 12 of 30 preregistered blind sessions (blocks 1-6, all complete) were played and
+  rated; the participant then stopped. The data were **not unblinded and not analysed** (`reveal` not run,
+  ratings not locked); there is no human-acceptance conclusion. Record: `game/M2_4_B_EARLY_TERMINATION.md`
+  (`a6c9b37`). Private data stay in `artifacts/m2_4_b/` (git-ignored).
+- **Runtime:** unchanged (`363a1a9`, default N4B1C); the learned policy is not integrated; nothing merged.
+- **To reopen:** finish sessions 13-30 under the unchanged protocol, or amend before unblinding to define an
+  exploratory 6-block analysis (the tools refuse `reveal` / `analyze` on a partial set).
+
+**Previous milestone, M2.4-B: blind human gameplay acceptance** (human validation only; no training):
+**closed early at 12 / 30 sessions; see above.** Original setup:
 
 - **Protocol:** `game/M2_4_B_HUMAN_TEST_PROTOCOL.md` and `game/learning/m2_4_b/protocol.json` (sha256 `51f3974f...`).
   The randomisation manifest `game/learning/m2_4_b/randomization_manifest.json` (sha256 `67fcfa9a...`) was pushed
