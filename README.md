@@ -1,13 +1,83 @@
 # fly-connectome-reservoir
 
-A reproducible Windows CPU computational neuroscience experiment and an untrained interactive fly-swatter baseline, using FlyBrain 0.1.0 and MaleCNS-derived connectivity.
+A real-time fly-swatter simulation in which a frozen fruit-fly connectome (MaleCNS, 166,700 neurons) drives escape behaviour, plus a preregistered study of learned controllers (behaviour cloning and constrained PPO) trained on top of it. It started as a reproducible Windows CPU reservoir experiment, using FlyBrain 0.1.0 and MaleCNS-derived connectivity.
 
 **Training a classifier on frozen neural activity does not mean that a fly brain learned the task.** The original experiment directly injects LC4/LPLC2 feature neurons; it does not process images through a complete eye. LIF dynamics, connection signs and normalization contain modeling assumptions and have not been validated against recordings of real flies.
 
 The frozen experiment is specified in [PROTOCOL.md](PROTOCOL.md), with historical results in [results/REPORT.md](results/REPORT.md). These protected artifacts retain their original language and bytes for reproducibility. Editable project content is English.
 
 
-## M1.8-A: accepted landing, perching and takeoff lifecycle
+## Project overview
+
+### What runs every 20 ms (50 Hz)
+
+1. **World.** The fly flies, lands and perches in a room; the player moves a physically simulated swatter with the mouse (pygame).
+2. **Retina.** The swatter is reduced to three numbers the fly could see: its angular size, how fast that size grows (looming) and its bearing. Mouse and swatter coordinates never reach the brain or the controller; the types enforce this.
+3. **Visual input.** The three numbers drive 55 LC4 and 91 LPLC2 looming-sensitive neurons per side.
+4. **Connectome.** One step of a leaky integrate-and-fire network with 166,700 neurons and 25,088,107 runtime connections (25,582,938 in the source graph; incoming sensory-neuron edges are removed). The weights are frozen: nothing in the brain learns.
+5. **Readout.** Escape (DNp01, the giant fiber) and steering (DNa02) descending neurons, left and right.
+6. **Controller.** Either the accepted hand-designed decoder (N4B1C) or a learned 2,315-parameter MLP. The MLP sees only those four neural signals plus the fly's own motion and state (60 inputs over 5 frames) and picks one of 11 maneuvers.
+7. **Physics** executes the maneuver, and the next tick starts.
+
+The spiking simulator ([FlyBrain](https://github.com/alextitonis/fly.ai) 0.1.0) and the MaleCNS data (Janelia FlyEM) are third-party. The game, the perception pipeline, the controllers and the learning and evaluation code belong to this project.
+
+One headless measurement (idle fly, no threat input, 8 Numba threads, Intel i9-13900HX) gave about 4.1 ms of compute per 20 ms tick, roughly 4.9x faster than real time. It was run once and is not a formal benchmark.
+
+### Learned controllers (M2, this branch)
+
+| Milestone | What was done | Result |
+|---|---|---|
+| M2.0 | Observation / action contracts, runners, probe policies | Reward v1 could be gamed by never-escape and constant-turn probes, so no training |
+| M2.1 | Exposure-controlled benchmark: every threat trial contains exactly one committed strike; background episodes measure unnecessary escapes; reward and constraints derived from probe policies; frozen test set of 320 episodes per policy | GO for constrained training |
+| M2.2 | Constrained PPO (NumPy), 5 seeds | NO-GO: all 5 seeds collapsed to never escaping (the unnecessary-escape multiplier overshot early and exploration died); test hit rate 0.738 vs 0.617 |
+| M2.3 | PyTorch behaviour cloning of the hand-designed controller (522,651 teacher samples), then KL-anchored constrained PPO with dual warm-up and adaptive entropy, 5 seeds | All 5 seeds stable. Test set: 41% fewer unnecessary escapes (3.02 vs 5.15 per min), no statistically significant hit-rate difference (0.592 vs 0.617, p = 0.53). NO-GO under the preregistered criterion |
+| M2.4-R0 | Decision-rate study | Keep 50 Hz |
+| M2.4-A | Strike-balanced loss weighting, threat-dense sampling, two-stage checkpoint selection, fresh test set frozen before training | Hit rate 0.552 vs 0.640 (paired McNemar p = 0.00026), 3.48 vs 4.97 unnecessary escapes per min. GO for human testing, with a documented procedural deviation |
+| M2.4-B | Blind human A/B test, 30 sessions preregistered | Stopped by the participant after 12 sessions; not unblinded, no conclusion |
+
+**Status:** the learning line is closed. The accepted runtime (`363a1a9`) still uses the hand-designed controller; the learned policy is not integrated.
+
+### Evaluation discipline and disclosed deviations
+
+- Protocols, seeds and success criteria are committed with SHA-256 hashes before runs. Training, validation and test seed ranges are disjoint, and each frozen candidate is evaluated once on its test set.
+- M2.3: the paired test (McNemar) was chosen after the test run. No equivalence or non-inferiority margin was ever preregistered, so the hit-rate result means "no significant difference", not "equal".
+- M2.4-A: the test runner was repaired after it was frozen (a multiprocessing pickling bug). The formal amendment and the equivalence audit were completed after the test run; TRAIN-only audits showed exactly identical outputs. See [the amendment](game/M2_4_A_EVAL_EXECUTION_AMENDMENT.md).
+- M2.4-B: stopped before the preregistered 30 sessions. See [the termination record](game/M2_4_B_EARLY_TERMINATION.md).
+- Known model limitation: very slow approaches are not detected, because the visual input encodes only relative geometry.
+
+### Reports
+
+[M2.0](game/M2_0_LEARNING_INFRASTRUCTURE.md),
+[M2.1](game/M2_1_EXPOSURE_CONTROLLED_BENCHMARK.md),
+[M2.2](game/M2_2_CONSTRAINED_LEARNED_POLICY.md),
+[M2.3](game/M2_3_PYTORCH_BC_CONSTRAINED_PPO.md),
+[M2.4-R0](game/M2_4_R0_TEMPORAL_ACTION_FEASIBILITY.md),
+[M2.4-A](game/M2_4_A_STRIKE_CENTRIC_PPO.md),
+[M2.4-B protocol](game/M2_4_B_HUMAN_TEST_PROTOCOL.md).
+
+### Branches
+
+| Branch | Content |
+|---|---|
+| `feature/m2-0-learning-infra` | This branch: the accepted runtime plus all learning work |
+| `feature/m1-8-n4b5r-geometry` | The accepted runtime only |
+| `wip/m1-4-enclosure` | M1 escape-decoder research and the project handoff state (`game/CURRENT_PROJECT_STATE.md`) |
+| `main` | The original frozen reservoir experiment |
+
+### Quick start
+
+From the repository root, with the environment and data set up as described under "Environment and original experiment" below:
+
+```powershell
+python -m game.app --arena room     # play against the accepted controller
+python -m unittest discover         # run the test suite
+```
+
+## Earlier milestones (history)
+
+The sections below describe the accepted M1 runtime as each milestone was signed off. Statements such as "no reinforcement learning" or "no learned policy" refer to that runtime, which is unchanged; the learned controllers above are separate research.
+
+### M1.8-A: accepted landing, perching and takeoff lifecycle
 
 ROOM now supports local visual approach, physical touchdown, stationary perching,
 a minimal food-contact feeding overlay, motivated voluntary departure and neural
@@ -37,7 +107,7 @@ ecological intent. LAB/GAME and the accepted
 physical swatter remain unchanged. ROOM schema 4 adds lifecycle events and
 alive-only simulator metrics; existing observation whitelists remain unchanged.
 
-## M1.7.1: accepted physical swatter baseline
+### M1.7.1: accepted physical swatter baseline
 
 M1.6 is preserved locally as `58ffd60fb60239a911c1ca0baea458ec743774b7`.
 M1.7 and the edge repair are committed at `e0f08ebe55ecefcab69cc7927668c0f2cef7f69c`.
@@ -94,7 +164,7 @@ python tools/session_sanity.py
 Historical sections below describe earlier milestones. Use `--arena game` for
 the preserved GAME preset and `--mode lab` for LAB.
 
-## Environment and original experiment
+### Environment and original experiment
 
 The actual virtual environment is `D:\Projects\flybrain-lab\.venv`, inside the repository. Python 3.11.16 and the CPU implementation are the validated path; CUDA/CuPy is not installed.
 
@@ -132,7 +202,7 @@ $env:FLY_DATA = "$PWD\data"
 | `tools/flight_sanity.py`, `tools/chase_sanity.py` | Isolated locomotion and neural pursuit checks |
 | `test_game*.py` | Game regressions and strict perception/action interfaces |
 
-## M1.5: fullscreen GAME and controlled LAB
+### M1.5: fullscreen GAME and controlled LAB
 
 At M1.5, the default became GAME; current M1.7 defaults to ROOM instead.
 H reveals the optional neural HUD. M1.4 was committed separately as
@@ -167,7 +237,7 @@ under `results/game/sessions/`; `--record-dir PATH` selects another profile and
 `--no-record` disables recording. World/debug data and policy
 observations are stored separately. No checkpoint is trained or loaded.
 
-## Interactive fly-swatter
+### Interactive fly-swatter
 
 ```powershell
 Set-Location D:\Projects\flybrain-lab
@@ -183,7 +253,7 @@ The threat pipeline is world geometry → frozen `Retina(theta, theta_dot, azimu
 
 LPLC2 populations are balanced to 91 cells per side (available L94/R91); LC4 to 55 per side (L71/R55), by a fixed encoder seed. The runtime sets `sensory_input=false`, removing incoming sensory-neuron edges: **25,088,107 runtime connections**, compared with **25,582,938 in the original dataset**. The source data are not rewritten. This is not the untouched full MaleCNS graph.
 
-## Policy and calibration contracts
+### Policy and calibration contracts
 
 `Policy` requires only `reset()` and `decide(MotorState)`. Diagnostics are optional and exposed generically by Session; a bare valid policy can render. `FixedEscapePolicy` remains the untrained baseline.
 
@@ -201,7 +271,7 @@ The threshold is the smallest predefined grid value with zero crossings across a
 
 The LAB fixed-fly threshold is 1.45 and GAME is 1.35; both detect 28/28 with median latency 0.06 s. The current M1.7.1 ROOM threshold is freshly measured at 1.45, detecting 28/28 with median latency 0.08 s after click. Each has zero crossings in its 2,520 no-loom ticks. ROOM uses a 6-second paddle settling interval and verifies that the head is stationary before measurement. These are calibration-sample results, not a guarantee of zero false triggers in arbitrary free flight.
 
-## M1.4 flight and enclosure baseline
+### M1.4 flight and enclosure baseline
 
 M1.4 continues Claude WIP `182c5a9` from stable M1.3 `85f987b279dbd2b1f725fa79aa299281259258ab`. The body polygon is 24 px; cruise is 160 px/s (6.67 body lengths/s), with a 1,000 px/s safety cap. There is no conversion to real-world millimeters or physiological speed.
 
