@@ -204,7 +204,7 @@ def category(event, counterfactual):
 
 def poisson_upper(count, minutes):
     """Exact one-sided 95 % upper bound on a Poisson rate (Garwood)."""
-    return chi2.ppf(0.95, 2*(count + 1))/2/minutes
+    return float(chi2.ppf(0.95, 2*(count + 1))/2/minutes)
 
 
 def summary():

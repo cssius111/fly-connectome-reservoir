@@ -4,7 +4,7 @@
 the original reservoir experiment, the interactive fly-swatter runtime, the escape-decoder
 research and the learned-controller study. Every number below is copied from a committed
 report or record, named where it appears. Only the test suites in section 10 and the
-diagnostic in section 9.1 were run for this report.
+measurements in section 9 were run while preparing this report.
 
 ## 1. Summary
 
@@ -283,11 +283,13 @@ and never tunes kinematics for difficulty.
 | B2b caps and escape/cruise study | `e504499`, `bea44d0` | The shared 1000 units/s ceiling also binds the neural escape; above scale ~3.2 escape would make a fast fly slower, and above ~30 BL/s it erases the graded escape strength |
 | B2b-i | `924ccc3` | Three separated class C ceilings, all still 1000 units/s; bit-identical |
 | B2b-ii | `0d8c254` | EXPLORE speed: one symmetric triangular draw on the accepted 5-8 BL/s support per EXPLORE episode, replacing a deterministic 8 s sinusoid with a U-shaped time density; mean kept at 6.5 BL/s, sd 1.06 to 0.61. First intended divergence at tick 0; LAB, GAME and no-ecology runs stay bit-identical |
+| B2b-iii | `7b9fa05` | ODOR_TRACK speed by the same method on its accepted 9-13 BL/s support, from its own random stream; mean 11.0, sd 1.41 to 0.82. Code alone is bit-identical; the first divergences are exactly the first airborne ODOR_TRACK ticks. Paired 240-minute free-flight check passes (section 9.2). Implemented and validated, awaiting acceptance |
 
 On 2026-10-20 the user answered the plan's remaining questions: the arena stays
 160 x 90 BL, the recorder moves to schema 5 only when a stage needs new fields, and
 M1.8-B stays phenomenological at `room_kinematic_scale` = 1.0. At that scale no ceiling
-binds, so the escape/cruise questions are deferred. Section 9 describes the next step.
+binds, so the escape/cruise questions are deferred. Section 9 describes B2b-iii and the
+ALERT finding that shapes what comes next.
 
 ## 5. Part III: escape decoding and visual geometry (M1.8-N0 to N4B8)
 
@@ -562,7 +564,8 @@ The same rules were applied from the first experiment to the last study:
   at 0.0123 per minute; a rate below 0.01 per minute has never been demonstrated.
   Free-flight escape categories B to D remain tracked rather than eliminated.
 - **Kinematics.** ROOM speeds are an order of magnitude below the literature in body
-  lengths per second, by decision; only EXPLORE speed is sampled so far.
+  lengths per second, by decision; only EXPLORE and ODOR_TRACK speeds are sampled so far,
+  and neural ALERT interruptions override most ecological dwell timers (section 9.1).
 - **Learned control.** The M2.4-A improvement rests on one test set, confounds strike budget
   with loss weighting, and was never confirmed by a completed human test.
 - **Human evidence.** One player produced every playtest and human session.
@@ -575,7 +578,8 @@ The same rules were applied from the first experiment to the last study:
 
 As of 2026-10-20 the accepted runtime is `363a1a9` (N4B1C decoder, N4B5R geometry), the
 slow-approach line and the learning line are closed by the user's decisions, and M1.8-B
-flight kinematics is the only active line.
+flight kinematics is the only active line. B2b-iii is implemented on top of the accepted
+runtime and awaits acceptance.
 
 ### 9.1 A measurement made for this report: where flight time goes
 
@@ -597,18 +601,38 @@ This is the combined behaviour of three frozen, accepted parts (the M1.2 ALERT g
 session's threat mapping and the M1.6 ecology), not a defect introduced by any milestone.
 It dominates the activity budget that M1.8-B set out to model.
 
-### 9.2 Proposed next stage
+### 9.2 B2b-iii: ODOR_TRACK speed
 
-The design note proposes **B2b-iii: ODOR_TRACK speed**, the largest context still driven
-by the shared 8 s sinusoid, using the B2b-ii method (one symmetric triangular draw on the
-accepted 9-13 BL/s support per episode, mean preserved, its own random stream), with
-acceptance checks fixed in advance. TRANSIT is deferred because it barely occurs, and
-B3 (timer removal) is premature until the ALERT interruption is decided. The user must
-approve the scope, decide how to treat the ALERT interruption (accept, investigate
-research-only, or defer), and decide whether a paired 240-minute free-flight escape check
-is required.
+The design note chose ODOR_TRACK, the largest context still driven by the shared 8 s
+sinusoid, and deferred TRANSIT because it barely occurs. The user approved the design, a
+research-only ALERT study and a paired free-flight check on 2026-10-20. Validation is in
+[results/game/M1_8_B2B_III.md](results/game/M1_8_B2B_III.md):
 
-### 9.3 Other open items
+- with the new code and the old configuration all seven trace scenarios and every random
+  stream are bit-identical; with the new configuration each ROOM divergence starts exactly
+  at the first airborne ODOR_TRACK tick, and the lifecycle-threat, no-ecology, GAME and LAB
+  scenarios stay bit-identical;
+- 200,000 offline draws give mean 10.998 and sd 0.8175 against 11.0 and 0.816;
+- paired no-player free flight on 80 fresh seeds (240 minutes per arm): 12 escapes under
+  the accepted configuration (0.050/min) and 9 under the candidate (0.037/min), with no
+  no-drive escape in either and candidate category B at 2 (upper bound 0.026/min, below the
+  0.1/min criterion);
+- 440 tests pass, and lifecycle and recorder replays are exact. The protected-file and
+  swatter-fixture checks need the local Windows checkout.
+
+### 9.3 The ALERT study
+
+`tools/alert_interruption_study.py` changed only the threat handed to the ecology, inside
+the tool ([game/M1_8_ALERT_INTERRUPTION.md](game/M1_8_ALERT_INTERRUPTION.md)). Under the
+accepted mapping 80-88 % of ALERT entries carry no requested or executing saccade. If the
+ecology reacts only to executed responses, ALERT entries fall from 43-48 to about 2 per
+minute, EXPLORE episodes last 4.2-4.5 s, TRANSIT rises from about 1 % to 22-24 % of alive
+time, and landing, feeding and voluntary takeoff still occur. Requiring the ALERT state to
+last the policy's own 0.06 s saccade dwell barely helps. The note lists three options
+(keep the mapping, adopt the executed-response mapping for the ecology only as its own
+preregistered stage, or design another ecology-side rule) and selects none.
+
+### 9.4 Other open items
 
 - **M2.4-B** can be reopened only by finishing sessions 13-30 under the unchanged
   protocol or by a pre-unblinding amendment for an exploratory six-block analysis; the
@@ -638,9 +662,9 @@ The validated environment is Windows with Python 3.11.16 and the CPU path; versi
 pinned in `requirements-lock.txt`, and the learning code additionally needs PyTorch
 2.13.0. The connectivity data are downloaded by FlyBrain and verified against SHA-256
 values (`brain.npz` `cc9bd1ec...`, `weights.npz` `c29919aa...`). On 2026-10-20 the
-accepted runtime's suite passed 427 of 427 tests on a Linux checkout, and the learning
-branch 516 of 517 with one CUDA-only test skipped, after a line-ending fix to two
-provenance tests.
+accepted runtime's suite passed 427 of 427 tests on a Linux checkout, the session branch
+with B2b-iii 440 of 440, and the learning branch 516 of 517 with one CUDA-only test
+skipped, after a line-ending fix to two provenance tests.
 
 ```text
 python first_run.py                                   # data integrity and replay smoke test
