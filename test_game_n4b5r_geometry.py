@@ -24,6 +24,12 @@ LAB = load_config(ROOT/'game_config.json')
 ACCEPTED_COMMIT = 'e3c55b36084cd1d05e5f38d0b178aed0b9a59ddf'
 ACCEPTED = json.loads(subprocess.check_output(['git', 'show', ACCEPTED_COMMIT + ':game_room_config.json'],
                                               cwd=ROOT, text=True))
+# The accepted N4B5R ROOM configuration. Later stages (M1.8-B2b-iii onward) change ROOM
+# outside the geometry and carry their own records, so the N4B5R record is checked against
+# its own frozen configuration, as test_game_n4b1c_decoder does for N4B1C.
+N4B5R_COMMIT = '363a1a94cf3f5e33efab08cb28594c24ca694a03'
+N4B5R_ROOM = json.loads(subprocess.check_output(['git', 'show', N4B5R_COMMIT + ':game_room_config.json'],
+                                                cwd=ROOT, text=True))
 RECORD = 'results/game/calibration_room_m1_8_n4b5r.json'
 DECODER_RECORD = 'results/game/calibration_room_m1_8_n4b1c.json'
 DT = 0.02
@@ -154,24 +160,27 @@ class TestScopeAndVersioning(unittest.TestCase):
         self.assertEqual(World(LAB, 1).tilt_geometry, TILT_BEARING_ONLY)
 
     def test_room_differs_from_the_accepted_n4b1c_config_only_in_geometry_and_record(self):
-        self.assertEqual(ROOM['config_version'], ACCEPTED['config_version'] + 1)
-        after = copy.deepcopy(ROOM)
+        self.assertEqual(N4B5R_ROOM['config_version'], ACCEPTED['config_version'] + 1)
+        after = copy.deepcopy(N4B5R_ROOM)
         after['config_version'] = ACCEPTED['config_version']
         for key in ('tilt_geometry', '_tilt_geometry_comment'):
             after['swatter']['directional'].pop(key)
         after['policy']['_comment'] = ACCEPTED['policy']['_comment']
         after['policy']['calibration_paths'] = ACCEPTED['policy']['calibration_paths']
         self.assertEqual(after, ACCEPTED)
+        self.assertEqual(escape_decoder_spec(N4B5R_ROOM), escape_decoder_spec(ACCEPTED))
+        # The current ROOM keeps the accepted geometry and decoder.
+        self.assertEqual(ROOM['swatter']['directional'], N4B5R_ROOM['swatter']['directional'])
         self.assertEqual(escape_decoder_spec(ROOM), escape_decoder_spec(ACCEPTED))
 
 
 class TestProvenance(unittest.TestCase):
     def test_room_resolves_the_geometry_record_with_the_unchanged_decoder(self):
-        source = resolve_escape_threshold(ROOM)
+        source = resolve_escape_threshold(N4B5R_ROOM)
         self.assertEqual(source.origin, RECORD)
         self.assertEqual(source.threshold, 1.45)
         self.assertEqual(source.decoder, resolve_escape_threshold(ACCEPTED).decoder)
-        p, _ = build_policy(ROOM)
+        p, _ = build_policy(N4B5R_ROOM)
         q, _ = build_policy(ACCEPTED)
         # Every constructed decoder / motor parameter and initial state is identical.
         self.assertEqual({k: v for k, v in vars(p).items()}, {k: v for k, v in vars(q).items()})
@@ -188,7 +197,7 @@ class TestProvenance(unittest.TestCase):
         self.assertTrue(record['geometry_changed'])
         self.assertEqual(record['escape_decoder'], decoder_record['escape_decoder'])
         self.assertEqual(record['escape_threshold'], decoder_record['escape_threshold'])
-        self.assertEqual(record['provenance'], calibration_provenance(ROOM))
+        self.assertEqual(record['provenance'], calibration_provenance(N4B5R_ROOM))
         self.assertEqual(record['geometry']['tilt_geometry'], TILT_ELEVATION_AWARE)
         self.assertEqual(record['geometry']['research']['research_commit'], '0e9d2d9')
         kept = record['decoder_record']
@@ -205,7 +214,7 @@ class TestProvenance(unittest.TestCase):
         self.assertEqual(resolve_escape_threshold(ACCEPTED).origin, DECODER_RECORD)
 
     def test_geometry_mode_is_bound_into_provenance(self):
-        cfg = copy.deepcopy(ROOM)
+        cfg = copy.deepcopy(N4B5R_ROOM)
         cfg['swatter']['directional']['tilt_geometry'] = TILT_BEARING_ONLY
         with self.assertRaisesRegex(ValueError, 'No matching'):
             resolve_escape_threshold(cfg)

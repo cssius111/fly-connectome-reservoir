@@ -260,8 +260,21 @@ class KinematicExecutor:
                              -max_yaw_rate, max_yaw_rate))
 
 
+def _triangular_support(spec: dict, label: str) -> tuple[float, float, float]:
+    """Validate a `triangular_symmetric` speed specification and return its support."""
+    shape = spec.get('distribution')
+    if shape != 'triangular_symmetric':
+        raise ValueError('unsupported ' + label + ' speed distribution: ' + str(shape))
+    low, mode, high = (float(spec[k]) for k in ('min_bl_s', 'mode_bl_s', 'max_bl_s'))
+    if not 0.0 < low <= mode <= high:
+        raise ValueError(label + ' speed support must be positive and ordered')
+    if abs((low + high)/2.0 - mode) > 1e-9:
+        raise ValueError('triangular_symmetric requires the mode at the midpoint')
+    return low, mode, high
+
+
 class KinematicSampler:
-    """Owns the only kinematics random stream, kept out of the pure resolver.
+    """Owns the kinematics random streams, kept out of the pure resolver.
 
         behavioral / ecological context
           -> KinematicSampler     (this class: may draw a context-dependent speed)
@@ -270,73 +283,84 @@ class KinematicSampler:
           -> KinematicExecutor
           -> physics
 
-    M1.8-B2a is inert. `target_speed_bl_s` returns None on every call, meaning "no
-    sample; use the ecological command unchanged", and no draw is ever taken. The
-    stream is nonetheless seeded and reset deterministically so that B2b can begin
-    drawing without disturbing any existing stream's call order.
+    M1.8-B2a made the sampler a seeded, inert hook. B2b-ii samples EXPLORE from the
+    original stream (`rng`, offset +24593). B2b-iii adds ODOR_TRACK on its own stream
+    (`odor_track_rng`), so the EXPLORE draw sequence is unchanged by construction. Each
+    context is sampled only when its specification is configured; without any, every
+    call returns None and no draw is taken.
     """
 
-    # Unique among the seeded streams: flight +3907, ecology +7013, spawn +8191,
-    # lifecycle +18001. Asserted pairwise-unique by test_game_kinematics.
+    # Unique among the seeded streams: flight +3907, room +6011, ecology +7013,
+    # spawn +8191, lifecycle +18001. Asserted pairwise-unique by test_game_kinematics.
     SEED_OFFSET = 24593
+    ODOR_TRACK_SEED_OFFSET = 30011
 
-    def __init__(self, seed: int, explore: dict | None = None):
+    def __init__(self, seed: int, explore: dict | None = None,
+                 odor_track: dict | None = None):
         self.explore = dict(explore) if explore else None
+        self.odor_track = dict(odor_track) if odor_track else None
+        self._supports = {}
         if self.explore is not None:
-            shape = self.explore.get('distribution')
-            if shape != 'triangular_symmetric':
-                raise ValueError('unsupported explore speed distribution: ' + str(shape))
-            low, mode, high = (float(self.explore[k]) for k in ('min_bl_s', 'mode_bl_s', 'max_bl_s'))
-            if not 0.0 < low <= mode <= high:
-                raise ValueError('explore speed support must be positive and ordered')
-            if abs((low + high)/2.0 - mode) > 1e-9:
-                raise ValueError('triangular_symmetric requires the mode at the midpoint')
-            self._support = (low, mode, high)
+            self._supports['EXPLORE'] = _triangular_support(self.explore, 'explore')
+        if self.odor_track is not None:
+            self._supports['ODOR_TRACK'] = _triangular_support(self.odor_track, 'odor track')
         self.reset(seed)
 
     def reset(self, seed: int) -> None:
         self.seed = int(seed)
         self.rng = np.random.default_rng(self.seed + self.SEED_OFFSET)
+        self.odor_track_rng = np.random.default_rng(self.seed + self.ODOR_TRACK_SEED_OFFSET)
         self.initial_state = copy.deepcopy(self.rng.bit_generator.state)
+        self.odor_track_initial_state = copy.deepcopy(self.odor_track_rng.bit_generator.state)
         self.draws = 0
+        self.draws_by_context = {}
         self._episode_state = None
         self._episode_sample = None
 
     @property
     def untouched(self) -> bool:
-        """True while no draw has been taken. Remains checkable after B2b-ii."""
-        return self.draws == 0 and self.rng.bit_generator.state == self.initial_state
+        """True while no draw has been taken from any kinematics stream."""
+        return (self.draws == 0 and self.rng.bit_generator.state == self.initial_state
+                and self.odor_track_rng.bit_generator.state == self.odor_track_initial_state)
+
+    def _configured(self, state) -> bool:
+        # Read the public specs, so a diagnostic tool can still disable one context by
+        # setting, for example, `sampler.explore = None`.
+        return ((state == 'EXPLORE' and self.explore is not None)
+                or (state == 'ODOR_TRACK' and self.odor_track is not None))
 
     @property
     def enabled(self) -> bool:
-        return self.explore is not None
+        return self.explore is not None or self.odor_track is not None
 
-    def _draw_explore(self) -> float:
-        low, mode, high = self._support
+    def _draw(self, state: str) -> float:
+        low, mode, high = self._supports[state]
+        rng = self.rng if state == 'EXPLORE' else self.odor_track_rng
         self.draws += 1
-        return float(self.rng.triangular(low, mode, high))
+        self.draws_by_context[state] = self.draws_by_context.get(state, 0) + 1
+        return float(rng.triangular(low, mode, high))
 
     def target_speed_bl_s(self, command, threat_priority: bool) -> float | None:
-        """One sampled EXPLORE target per ecological EXPLORE episode.
+        """One sampled target per ecological episode of each configured context.
 
         `None` means "no sample; use the ecological command unchanged", which is still
-        the answer for every context other than EXPLORE, for threat-priority ticks, and
-        whenever sampling is not configured.
+        the answer for every unconfigured context, for threat-priority ticks, and
+        whenever sampling is not configured at all.
 
-        The resample boundary is the existing ecological state transition into EXPLORE,
-        so persistence equals the accepted `ecology.explore_duration_seconds` dwell and
-        no new persistence parameter is invented. No ecology, flight, world, spawn or
-        lifecycle random stream is consumed here.
+        The resample boundary is the existing ecological state transition into the
+        context, so persistence equals the accepted ecological episode (the EXPLORE dwell,
+        or an ODOR_TRACK bout) and no new persistence parameter is invented. No ecology,
+        flight, world, spawn, room or lifecycle random stream is consumed here.
         """
         if command is None or threat_priority or not self.enabled:
             return None
         state = getattr(command, 'state', None)
-        if state != 'EXPLORE':
+        if not self._configured(state):
             # Track the transition without drawing, so re-entry resamples exactly once.
             self._episode_state = state
             self._episode_sample = None
             return None
-        if self._episode_state != 'EXPLORE' or self._episode_sample is None:
-            self._episode_sample = self._draw_explore()
-            self._episode_state = 'EXPLORE'
+        if self._episode_state != state or self._episode_sample is None:
+            self._episode_sample = self._draw(state)
+            self._episode_state = state
         return self._episode_sample

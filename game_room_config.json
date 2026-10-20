@@ -1,5 +1,5 @@
 {
-  "config_version": 17,
+  "config_version": 18,
   "_comment": "M1.6 horizontal ROOM slice. Logical units and state speeds are gameplay mappings, not universal biological constants.",
   "sim": {
     "tick_seconds": 0.02,
@@ -135,11 +135,11 @@
     "virtual_distance": 100.0
   },
   "policy": {
-    "_comment": "Exact provenance required. The M1.8-N4B1C lateral dual-path decoder (unchanged) loads the M1.8-N4B5R geometry-candidate record, which carries the identical decoder block for the elevation-aware geometry configuration: rebuild it with python tools/n4b5r_geometry_record.py. The N4B1C decoder record itself is preserved unchanged. tools/calibrate_escape.py measures the scalar single-sample criterion only and does not calibrate this decoder.",
+    "_comment": "Exact provenance required. The M1.8-N4B1C lateral dual-path decoder (unchanged) under the M1.8-N4B5R elevation-aware geometry loads the M1.8-B2b-iii transfer record, which carries the identical decoder block for the configuration with ODOR_TRACK speed sampling: rebuild it with python tools/b2b_iii_record.py. The N4B5R and N4B1C records are preserved unchanged. tools/calibrate_escape.py measures the scalar single-sample criterion only and does not calibrate this decoder.",
     "escape_threshold": null,
     "calibration_paths": [
-      "artifacts/game/calibration_room_m1_8_n4b5r.json",
-      "results/game/calibration_room_m1_8_n4b5r.json"
+      "artifacts/game/calibration_room_m1_8_b2b_iii.json",
+      "results/game/calibration_room_m1_8_b2b_iii.json"
     ],
     "escape_decoder": {
       "_comment": "M1.8-N4B1C combined DNp01 criterion. Escape when EITHER path qualifies outside the shared refractory period. LATERAL: the same DNp01 side produces lateral_required_spikes inferred spikes within lateral_same_side_window_ms (per-side spikes inferred from that side's own trace; a left spike followed by a right spike never qualifies). Summed N2b path: FAST when left + right >= summed_fast_threshold; SUSTAINED when the current summed sample is >= sustained_threshold AND at least sustained_required_samples of the most recent sustained_window_samples summed samples are >= sustained_threshold. All values are Class C engineering decoder parameters derived from simulator evidence, not biological constants. sustained_threshold must equal the record's escape_threshold.",
@@ -418,6 +418,13 @@
       "min_bl_s": 5.0,
       "mode_bl_s": 6.5,
       "max_bl_s": 8.0
+    },
+    "odor_track_speed_bl_s": {
+      "_comment": "M1.8-B2b-iii. One sampled ODOR_TRACK target per ecological ODOR_TRACK episode, replacing the shared deterministic 8 s speed sinusoid for this context only, drawn from its own random stream. The shape is PHENOMENOLOGICAL, as for EXPLORE: no reviewed source gives a usable groundspeed central tendency, spread or shape for odor tracking in ROOM, and E05 reports a wind-tunnel airspeed, a different quantity that could enter only through room_kinematic_scale, which stays 1.0. Support and mean are held at the accepted ODOR_TRACK envelope. Persistence is the existing ODOR_TRACK episode; no new persistence parameter is added.",
+      "distribution": "triangular_symmetric",
+      "min_bl_s": 9.0,
+      "mode_bl_s": 11.0,
+      "max_bl_s": 13.0
     }
   }
 }

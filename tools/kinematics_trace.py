@@ -35,9 +35,11 @@ def _rng_states(world, session):
     states = {'world': world.rng.bit_generator.state,
               'spawn': world._spawn_rng.bit_generator.state,
               'flight': world.flight.rng.bit_generator.state,
-              # M1.8-B2a: seeded but never drawn from, so this must stay at its
-              # initial state. `kinematics_untouched` asserts that independently.
-              'kinematics': world.kinematic_sampler.rng.bit_generator.state}
+              # The EXPLORE sampling stream since M1.8-B2b-ii; `kinematics_untouched`
+              # reports independently whether any kinematics stream was drawn from.
+              'kinematics': world.kinematic_sampler.rng.bit_generator.state,
+              # M1.8-B2b-iii: the separate ODOR_TRACK sampling stream.
+              'kinematics_odor_track': world.kinematic_sampler.odor_track_rng.bit_generator.state}
     if session.ecology is not None:
         states['ecology'] = session.ecology.rng.bit_generator.state
     if world.lifecycle is not None:

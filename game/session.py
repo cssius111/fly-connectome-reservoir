@@ -175,10 +175,13 @@ def resolve_escape_threshold(config: dict, root: Path = ROOT) -> ThresholdSource
                    LATERAL_DECODER: "python tools/n4b1c_decoder_record.py"}.get(
                        decoder["kind"], "python tools/n2_decoder_record.py")
         # Diagnostic hint only: the M1.8-N4B5R geometry configuration carries the same decoder
-        # in its own geometry-candidate record.
+        # in its own geometry-candidate record, and the M1.8-B2b-iii configuration with
+        # ODOR_TRACK speed sampling in its own kinematics transfer record.
         if (decoder["kind"] == LATERAL_DECODER and
                 (config["swatter"].get("directional") or {}).get("tilt_geometry") == "elevation_aware_tilt_v1"):
             command = "python tools/n4b5r_geometry_record.py"
+            if config.get("kinematics", {}).get("odor_track_speed_bl_s"):
+                command = "python tools/b2b_iii_record.py"
     expected = calibration_provenance(config)
     tried = []
     for rel in policy["calibration_paths"]:

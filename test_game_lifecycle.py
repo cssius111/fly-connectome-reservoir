@@ -153,6 +153,7 @@ class TestLocalLifecycle(unittest.TestCase):
             root=Path(folder)
             # M1.8-N4B1C: ROOM loads the lateral dual-path decoder record.
             # M1.8-N4B5R: ROOM loads the geometry-candidate record (identical N4B1C decoder).
+            # M1.8-B2b-iii: ROOM loads the kinematics transfer record (same decoder again).
             valid=load_config(ROOT/ROOM['policy']['calibration_paths'][1])
             stale=copy.deepcopy(valid);stale['provenance']['encoder_seed']+=1
             stale['escape_threshold']=99
@@ -254,7 +255,13 @@ class TestLocalLifecycle(unittest.TestCase):
         self.assertEqual(active['original_measurement'],'results/game/calibration_room_m1_7_1.json')
         self.assertEqual(resolve_escape_threshold(ROOM).threshold,1.45)
         self.assertEqual(resolve_escape_threshold(ROOM).origin,
-                         'results/game/calibration_room_m1_8_n4b5r.json')
+                         'results/game/calibration_room_m1_8_b2b_iii.json')
+        # M1.8-B2b-iii transfers the N4B5R record unchanged and still names the M1.7.1 bytes.
+        b2biii=load_config(ROOT/'results/game/calibration_room_m1_8_b2b_iii.json')['measurement_reuse']
+        self.assertEqual(b2biii['source_record'],'results/game/calibration_room_m1_8_n4b5r.json')
+        self.assertTrue(same_content(ROOT/b2biii['source_record'],b2biii['source_sha256']))
+        self.assertEqual(b2biii['original_measurement'],'results/game/calibration_room_m1_7_1.json')
+        self.assertTrue(same_content(original,b2biii['original_measurement_sha256']))
         # The N4B5R record transfers the N4B1C decoder record byte-for-byte by content hash.
         n4b5r=load_config(ROOT/'results/game/calibration_room_m1_8_n4b5r.json')['measurement_reuse']
         self.assertEqual(n4b5r['decoder_source_record'],'results/game/calibration_room_m1_8_n4b1c.json')

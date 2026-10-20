@@ -194,8 +194,9 @@ class TestB2aSamplerAndScale(unittest.TestCase):
         from game.ecology import EcologicalController
         from game.flight import FreeFlightController
         # Offsets are literals in their own modules; assert they cannot collide.
-        offsets = {'flight': 3907, 'ecology': 7013, 'spawn': 8191, 'lifecycle': 18001,
-                   'kinematics': KinematicSampler.SEED_OFFSET}
+        offsets = {'flight': 3907, 'room': 6011, 'ecology': 7013, 'spawn': 8191, 'lifecycle': 18001,
+                   'kinematics': KinematicSampler.SEED_OFFSET,
+                   'kinematics_odor_track': KinematicSampler.ODOR_TRACK_SEED_OFFSET}
         self.assertEqual(len(set(offsets.values())), len(offsets))
         seed = 255
         streams = {name: np.random.default_rng(seed+off).random() for name, off in offsets.items()}
@@ -447,6 +448,166 @@ class TestB2biiExploreSampling(unittest.TestCase):
         self.assertTrue(w.kinematic_sampler.enabled)
         w.tick(DT, Action())
         self.assertGreater(w.kinematic_sampler.draws, 0)
+
+
+class TestB2biiiOdorTrackSampling(unittest.TestCase):
+    """M1.8-B2b-iii: ODOR_TRACK speed from its own stream, by the B2b-ii method."""
+
+    def sampler(self, seed=255, explore=True):
+        k = ROOM['kinematics']
+        return KinematicSampler(seed, k['explore_speed_bl_s'] if explore else None,
+                                k['odor_track_speed_bl_s'])
+
+    @staticmethod
+    def command(state, speed=11.0):
+        return EcologicalCommand(state, speed, 0., .35)
+
+    def test_support_and_mean_match_the_accepted_envelope(self):
+        spec = ROOM['kinematics']['odor_track_speed_bl_s']
+        low, high = ROOM['ecology']['speed_bl_s']['ODOR_TRACK']
+        self.assertEqual(spec['distribution'], 'triangular_symmetric')
+        self.assertEqual((spec['min_bl_s'], spec['max_bl_s']), (low, high))
+        self.assertEqual(spec['mode_bl_s'], (low+high)/2)
+        self.assertEqual(ROOM['kinematics']['room_kinematic_scale'], 1.0)
+
+    def test_invalid_specifications_are_rejected(self):
+        base = dict(ROOM['kinematics']['odor_track_speed_bl_s'])
+        for bad in ({'distribution': 'gamma'}, {'min_bl_s': 14.0}, {'mode_bl_s': 12.0}, {'min_bl_s': 0.0}):
+            with self.assertRaises(ValueError):KinematicSampler(1, None, {**base, **bad})
+
+    def test_one_draw_per_odor_track_episode(self):
+        s = self.sampler()
+        first = [s.target_speed_bl_s(self.command('ODOR_TRACK'), False) for _ in range(40)]
+        self.assertEqual(len(set(first)), 1);self.assertEqual(s.draws_by_context, {'ODOR_TRACK': 1})
+        for _ in range(5):s.target_speed_bl_s(self.command('ODOR_SEARCH', 5.0), False)
+        second = s.target_speed_bl_s(self.command('ODOR_TRACK'), False)
+        self.assertEqual(s.draws_by_context, {'ODOR_TRACK': 2});self.assertNotEqual(second, first[0])
+        low, high = ROOM['ecology']['speed_bl_s']['ODOR_TRACK']
+        self.assertTrue(low <= first[0] <= high and low <= second <= high)
+
+    def test_direct_switch_between_sampled_contexts_resamples_both(self):
+        s = self.sampler()
+        explore = s.target_speed_bl_s(self.command('EXPLORE', 6.0), False)
+        track = s.target_speed_bl_s(self.command('ODOR_TRACK'), False)
+        again = s.target_speed_bl_s(self.command('EXPLORE', 6.0), False)
+        self.assertTrue(5.0 <= explore <= 8.0 and 9.0 <= track <= 13.0 and 5.0 <= again <= 8.0)
+        self.assertEqual(s.draws_by_context, {'EXPLORE': 2, 'ODOR_TRACK': 1})
+
+    def test_explore_draw_sequence_is_unchanged_by_odor_track_sampling(self):
+        # Separate streams: interleaving ODOR_TRACK episodes cannot shift EXPLORE draws.
+        k = ROOM['kinematics']
+        alone, mixed = KinematicSampler(255, k['explore_speed_bl_s']), self.sampler()
+        a, b = [], []
+        for i in range(300):
+            a.append(alone.target_speed_bl_s(self.command('EXPLORE', 6.0), False))
+            alone.target_speed_bl_s(self.command('TRANSIT'), False)
+            b.append(mixed.target_speed_bl_s(self.command('EXPLORE', 6.0), False))
+            mixed.target_speed_bl_s(self.command('ODOR_TRACK'), False)
+        self.assertEqual(a, b)
+        self.assertEqual(alone.rng.bit_generator.state, mixed.rng.bit_generator.state)
+
+    def test_odor_track_draws_touch_only_their_own_stream(self):
+        from game.ecology import EcologicalController
+        from game.flight import FreeFlightController
+        from game.lifecycle import LifecycleController
+        eco = EcologicalController(ROOM['ecology'], 255, landing_enabled=False)
+        flight = FreeFlightController(ROOM['flight'], 255)
+        life = LifecycleController(ROOM['lifecycle'], 255)
+        others = (np.random.default_rng(255), np.random.default_rng(255+8191),
+                  np.random.default_rng(255+6011))
+        before = [g.bit_generator.state for g in (eco.rng, flight.rng, life.rng) + others]
+        s = self.sampler(explore=False)
+        explore_before = s.rng.bit_generator.state
+        for i in range(2000):
+            s.target_speed_bl_s(self.command('ODOR_TRACK') if (i//40) % 2 == 0
+                                else self.command('ODOR_SEARCH', 5.0), False)
+        self.assertEqual(s.draws_by_context, {'ODOR_TRACK': 25})
+        self.assertEqual(s.rng.bit_generator.state, explore_before)
+        self.assertNotEqual(s.odor_track_rng.bit_generator.state, s.odor_track_initial_state)
+        self.assertEqual(before, [g.bit_generator.state for g in (eco.rng, flight.rng, life.rng) + others])
+
+    def test_no_sample_on_threat_ticks_or_unconfigured_contexts(self):
+        s = self.sampler()
+        self.assertIsNone(s.target_speed_bl_s(self.command('ODOR_TRACK'), True))
+        for state in ('TRANSIT', 'ODOR_SEARCH', 'RECOVER', 'ALERT', 'ESCAPE'):
+            self.assertIsNone(s.target_speed_bl_s(self.command(state, 9.0), False))
+        self.assertTrue(s.untouched)
+
+    def test_reset_restores_both_streams(self):
+        s = self.sampler()
+        first = (s.target_speed_bl_s(self.command('EXPLORE', 6.0), False),
+                 s.target_speed_bl_s(self.command('ODOR_TRACK'), False))
+        s.reset(255)
+        self.assertTrue(s.untouched);self.assertEqual(s.draws_by_context, {})
+        self.assertEqual((s.target_speed_bl_s(self.command('EXPLORE', 6.0), False),
+                          s.target_speed_bl_s(self.command('ODOR_TRACK'), False)), first)
+
+    def test_disabling_explore_leaves_odor_track_sampling(self):
+        # Diagnostic tools disable EXPLORE sampling by clearing `sampler.explore`.
+        s = self.sampler()
+        s.explore = None
+        self.assertIsNone(s.target_speed_bl_s(self.command('EXPLORE', 6.0), False))
+        self.assertIsNotNone(s.target_speed_bl_s(self.command('ODOR_TRACK'), False))
+        self.assertTrue(s.enabled)
+
+    def test_world_samples_odor_track_and_legacy_presets_do_not(self):
+        w = World(ROOM, 255)
+        w.ecological_command = self.command('ODOR_TRACK', 12.5)
+        w.tick(DT, Action())
+        self.assertEqual(w.kinematic_profile.context, 'ecology_odor_track')
+        sampled = w.applied_target_speed/w.body_length
+        self.assertTrue(9.0 <= sampled <= 13.0);self.assertNotEqual(sampled, 12.5)
+        self.assertEqual(w.kinematic_sampler.draws_by_context, {'ODOR_TRACK': 1})
+        for name in ('game_config.json', 'game_play_config.json'):
+            config = load_config(ROOT/name)
+            self.assertNotIn('odor_track_speed_bl_s', config.get('kinematics', {}))
+            self.assertIsNone(World(config, 5).kinematic_sampler.odor_track)
+
+
+class TestB2biiiProvenance(unittest.TestCase):
+    RECORD = 'results/game/calibration_room_m1_8_b2b_iii.json'
+    SOURCE = 'results/game/calibration_room_m1_8_n4b5r.json'
+    N4B5R_COMMIT = '363a1a94cf3f5e33efab08cb28594c24ca694a03'
+
+    def accepted(self):
+        import json, subprocess
+        return json.loads(subprocess.check_output(
+            ['git', 'show', self.N4B5R_COMMIT + ':game_room_config.json'], cwd=ROOT, text=True))
+
+    def test_room_differs_from_the_accepted_n4b5r_config_only_in_odor_track_sampling(self):
+        import copy
+        accepted = self.accepted()
+        self.assertEqual(ROOM['config_version'], accepted['config_version'] + 1)
+        after = copy.deepcopy(ROOM)
+        after['config_version'] = accepted['config_version']
+        after['kinematics'].pop('odor_track_speed_bl_s')
+        after['policy']['_comment'] = accepted['policy']['_comment']
+        after['policy']['calibration_paths'] = accepted['policy']['calibration_paths']
+        self.assertEqual(after, accepted)
+
+    def test_room_resolves_the_transfer_record_with_the_unchanged_decoder(self):
+        from game.session import build_policy, calibration_provenance, resolve_escape_threshold
+        source = resolve_escape_threshold(ROOM)
+        self.assertEqual(source.origin, self.RECORD)
+        self.assertEqual(source.threshold, 1.45)
+        accepted = self.accepted()
+        self.assertEqual(source.decoder, resolve_escape_threshold(accepted).decoder)
+        p, q = build_policy(ROOM)[0], build_policy(accepted)[0]
+        self.assertEqual(vars(p), vars(q))
+        record = load_config(ROOT/self.RECORD)
+        self.assertEqual(record['provenance'], calibration_provenance(ROOM))
+        self.assertEqual(record['escape_decoder'], load_config(ROOT/self.SOURCE)['escape_decoder'])
+        self.assertEqual(sorted(record['measurement_reuse']['changed_config_paths']),
+                         ['config_version', 'kinematics.odor_track_speed_bl_s', 'policy._comment',
+                          'policy.calibration_paths'])
+
+    def test_n4b5r_record_is_unmodified_and_still_bound_to_its_config(self):
+        import subprocess
+        from game.session import resolve_escape_threshold
+        committed = subprocess.check_output(['git', 'show', self.N4B5R_COMMIT + ':' + self.SOURCE], cwd=ROOT)
+        self.assertEqual((ROOT/self.SOURCE).read_bytes().replace(b'\r\n', b'\n'),
+                         committed.replace(b'\r\n', b'\n'))
+        self.assertEqual(resolve_escape_threshold(self.accepted()).origin, self.SOURCE)
 
 
 if __name__ == '__main__':
