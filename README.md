@@ -6,6 +6,8 @@ A reproducible Windows CPU computational neuroscience experiment and an untraine
 
 The frozen experiment is specified in [PROTOCOL.md](PROTOCOL.md), with historical results in [results/REPORT.md](results/REPORT.md). These protected artifacts retain their original language and bytes for reproducibility. Editable project content is English.
 
+For an overview of all work to date (the reservoir experiment, the game runtime, the escape-decoder research, the learned-controller study and the current M1.8-B state), see [TECHNICAL_REPORT.md](TECHNICAL_REPORT.md). Where the milestone sections below disagree with it about the current state, the report is newer.
+
 
 ## M1.8-A: accepted landing, perching and takeoff lifecycle
 
