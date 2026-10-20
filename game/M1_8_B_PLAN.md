@@ -1,8 +1,9 @@
 # M1.8-B plan: activity budget and context-dependent flight kinematics
 
-Status: **planning only.** Section 2 is decided (see section 2.1); B1 is authorized and
-reported separately in [results/game/M1_8_B1.md](../results/game/M1_8_B1.md). B2 and
-later stages are not authorized and require a subsequent explicit user request.
+Status: **planning document.** Section 2 is decided (see section 2.1) and the section 13
+decisions were answered on 2026-10-20. B1, B2a, B2b-i and B2b-ii were each authorized
+separately and are accepted (reports under `results/game/M1_8_B*.md`). Every later stage
+still requires its own explicit user approval before implementation.
 
 Baseline: M1.8-A accepted and committed (`bfbef04`). Biological authority remains the
 accepted [M1.8-R0 evidence lock](M1_8_EVIDENCE.md) and
@@ -262,11 +263,29 @@ B1 is deliberately a no-op refactor so that later behavioral changes are attribu
 
 ## 13. Decisions needed from the user before B2
 
+All four were answered by the user on 2026-10-20.
+
 1. ~~Which reading in section 2?~~ **Answered: (a)**, under the constraints in section
-   2.1. The remaining sub-decision is the eventual numeric value of
-   `room_kinematic_scale`, which is deliberately deferred past B1.
-2. Should the arena stay 160 x 90 BL, or is a physically larger room intended later? This
-   changes what "activity budget" even means.
-3. Is a recorder schema bump to 5 acceptable, given replay compatibility work?
-4. Should M1.8-B target parity with a specific published assay, or explicitly remain
-   phenomenological with cited inspiration?
+   2.1. ~~The remaining sub-decision is the eventual numeric value of
+   `room_kinematic_scale`.~~ **Answered: it stays exactly 1.0** (see item 4). Any other
+   value needs a new explicit decision.
+2. ~~Should the arena stay 160 x 90 BL?~~ **Answered: yes.** The arena, the M1.7.1 swatter
+   geometry, the M1.8-A lifecycle and every calibration record keep their dimensions. The
+   activity budget is defined, measured and reported inside this arena only.
+3. ~~Is a recorder schema bump to 5 acceptable?~~ **Answered: only when a stage needs
+   it.** A stage may move the recorder to schema 5 only if it must record new kinematic
+   fields. `replay.py` must keep reading schema 3 and 4, with exact-replay tests for each
+   version.
+4. ~~Parity with a published assay, or phenomenological?~~ **Answered: phenomenological
+   with cited inspiration, at `room_kinematic_scale` = 1.0.** ROOM keeps its accepted
+   BL/s magnitudes; M1.8-B changes the shape and the context dependence of the
+   distributions, not their scale. No reviewed assay matches ROOM (female flies in 1 m
+   arenas against a male connectome in a 0.4 m two-dimensional slice), so no stage
+   claims parity with one.
+
+Consequence for the escape/cruise study
+([M1_8_B2B_ESCAPE_CRUISE.md](M1_8_B2B_ESCAPE_CRUISE.md), section 9): at scale 1.0 the
+highest sampled ecological band tops out at 13 BL/s = 312 units/s, far below all three
+1000 units/s caps and below the 880 units/s escape impulse. No cap binds, so its six
+decisions are deferred rather than answered. They become blocking again only if the scale
+changes.
