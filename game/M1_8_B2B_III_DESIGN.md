@@ -1,8 +1,11 @@
 # M1.8-B2b-iii design: the next speed context, and why it is not TRANSIT
 
-Status: **design only. Nothing is implemented and nothing is authorized.** No runtime
-code, configuration, calibration record or recorder schema was changed. Implementation
-needs the user's explicit approval of section 5.
+Status: **approved by the user on 2026-10-20 and implemented.** The user approved all
+three section 5 items: B2b-iii as the ODOR_TRACK speed distribution (implemented in
+`7b9fa05`, validated in [results/game/M1_8_B2B_III.md](../results/game/M1_8_B2B_III.md)),
+a research-only investigation of the ALERT interruption
+([M1_8_ALERT_INTERRUPTION.md](M1_8_ALERT_INTERRUPTION.md)), and the paired free-flight
+check 5. The text below is the design as it was fixed before implementation.
 
 Baseline: the accepted runtime `363a1a9` (M1.8-N4B5R, ROOM `config_version` 17). It
 contains B2b-ii (`0d8c254`, EXPLORE speed sampling) plus the N4B1C decoder and the N4B5R
