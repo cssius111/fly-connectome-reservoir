@@ -189,8 +189,8 @@ paddle centre within 1.5 s decides near pass or not.
 | Recorder exact replay | `tools/session_sanity.py`: `exact: true`, 1,200 ticks and 1,212 input operations, source verified, schema 4 at `config_version` 18; no schema bump was needed |
 | Policy observation isolation | unchanged; covered by the suite |
 | Calibration provenance | ROOM resolves 1.45 through `calibration_room_m1_8_b2b_iii.json`; the N4B5R record is byte-identical to `363a1a9` and still resolves for its own configuration; LAB 1.45 and GAME 1.35 unchanged |
-| M1.7.1 swatter fixtures (`tools/approach_sanity.py`) | **not run here**: it needs a recorded human session, which exists only on the local Windows checkout |
-| 20 protected original files, `verify_results.py` | **not run here**: they need the local `artifacts/` directory; run them on the local Windows checkout before accepting |
+| M1.7.1 swatter fixtures (`tools/approach_sanity.py`) | the four controlled fixtures are **identical** to `results/game/approach_m1_7_1.json`; the fixed-human-input part needs the M1.7.1 acceptance recording, which exists only on the local Windows checkout |
+| 20 protected original files, `verify_results.py` | in git, all 20 files are byte-identical to `main` (`309abd9`); the working-copy check against `artifacts/m1-2/protected-before.json` and `verify_results.py` need the local `artifacts/` directory (section 11) |
 
 ## 8. Calibration
 
@@ -224,8 +224,8 @@ to the git-ignored `artifacts/m1_8_b2b_iii/`.
 ## 10. Status
 
 All seven preregistered checks pass or are documented as not runnable in this environment:
-the M1.7.1 swatter fixtures, the 20 protected files and `verify_results.py` need the local
-Windows checkout and must be run there before acceptance. B2b-iii is implemented and
+the working-copy check of the 20 protected files, `verify_results.py` and the
+fixed-human-input swatter comparison need the local Windows checkout (section 11). B2b-iii is implemented and
 validated; acceptance, including whether a human playtest is wanted for this stage, is the
 user's decision.
 
@@ -235,3 +235,51 @@ the ALERT gate or the session's threat mapping, a recorder schema change, and an
 The ALERT interruption is documented separately in
 [game/M1_8_ALERT_INTERRUPTION.md](../../game/M1_8_ALERT_INTERRUPTION.md); it is unchanged
 by this stage.
+
+## 11. Acceptance procedure (local Windows checkout)
+
+Use a separate worktree checked out **with LF line endings**. `verify_results.py` compares
+raw bytes of the original source files, and a `core.autocrlf` checkout expands them to CRLF
+(the N4B5R report met the same issue).
+
+```powershell
+Set-Location D:\Projects\flybrain-lab
+git fetch origin
+git -c core.autocrlf=false worktree add --detach artifacts\worktrees\b2b-iii origin/claude/gracious-galileo-mxnbs9
+$wt = "artifacts\worktrees\b2b-iii"
+New-Item -ItemType Junction -Path "$wt\data" -Target "$PWD\data"
+New-Item -ItemType Directory -Path "$wt\artifacts" | Out-Null
+New-Item -ItemType Junction -Path "$wt\artifacts\results" -Target "$PWD\artifacts\results"
+Set-Location $wt
+$py = "D:\Projects\flybrain-lab\.venv\Scripts\python.exe"
+```
+
+Automated checks, each with its expected result:
+
+```powershell
+& $py tools\check_protected_files.py D:\Projects\flybrain-lab\artifacts\m1-2\protected-before.json   # 20 of 20 byte-exact
+& $py verify_results.py                                  # 36 records, source hashes match, 2 exact replays
+& $py -m unittest discover                               # Ran 440 tests ... OK
+& $py tools\approach_sanity.py --session D:\Projects\flybrain-lab\results\game\sessions\20260921T013555.126134Z-cb64aa1a --report artifacts\approach.json
+```
+
+The last command must finish without an assertion error; its `fixed_human_input` block
+should equal the one in `results/game/approach_m1_7_1.json`, because the swatter is
+unchanged.
+
+Optional human playtest, about 5 minutes:
+
+```powershell
+& $py -m game.app --arena room --seed 255 --record --windowed
+```
+
+- Keep the pointer away first. The fly should find the odor, track it toward the food,
+  land, feed and later leave on its own. Within one tracking bout its speed should stay
+  steady instead of drifting with the old 8 s oscillation; separate bouts may differ.
+- Then approach and strike with the paddle. Escapes should look and time as before, and a
+  parked paddle should not cause new escapes.
+- Press H for the HUD with the ecological state. The recording lands under
+  `results/game/sessions/` in the worktree and can be replayed with `--replay`.
+
+Acceptance is the user's decision. If the fly is harder or easier to hit, that is recorded
+as an outcome, not used to tune anything.
