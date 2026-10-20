@@ -30,7 +30,7 @@ import numpy as np
 from game.action import Action, FixedEscapePolicy, MotorState, MotionState
 from game.session import (Session, build_policy, calibration_provenance, escape_decoder_spec,
                           load_config, resolve_escape_threshold)
-from test_game import shared_brain
+from test_game import same_content, shared_brain
 
 ROOT = Path(__file__).parent
 ROOM = load_config(ROOT/'game_room_config.json')
@@ -59,16 +59,6 @@ def archived_n2b_room():
 
 
 N2B_ROOM = archived_n2b_room()
-
-def same_content(path, digest):
-    """True when the file matches `digest` as stored or with CRLF normalised to LF.
-
-    Records written from a Windows working copy hash whichever line endings the checkout
-    had (core.autocrlf); the committed content is what must be unchanged."""
-    data = Path(path).read_bytes()
-    return digest in (hashlib.sha256(data).hexdigest(),
-                      hashlib.sha256(data.replace(b'\r\n', b'\n')).hexdigest())
-
 
 
 def require_archive(case):
@@ -574,10 +564,9 @@ class TestDecoderProvenance(unittest.TestCase):
         reuse = record['measurement_reuse']
         b2bii = 'results/game/calibration_room_m1_8_b2b_ii.json'
         self.assertEqual(reuse['source_record'], b2bii)
-        self.assertEqual(reuse['source_sha256'], hashlib.sha256((ROOT/b2bii).read_bytes()).hexdigest())
+        self.assertTrue(same_content(ROOT/b2bii, reuse['source_sha256']))
         original = ROOT/'results/game/calibration_room_m1_7_1.json'
-        self.assertEqual(reuse['original_measurement_sha256'],
-                         hashlib.sha256(original.read_bytes()).hexdigest())
+        self.assertTrue(same_content(original, reuse['original_measurement_sha256']))
         self.assertEqual(reuse['changed_config_paths'],
                          ['config_version', 'policy._comment', 'policy.calibration_paths',
                           'policy.escape_decoder'])
