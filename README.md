@@ -23,7 +23,7 @@ The spiking simulator ([FlyBrain](https://github.com/alextitonis/fly.ai) 0.1.0) 
 
 One headless measurement (idle fly, no threat input, 8 Numba threads, Intel i9-13900HX) gave about 4.1 ms of compute per 20 ms tick, roughly 4.9x faster than real time. It was run once and is not a formal benchmark.
 
-### Learned controllers (M2, this branch)
+### Learned controllers (M2, `feature/m2-0-learning-infra`)
 
 | Milestone | What was done | Result |
 |---|---|---|
@@ -59,10 +59,15 @@ One headless measurement (idle fly, no threat input, 8 Numba threads, Intel i9-1
 
 | Branch | Content |
 |---|---|
-| `feature/m2-0-learning-infra` | This branch: the accepted runtime plus all learning work |
-| `feature/m1-8-n4b5r-geometry` | The accepted runtime only |
-| `wip/m1-4-enclosure` | M1 escape-decoder research and the project handoff state (`game/CURRENT_PROJECT_STATE.md`) |
-| `main` | The original frozen reservoir experiment |
+| `feature/m1-8-n4b5r-geometry` | The accepted runtime only, frozen at `363a1a9` (M1.8-N4B5R: N4B1C decoder plus elevation-aware paddle geometry) |
+| `feature/m2-0-learning-infra` | The accepted runtime plus all M2 learning work; no accepted runtime file is changed |
+| `feature/m1-8-n4b1c-runtime` | The previous accepted runtime (N4B1C decoder layer), frozen at `e3c55b3` |
+| `wip/m1-4-enclosure` | M1 escape-decoder research (N2 to N4B8) and the operational handoff state (`game/CURRENT_PROJECT_STATE.md`); proposed for `main` in [pull request 1](https://github.com/cssius111/fly-connectome-reservoir/pull/1), not merged |
+| `archive/m1-8-n2b-rejected` | Snapshot of the rejected N2b runtime at `2c30617`; never merged |
+| `feature/flyswatter-game` | The M1.3 game baseline at `85f987b` (history) |
+| `main` | The original frozen reservoir experiment at `309abd9` |
+
+No branch has been merged into `main`.
 
 ### Quick start
 
@@ -72,6 +77,8 @@ From the repository root, with the environment and data set up as described unde
 python -m game.app --arena room     # play against the accepted controller
 python -m unittest discover         # run the test suite
 ```
+
+The M2 learner tests (`test_m2_3_torch.py`, `test_m2_4_a.py`) also need PyTorch from `requirements-learning.txt`. Provenance tests accept a recorded hash of either the LF or the CRLF form of a file, so the result does not depend on the checkout's `core.autocrlf` setting.
 
 ## Earlier milestones (history)
 
@@ -188,7 +195,7 @@ $env:FLY_DATA = "$PWD\data"
 & .\.venv\Scripts\flybrain.exe info
 ```
 
-`requirements.txt` contains direct dependencies; `requirements-lock.txt` records resolved versions. If the global uv cache is not writable, `uv pip install --no-cache` avoids it without deleting shared Python installations or caches. Git ignores virtual environments, downloaded connectivity, intermediate activity arrays and logs.
+`requirements.txt` contains direct dependencies; `requirements-lock.txt` records resolved versions. `requirements-learning.txt` adds PyTorch for the M2 learning code only. If the global uv cache is not writable, `uv pip install --no-cache` avoids it without deleting shared Python installations or caches. Git ignores virtual environments, downloaded connectivity, intermediate activity arrays and logs.
 
 | Files | Purpose |
 |---|---|

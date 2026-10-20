@@ -1,0 +1,8 @@
+# Optional: the M2 learning code (game/learning/, tools/m2_*.py) and its tests
+# (test_m2_3_torch.py, test_m2_4_a.py). The accepted runtime and the original
+# experiment do not need it. Install on top of requirements-lock.txt.
+#
+# The official M2.3 and M2.4-A runs recorded torch 2.13.0+cu132 (CUDA 13.2).
+# The CPU build is enough to run the tests and load the frozen checkpoints:
+#   pip install -r requirements-learning.txt --index-url https://download.pytorch.org/whl/cpu
+torch==2.13.0

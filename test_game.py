@@ -12,6 +12,7 @@ it between runs.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 import os
@@ -36,6 +37,18 @@ def shared_brain():
     if "brain" not in _SHARED:
         _SHARED["brain"] = build_brain(CONFIG, ROOT)
     return _SHARED["brain"]
+
+
+def same_content(path, digest) -> bool:
+    """True when the file matches `digest` as stored, with LF or with CRLF line endings.
+
+    Provenance records written from a Windows working copy hash whichever line endings that
+    checkout had (core.autocrlf), while Linux and macOS checkouts hold the committed LF bytes.
+    The committed content is what must be unchanged."""
+    data = Path(path).read_bytes()
+    lf = data.replace(b"\r\n", b"\n")
+    return digest in (hashlib.sha256(data).hexdigest(), hashlib.sha256(lf).hexdigest(),
+                      hashlib.sha256(lf.replace(b"\n", b"\r\n")).hexdigest())
 
 
 def shared_encoder():

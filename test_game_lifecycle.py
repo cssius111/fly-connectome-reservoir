@@ -18,7 +18,7 @@ from game.session import Session, load_config, resolve_escape_threshold
 from game.session_recording import HumanSessionRecorder
 from game.replay import replay_session
 from game.world import World, Fly
-from test_game import shared_brain
+from test_game import same_content, shared_brain
 
 ROOT = Path(__file__).parent
 ROOM = load_config(ROOT/'game_room_config.json')
@@ -235,26 +235,22 @@ class TestLocalLifecycle(unittest.TestCase):
         # link must name the exact bytes it transfers from.
         original=ROOT/'results/game/calibration_room_m1_7_1.json'
         previous=ROOT/'results/game/calibration_room_m1_8_a.json'
-        self.assertEqual(load_config(previous)['measurement_reuse']['source_sha256'],
-                         hashlib.sha256(original.read_bytes()).hexdigest())
+        self.assertTrue(same_content(original,load_config(previous)['measurement_reuse']['source_sha256']))
         b2a=ROOT/'results/game/calibration_room_m1_8_b2a.json'
-        self.assertEqual(load_config(b2a)['measurement_reuse']['source_sha256'],
-                         hashlib.sha256(previous.read_bytes()).hexdigest())
+        self.assertTrue(same_content(previous,load_config(b2a)['measurement_reuse']['source_sha256']))
         b2bi=ROOT/'results/game/calibration_room_m1_8_b2b_i.json'
-        self.assertEqual(load_config(b2bi)['measurement_reuse']['source_sha256'],
-                         hashlib.sha256(b2a.read_bytes()).hexdigest())
+        self.assertTrue(same_content(b2a,load_config(b2bi)['measurement_reuse']['source_sha256']))
         record=load_config(ROOT/'results/game/calibration_room_m1_8_b2b_ii.json')
         reuse=record['measurement_reuse']
         self.assertEqual(reuse['source_record'],'results/game/calibration_room_m1_8_b2b_i.json')
-        self.assertEqual(reuse['source_sha256'],hashlib.sha256(b2bi.read_bytes()).hexdigest())
+        self.assertTrue(same_content(b2bi,reuse['source_sha256']))
         self.assertEqual(reuse['original_measurement'],'results/game/calibration_room_m1_7_1.json')
-        self.assertEqual(reuse['original_measurement_sha256'],
-                         hashlib.sha256(original.read_bytes()).hexdigest())
+        self.assertTrue(same_content(original,reuse['original_measurement_sha256']))
         self.assertIn('kinematics.explore_speed_bl_s',reuse['changed_config_paths'])
         b2bii=ROOT/'results/game/calibration_room_m1_8_b2b_ii.json'
         active=load_config(ROOT/'results/game/calibration_room_m1_8_n4b1c.json')['measurement_reuse']
         self.assertEqual(active['source_record'],'results/game/calibration_room_m1_8_b2b_ii.json')
-        self.assertEqual(active['source_sha256'],hashlib.sha256(b2bii.read_bytes()).hexdigest())
+        self.assertTrue(same_content(b2bii,active['source_sha256']))
         self.assertEqual(active['original_measurement'],'results/game/calibration_room_m1_7_1.json')
         self.assertEqual(resolve_escape_threshold(ROOM).threshold,1.45)
         self.assertEqual(resolve_escape_threshold(ROOM).origin,
