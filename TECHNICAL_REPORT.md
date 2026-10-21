@@ -647,8 +647,10 @@ transitions exactly. In the paired check on fresh seeds 9201-9280 (240 minutes p
 escapes go from 6 to 10, category B is 1 (upper bound 0.020/min, criterion met), and
 self-approach escapes (D) rise from 2 to 8 (exact conditional p = 0.11), the risk the design
 named: the fly now spends about a quarter of its time in TRANSIT, still at the legacy
-sinusoidal 9-13 BL/s. 451 tests pass. The local Windows checks and a playtest remain before
-acceptance.
+sinusoidal 9-13 BL/s. 451 tests pass, and the local Windows checks pass. In a 219 s human
+playtest no ecology ALERT entry arrived without an executed alert response and no escape was
+a fly-driven self-approach (2.2 parked minutes, 0.07 expected); the player found transit fast
+but not very fast, which is the configured 9-13 BL/s band. Acceptance is the user's decision.
 
 ### 9.5 Other open items
 
