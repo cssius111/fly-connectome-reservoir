@@ -181,7 +181,7 @@ paddle centre within 1.5 s decides near pass or not.
 
 | Check | Result |
 | --- | --- |
-| Full unit suite | **440 tests, OK** (427 at the accepted runtime, +13) |
+| Full unit suite | **440 tests, OK** (427 at the accepted runtime, +13), on Linux and on the local Windows checkout |
 | `git diff --check` | clean |
 | Code-only trace (config 17) | bit-identical, all seven scenarios and all streams (section 2) |
 | Neural escape mechanics | `tools/escape_cruise_study.py` output identical at `363a1a9` and at `7b9fa05`: 54 cases, 18 that reduce speed |
@@ -189,8 +189,9 @@ paddle centre within 1.5 s decides near pass or not.
 | Recorder exact replay | `tools/session_sanity.py`: `exact: true`, 1,200 ticks and 1,212 input operations, source verified, schema 4 at `config_version` 18; no schema bump was needed |
 | Policy observation isolation | unchanged; covered by the suite |
 | Calibration provenance | ROOM resolves 1.45 through `calibration_room_m1_8_b2b_iii.json`; the N4B5R record is byte-identical to `363a1a9` and still resolves for its own configuration; LAB 1.45 and GAME 1.35 unchanged |
-| M1.7.1 swatter fixtures (`tools/approach_sanity.py`) | the four controlled fixtures are **identical** to `results/game/approach_m1_7_1.json`; the fixed-human-input part needs the M1.7.1 acceptance recording, which exists only on the local Windows checkout |
-| 20 protected original files, `verify_results.py` | in git, all 20 files are byte-identical to `main` (`309abd9`); the working-copy check against `artifacts/m1-2/protected-before.json` and `verify_results.py` need the local `artifacts/` directory (section 11) |
+| M1.7.1 swatter (`tools/approach_sanity.py`) | the four controlled fixtures are **identical** to `results/game/approach_m1_7_1.json`; on the M1.7.1 acceptance recording (local Windows, `20260921T013555.126134Z-cb64aa1a`) the recorded configuration reproduces all 6,911 paddle ticks exactly and every old statistic equals its new counterpart |
+| 20 protected original files | in git, byte-identical to `main` (`309abd9`); against `artifacts/m1-2/protected-before.json` (local Windows, `tools/check_protected_files.py`): the main working copy matches **20 of 20 byte-exactly**, and the LF acceptance worktree matches 20 of 20 (12 byte-exact, 8 in their original CRLF form) |
+| `verify_results.py` | local Windows worktree: 36 prediction records, source hashes match, 2 exact held-out neuronal replays, frozen weights verified |
 
 ## 8. Calibration
 
@@ -223,11 +224,11 @@ to the git-ignored `artifacts/m1_8_b2b_iii/`.
 
 ## 10. Status
 
-All seven preregistered checks pass or are documented as not runnable in this environment:
-the working-copy check of the 20 protected files, `verify_results.py` and the
-fixed-human-input swatter comparison need the local Windows checkout (section 11). B2b-iii is implemented and
-validated; acceptance, including whether a human playtest is wanted for this stage, is the
-user's decision.
+All seven preregistered checks pass. The checks that need the local Windows checkout (the
+protected files, `verify_results.py`, the test suite on Windows and the swatter comparison
+on a human recording) were run there by the user on 2026-10-21 following section 11, and
+all pass. B2b-iii is implemented and validated; acceptance, including whether a human
+playtest is wanted for this stage, is the user's decision.
 
 Not done, deliberately: TRANSIT, ODOR_SEARCH or RECOVER sampling, acceleration or
 deceleration models, timer removal, any change to the scale, the caps, the escape impulse,
