@@ -284,6 +284,7 @@ and never tunes kinematics for difficulty.
 | B2b-i | `924ccc3` | Three separated class C ceilings, all still 1000 units/s; bit-identical |
 | B2b-ii | `0d8c254` | EXPLORE speed: one symmetric triangular draw on the accepted 5-8 BL/s support per EXPLORE episode, replacing a deterministic 8 s sinusoid with a U-shaped time density; mean kept at 6.5 BL/s, sd 1.06 to 0.61. First intended divergence at tick 0; LAB, GAME and no-ecology runs stay bit-identical |
 | B2b-iii | `7b9fa05` | ODOR_TRACK speed by the same method on its accepted 9-13 BL/s support, from its own random stream; mean 11.0, sd 1.41 to 0.82. Code alone is bit-identical; the first divergences are exactly the first airborne ODOR_TRACK ticks. Paired 240-minute free-flight check passes (section 9.2). **Accepted 2026-10-21** |
+| B3a | `0e463bc` | The ecology receives CALM when the policy reports ALERT but no saccade is requested or executing; the lifecycle keeps the accepted threat. ALERT entries fall from about 45 to about 2 per minute and TRANSIT rises to about 23 % of alive time. Paired check passes; self-approach escapes rise 2 -> 8 (section 9.4). Awaiting acceptance |
 
 On 2026-10-20 the user answered the plan's remaining questions: the arena stays
 160 x 90 BL, the recorder moves to schema 5 only when a stage needs new fields, and
@@ -634,7 +635,22 @@ last the policy's own 0.06 s saccade dwell barely helps. The note lists three op
 (keep the mapping, adopt the executed-response mapping for the ecology only as its own
 preregistered stage, or design another ecology-side rule) and selects none.
 
-### 9.4 Other open items
+### 9.4 B3a: the ecology reacts to executed responses
+
+At the user's request the executed-response option became M1.8-B3a, preregistered in
+[game/M1_8_B3A_DESIGN.md](game/M1_8_B3A_DESIGN.md) and validated in
+[results/game/M1_8_B3A.md](results/game/M1_8_B3A.md). Only the threat handed to the ecology
+changes; the policy, the decoder, the lifecycle and its threat input are untouched. Code alone
+is bit-identical; each diverging scenario diverges exactly at its first ALERT entry from the
+policy state alone; and the runtime reproduces the research counterfactual's occupancy and
+transitions exactly. In the paired check on fresh seeds 9201-9280 (240 minutes per arm)
+escapes go from 6 to 10, category B is 1 (upper bound 0.020/min, criterion met), and
+self-approach escapes (D) rise from 2 to 8 (exact conditional p = 0.11), the risk the design
+named: the fly now spends about a quarter of its time in TRANSIT, still at the legacy
+sinusoidal 9-13 BL/s. 451 tests pass. The local Windows checks and a playtest remain before
+acceptance.
+
+### 9.5 Other open items
 
 - **M2.4-B** can be reopened only by finishing sessions 13-30 under the unchanged
   protocol or by a pre-unblinding amendment for an exploratory six-block analysis; the

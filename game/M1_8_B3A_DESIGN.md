@@ -1,7 +1,8 @@
 # M1.8-B3a design: the ecology reacts to executed responses, not to the policy's ALERT state
 
-Status: **preregistered design. Requested by the user on 2026-10-21** ("continue M1.8-B,
-do the ALERT stage"), as option 2 of
+Status: **preregistered, then implemented (`0e463bc`) and validated in
+[results/game/M1_8_B3A.md](../results/game/M1_8_B3A.md); awaiting acceptance.** Requested by
+the user on 2026-10-21 ("continue M1.8-B, do the ALERT stage"), as option 2 of
 [M1_8_ALERT_INTERRUPTION.md](M1_8_ALERT_INTERRUPTION.md) section 5. This note fixes the
 scope and the acceptance checks before any implementation; nothing is implemented in the
 commit that adds it.
