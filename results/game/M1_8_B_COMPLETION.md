@@ -314,3 +314,80 @@ runtime is unaffected.
 escape/cruise results of B4a carry over; ROOM resolves 1.45 through the B4b record.
 
 **B4b passes and is adopted.**
+
+
+## 5. B3c: EXPLORE and TRANSIT dwell timers replaced by evidence-gated hazards
+
+Implementation (`ddd702d`): `game/ecology.py` (the `intent_hazards` block and its stream,
++59011), `game_room_config.json` (`config_version` 23), `results/game/calibration_room_m1_8_b3c.json`.
+
+**Check 1.** Code alone: bit-identical; combined SHA256 `ef762a10...` before and `ef762a10...` after; new streams: intent.
+
+**Check 2.** With `config_version` 23 the seven trace scenarios keep identical rows; only
+`room_airborne_seed101` consumes hazard draws:
+
+| Scenario | Identical | First divergence | First ecology-driven EXPLORE / TRANSIT tick |
+| --- | --- | --- | --- |
+| `room_quiet` | **yes** | none | 0 |
+| `room_perched_threat` | **yes** | none | 0 |
+| `room_approach_threat` | **yes** | none | 0 |
+| `room_airborne_seed101` | **yes** | none | 0 |
+| `room_no_ecology` | **yes** | none | None |
+| `game_preset` | **yes** | none | None |
+| `lab_preset` | **yes** | none | None |
+
+None of the trace windows reaches an EXPLORE or TRANSIT dwell end, so the preregistered trace
+check does not exercise this stage. Sequential 180 s runs of the B3b and B3c configurations
+(seeds 101, 255, 4242) locate the first divergence instead: in every seed it is an EXPLORE /
+TRANSIT switch decided differently by the hazard and by the accepted dwell, with identical
+positions until then (seed 101, tick 983: the hazard ends EXPLORE after 2.06 s where the dwell
+was 4.63 s; seed 255, tick 1494, and seed 4242, tick 315: the accepted dwell expires at 4.74 s
+and 6.32 s while the hazard has not fired).
+
+**Check 3.** B3c tests: over 60 seeds without structure every EXPLORE and TRANSIT episode lasts
+at least the 1 s minimum dwell and the means are within 0.6 s of 5.0 s and 3.5 s; structure
+prolongs EXPLORE and shortens TRANSIT; the hazard stream is untouched without the block.
+**480 tests pass.**
+
+**Checks 4 and 5.** Metrics, B3b -> B3c:
+
+| State | Driving share | Speed mean BL/s | Episode mean s | Episode median s |
+| --- | --- | --- | --- | --- |
+| ALERT | 0.0 % -> 0.0 % | - -> - | 0.06 -> 0.06 | 0.06 -> 0.06 |
+| ESCAPE | 0.0 % -> 0.0 % | - -> 16.25 | - -> 0.42 | - -> 0.42 |
+| EXPLORE | 48.5 % -> 47.2 % | 6.82 -> 6.79 | 3.67 -> 3.61 | 4.00 -> 2.68 |
+| ODOR_SEARCH | 12.5 % -> 14.5 % | 6.06 -> 6.05 | 3.99 -> 4.60 | 2.82 -> 4.18 |
+| ODOR_TRACK | 12.9 % -> 9.8 % | 10.38 -> 10.44 | 3.00 -> 3.14 | 2.02 -> 1.86 |
+| RECOVER | 0.7 % -> 1.2 % | 7.92 -> 8.17 | 0.22 -> 0.29 | 0.22 -> 0.22 |
+| TRANSIT | 25.3 % -> 27.3 % | 9.72 -> 9.66 | 2.09 -> 2.04 | 1.62 -> 1.20 |
+
+Lifecycle airborne / perched / feeding: 85.2 / 14.8 / 13.8 % -> 81.8 / 18.2 / 17.9 %; touchdowns food+other 12+1 -> 15+1; visited cells 55.0 % -> 48.4 %; upwind share while tracking 48.3 % -> 53.8 %; escape onsets 0 -> 3. Pathology screen: pass. EXPLORE and TRANSIT episodes become more variable (EXPLORE up to 21 s, TRANSIT up to
+11.6 s). Hard check, on the episode-end record of the final configuration (which contains B3c):
+all 17 EXPLORE and TRANSIT episodes shorter than 1 s end in ALERT or ODOR_TRACK, none in an
+EXPLORE/TRANSIT switch.
+
+Sensitivity (seeds 101 / 4242 / 1729): `structure_gain` 0 (ablation), 0.5 and 1.0 give EXPLORE
+means of 3.37, 3.45 and 3.45 s and TRANSIT means of 1.79, 1.92 and 1.92 s; the runs at 0.5 and
+1.0 are identical. **The visual-structure gate is nearly inert in ROOM:** the local structure
+u stays around 0.01 because the fly is rarely near an object, so at the preregistered reference
+the hazards are close to constant rates after the minimum dwell. Nothing is retuned for it.
+
+**Check 6.** Paired free flight, the B3b arm reused:
+
+| | Previous stage | B3c |
+| --- | --- | --- |
+| Alive minutes | 240.0 | 240.0 |
+| Escapes (rate, exact 95 % upper bound) | 10 (0.042/min, 0.071) | 8 (0.033/min, 0.060) |
+| A | 0 (upper 0.012) | 0 (upper 0.012) |
+| B | 2 (upper 0.026) | 2 (upper 0.026) |
+| C | 3 (upper 0.032) | 2 (upper 0.026) |
+| D | 5 (upper 0.044) | 4 (upper 0.038) |
+| Perched escapes | 0 | 0 |
+
+Seeds with identical escape ticks: 67. Category B criterion met: True.
+
+**Check 7.** Lifecycle scenarios replay exactly with their accepted event sets; recorder exact
+replay (schema 4, `config_version` 23); escape/cruise study and swatter fixtures identical; ROOM
+resolves 1.45 through the B3c record.
+
+**B3c passes and is adopted.**
