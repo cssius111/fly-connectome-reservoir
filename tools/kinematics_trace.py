@@ -47,6 +47,8 @@ def _rng_states(world, session):
               'kinematics_relaxation': world.kinematic_sampler.relaxation_rng.bit_generator.state}
     if session.ecology is not None:
         states['ecology'] = session.ecology.rng.bit_generator.state
+        # M1.8-B3b: the odor-history hazard stream.
+        states['odor_history'] = session.ecology.history_rng.bit_generator.state
     if world.lifecycle is not None:
         states['lifecycle'] = world.lifecycle.rng.bit_generator.state
     return json.loads(json.dumps(states, default=str))

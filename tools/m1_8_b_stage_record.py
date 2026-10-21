@@ -55,6 +55,13 @@ STAGES = {
             'paths': ('kinematics.speed_relaxation_per_second',),
             'rule': ('Speed relaxation: one symmetric triangular damping-rate draw per ecological episode '
                      'of the sampled contexts, from its own random stream, mean held at the accepted 3.0 /s.')},
+    'B3b': {'config_version': 22, 'record': 'results/game/calibration_room_m1_8_b3b.json',
+            'source_record': 'results/game/calibration_room_m1_8_b2e.json',
+            'baseline_commit': '72eb8e7f0c1abeeaeb22a2b8b39ed4b091b2a4aa',
+            'paths': ('ecology.odor_history',),
+            'rule': ('Odor timers replaced by an encounter history: weaker upwind response with history, '
+                     'a plume-abandonment hazard with a short refractory, and a search give-up hazard after '
+                     'a minimum search.')},
 }
 
 

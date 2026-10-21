@@ -420,15 +420,30 @@ class TestNeuralLifecycle(unittest.TestCase):
 class TestLifecyclePresentation(unittest.TestCase):
     """Presentation only; no lifecycle, ecology, swatter or threshold behavior changes."""
 
-    def app_at_perch(self, ticks=240):
+    def app_at_perch(self, ticks=240, config=None):
         from game.app import App
-        app=App(ROOM,seed=255,mode='evaluation')
+        app=App(config or ROOM,seed=255,mode='evaluation')
         app.pointer_world=(1920,388.8)
         for _ in range(ticks):app._advance(DT,False)
         return app
 
-    def test_hud_shows_feeding_while_ecology_still_reports_odor_track(self):
+    def test_hud_reports_the_current_unexecuted_intent_while_perched(self):
+        # From M1.8-B3b on the ecology may leave ODOR_TRACK while the fly feeds; the HUD must
+        # still show the effective lifecycle first and the current intent as not executed.
         app=self.app_at_perch()
+        try:
+            self.assertTrue(app.session.world.lifecycle.stationary)
+            lifecycle_line,motion_line,intent_line,note_line=app.behavior_lines()
+            self.assertIn('PERCHED',lifecycle_line)
+            self.assertIn(app.session.ecology.state,intent_line)
+            self.assertIn('not executed: suppressed while perched',note_line)
+        finally:app.session.close()
+
+    def test_hud_shows_feeding_while_ecology_still_reports_odor_track(self):
+        # The accepted M1.8-B3a configuration reproduces the scenario that confused the tester.
+        import subprocess
+        b3a=json.loads(subprocess.check_output(['git','show','6b43c0fd2cf5537216bb5f663b4e606e0fac76f6:game_room_config.json'],cwd=ROOT,text=True))
+        app=self.app_at_perch(config=b3a)
         try:
             w=app.session.world
             self.assertTrue(w.lifecycle.stationary);self.assertTrue(w.lifecycle.feeding)

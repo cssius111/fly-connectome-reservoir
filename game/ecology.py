@@ -43,7 +43,11 @@ class EcologicalController:
         'transit_duration_seconds','speed_bl_s','speed_tau_seconds','steering_tau_seconds','steering_cap_rad_s',
         'upwind_gain','search_period_seconds','search_amplitude_radians','visual_gain_floor',
         'landing_affordance_threshold','landing_dwell_seconds','landing_attempt_seconds','landing_cooldown_seconds',
-        'spontaneous_clock_rate'}
+        'spontaneous_clock_rate','odor_history'}
+    # M1.8-B3b: encounter history replacing the odor timers (game/M1_8_B_COMPLETION_DESIGN.md).
+    ODOR_HISTORY_KEYS = {'_comment','build_seconds','recovery_seconds','upwind_attenuation','abandon_seconds',
+                         'refractory_seconds','search_min_seconds','search_give_up_seconds'}
+    ODOR_HISTORY_SEED_OFFSET = 53113
 
     def __init__(self, config, seed, landing_enabled=True):
         if set(config)-self.CONFIG_KEYS: raise ValueError('only ecological controller parameters are allowed')
@@ -54,6 +58,13 @@ class EcologicalController:
         for state in STATES:
             low,high = config['speed_bl_s'][state]
             if not 0 < low <= high: raise ValueError('speed ranges must be positive and ordered')
+        self.odor_history = config.get('odor_history')
+        if self.odor_history is not None:
+            h = self.odor_history
+            if set(h) != self.ODOR_HISTORY_KEYS: raise ValueError('odor_history requires exactly its documented keys')
+            for name in self.ODOR_HISTORY_KEYS - {'_comment','upwind_attenuation'}:
+                if not math.isfinite(h[name]) or h[name] <= 0: raise ValueError('odor_history.'+name+' must be positive')
+            if not 0 <= h['upwind_attenuation'] <= 1: raise ValueError('odor_history.upwind_attenuation must be in [0,1]')
         self.reset(seed)
 
     def reset(self, seed):
@@ -67,6 +78,9 @@ class EcologicalController:
         self.recovery_duration=self.config['alert_recover_seconds']
         self.state_duration=float(self.rng.uniform(*self.config['explore_duration_seconds']))
         self.speed=sum(self.config['speed_bl_s']['EXPLORE'])/2
+        # Encounter history H in [0,1] and its hazard stream; inert without odor_history.
+        self.history=0.0
+        self.history_rng=np.random.default_rng(seed+self.ODOR_HISTORY_SEED_OFFSET)
         self.steering=0.0;self.last_threat=ThreatState.CALM
         self.last_command=EcologicalCommand(self.state,self.speed,0.0,1.0)
 
@@ -89,6 +103,10 @@ class EcologicalController:
         self.off_time=self.off_time+dt if sense.odor<=c['odor_off'] else 0.0
         if self.on_time>=c['encounter_dwell_seconds']:self.has_odor=True
         if self.off_time>=c['loss_dwell_seconds']:self.has_odor=False
+        h=self.odor_history
+        if h is not None:
+            if self.has_odor:self.history+=(1-self.history)*(1-math.exp(-dt/h['build_seconds']))
+            else:self.history-=self.history*(1-math.exp(-dt/h['recovery_seconds']))
         eligible=(self.landing_enabled and sense.landing_affordance>=c['landing_affordance_threshold'] and sense.surface_expansion>0 and self.has_odor)
         self.surface_time=self.surface_time+dt if eligible else 0.0
         attempt=False
@@ -112,12 +130,18 @@ class EcologicalController:
         elif self.has_odor:
             if self.surface_time>=c['landing_dwell_seconds'] and self.landing_cooldown<=0:
                 attempt=self._enter('LAND_OR_PERCH')
-            elif self.state=='ODOR_TRACK' and self.elapsed>=c['odor_bout_seconds']:
+            elif h is None and self.state=='ODOR_TRACK' and self.elapsed>=c['odor_bout_seconds']:
                 self.ignore_odor=c['relocation_seconds'];self._enter('TRANSIT')
+            elif h is not None and self.state=='ODOR_TRACK' and self._hazard(self.history/h['abandon_seconds'],dt):
+                # Leaving the plume: only a short refractory, not a relocation timer.
+                self.ignore_odor=h['refractory_seconds'];self._enter('TRANSIT')
             else:self._enter('ODOR_TRACK')
         elif self.state=='ODOR_TRACK':self._enter('ODOR_SEARCH')
         elif self.state=='ODOR_SEARCH':
-            if self.elapsed>=c['search_seconds']:self._enter('EXPLORE')
+            if h is None:
+                if self.elapsed>=c['search_seconds']:self._enter('EXPLORE')
+            elif self.elapsed>=h['search_min_seconds'] and self._hazard(1/h['search_give_up_seconds'],dt):
+                self._enter('EXPLORE')
         elif self.state=='RECOVER':self._enter('EXPLORE')
         elif self.elapsed>=self.state_duration:
             self._enter('TRANSIT' if self.state=='EXPLORE' else 'EXPLORE')
@@ -139,6 +163,9 @@ class EcologicalController:
             # atan2 has a sign ambiguity exactly downwind; retain a seeded side.
             if abs(abs(error)-math.pi)<1e-8:error=self.tie_side*math.pi
             steer=c['upwind_gain']*error*visual_gain
+            if h is not None and self.state=='ODOR_TRACK':
+                # E17: later encounters elicit weaker upwind responses.
+                steer*=1-h['upwind_attenuation']*self.history
         obstacle_turn=2*(sense.visual_left-sense.visual_right)
         if abs(obstacle_turn)<.01 and sense.visual_front>.08:
             obstacle_turn=self.tie_side*sense.visual_front*2
@@ -150,7 +177,15 @@ class EcologicalController:
         self.last_command=EcologicalCommand(self.state,self.speed,self.steering,c['spontaneous_clock_rate'][self.state],attempt)
         return self.last_command
 
+    def _hazard(self, rate, dt):
+        """One seeded Bernoulli draw for a constant-rate event over this tick."""
+        return float(self.history_rng.random()) < 1-math.exp(-rate*dt)
+
     def diagnostics(self):
+        extra = {} if self.odor_history is None else {'odor_history':self.history}
+        return {**self._diagnostics(), **extra}
+
+    def _diagnostics(self):
         return {'state':self.state,'state_seconds':self.elapsed,'target_speed_bl_s':self.speed,
                 'steering_rad_s':self.steering,'odor_detected':self.has_odor,'transitions':self.transitions,
                 'landing_attempts':self.landing_attempts,'neural_threat_state':self.last_threat.value,

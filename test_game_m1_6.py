@@ -26,8 +26,16 @@ def environment(seed=101,config=None):
     return RoomEnvironment((config or ROOM)['room'],seed)
 
 
+# The accepted M1.6 ecology mechanism. M1.8-B completion stages add gated blocks to
+# ROOM's ecology (odor history, intent hazards, casting, odor cues, wind reliability);
+# without them the accepted timers and oscillators run, which these tests pin. The new
+# mechanisms are tested in test_game_m1_8_b_completion.
+COMPLETION_KEYS={'odor_history','intent_hazards','search_half_period_seconds','odor_cues','wind_reliability'}
+M1_6_ECOLOGY={k:v for k,v in ROOM['ecology'].items() if k not in COMPLETION_KEYS}
+
+
 def controller(seed=101):
-    return EcologicalController(ROOM['ecology'],seed)
+    return EcologicalController(M1_6_ECOLOGY,seed)
 
 
 def run_cue(c,cue,seconds,threat=ThreatState.CALM):

@@ -176,5 +176,93 @@ class TestB2eRelaxation(unittest.TestCase):
                                             'mode_per_second': 3.0, 'max_per_second': 3.0})
 
 
+def sense(**values):
+    from game.ecological_sense import EcologicalSense
+    base = {'wind_forward': -40.0, 'wind_lateral': 0.0, 'visual_contrast': 0.6}
+    base.update(values)
+    return EcologicalSense(**base)
+
+
+def eco(config, seed=255):
+    from game.ecology import EcologicalController
+    return EcologicalController(config['ecology'], seed, landing_enabled=False)
+
+
+
+def calm():
+    from game.ecology import ThreatState
+    return ThreatState.CALM
+
+
+class TestB3bOdorHistory(unittest.TestCase):
+    def config(self):
+        return stage_config('B3b')
+
+    def test_history_rises_in_odor_and_decays_outside(self):
+        e = eco(self.config())
+        for _ in range(250):                     # 5 s in odor
+            e.step(sense(odor=1.0), calm(), 0.02)
+        h = e.history
+        self.assertGreater(h, 0.3)
+        self.assertLessEqual(h, 1.0)
+        for _ in range(500):                     # 10 s without odor
+            e.step(sense(odor=0.0), calm(), 0.02)
+        self.assertLess(e.history, h)
+        self.assertGreaterEqual(e.history, 0.0)
+
+    def test_no_fixed_bout_or_search_timer(self):
+        """ODOR_TRACK bouts no longer end at exactly 8 s; searches no longer at exactly 6 s."""
+        bouts, searches = [], []
+        for seed in range(40):
+            e = eco(self.config(), seed)
+            state, start = e.state, 0
+            for tick in range(3000):
+                odor = 1.0 if (tick // 400) % 2 == 0 else 0.0
+                e.step(sense(odor=odor), calm(), 0.02)
+                if e.state != state:
+                    if state == 'ODOR_TRACK':
+                        bouts.append((tick - start)*0.02)
+                    if state == 'ODOR_SEARCH':
+                        searches.append((tick - start)*0.02)
+                    state, start = e.state, tick
+        self.assertTrue(bouts and searches)
+        self.assertLess(sum(abs(b - 8.0) < 0.03 for b in bouts), max(2, len(bouts)//10))
+        self.assertLess(sum(abs(s - 6.0) < 0.03 for s in searches), max(2, len(searches)//10))
+        self.assertTrue(all(s >= 1.0 - 1e-9 for s in searches if s < 7.9))
+
+    def test_abandonment_enters_transit_with_a_short_refractory(self):
+        e = eco(self.config(), 7)
+        left = None
+        for tick in range(5000):
+            previous = e.state
+            e.step(sense(odor=1.0), calm(), 0.02)
+            if previous == 'ODOR_TRACK' and e.state == 'TRANSIT':
+                left = tick
+                self.assertAlmostEqual(e.ignore_odor, 1.0)
+                break
+        self.assertIsNotNone(left)
+
+    def test_upwind_gain_is_attenuated_by_history(self):
+        cfg = self.config()
+        fresh, used = eco(cfg), eco(cfg)
+        used.history = 1.0
+        for e in (fresh, used):
+            e.state, e.has_odor, e.on_time = 'ODOR_TRACK', True, 1.0
+        s = sense(odor=1.0, wind_lateral=20.0)
+        a = fresh.step(s, calm(), 0.02).steering_rad_s
+        b = used.step(s, calm(), 0.02).steering_rad_s
+        self.assertLess(abs(b), abs(a))
+
+    def test_gated_by_its_block(self):
+        cfg = read_commit(STAGES['B3b']['baseline_commit'])
+        self.assertNotIn('odor_history', cfg['ecology'])
+        e = eco(cfg)
+        for _ in range(100):
+            e.step(sense(odor=1.0), calm(), 0.02)
+        self.assertEqual(e.history, 0.0)
+        self.assertNotIn('odor_history', e.diagnostics())
+        self.assertIn('odor_history', eco(self.config()).diagnostics())
+
+
 if __name__ == '__main__':
     unittest.main()

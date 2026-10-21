@@ -1,5 +1,5 @@
 {
-  "config_version": 21,
+  "config_version": 22,
   "_comment": "M1.6 horizontal ROOM slice. Logical units and state speeds are gameplay mappings, not universal biological constants.",
   "sim": {
     "tick_seconds": 0.02,
@@ -135,11 +135,11 @@
     "virtual_distance": 100.0
   },
   "policy": {
-    "_comment": "Exact provenance required. The M1.8-N4B1C lateral dual-path decoder (unchanged) under the M1.8-N4B5R elevation-aware geometry, the M1.8-B2b-iii kinematics and the M1.8-B3a ecology threat input loads the M1.8-B2e transfer record, which carries the identical decoder block for this configuration: rebuild it with python tools/m1_8_b_stage_record.py B2e. Earlier records are preserved unchanged. tools/calibrate_escape.py measures the scalar single-sample criterion only and does not calibrate this decoder.",
+    "_comment": "Exact provenance required. The M1.8-N4B1C lateral dual-path decoder (unchanged) under the M1.8-N4B5R elevation-aware geometry, the M1.8-B2b-iii kinematics and the M1.8-B3a ecology threat input loads the M1.8-B3b transfer record, which carries the identical decoder block for this configuration: rebuild it with python tools/m1_8_b_stage_record.py B3b. Earlier records are preserved unchanged. tools/calibrate_escape.py measures the scalar single-sample criterion only and does not calibrate this decoder.",
     "escape_threshold": null,
     "calibration_paths": [
-      "artifacts/game/calibration_room_m1_8_b2e.json",
-      "results/game/calibration_room_m1_8_b2e.json"
+      "artifacts/game/calibration_room_m1_8_b3b.json",
+      "results/game/calibration_room_m1_8_b3b.json"
     ],
     "escape_decoder": {
       "_comment": "M1.8-N4B1C combined DNp01 criterion. Escape when EITHER path qualifies outside the shared refractory period. LATERAL: the same DNp01 side produces lateral_required_spikes inferred spikes within lateral_same_side_window_ms (per-side spikes inferred from that side's own trace; a left spike followed by a right spike never qualifies). Summed N2b path: FAST when left + right >= summed_fast_threshold; SUSTAINED when the current summed sample is >= sustained_threshold AND at least sustained_required_samples of the most recent sustained_window_samples summed samples are >= sustained_threshold. All values are Class C engineering decoder parameters derived from simulator evidence, not biological constants. sustained_threshold must equal the record's escape_threshold.",
@@ -379,7 +379,17 @@
       "ESCAPE": 0.0,
       "RECOVER": 0.7
     },
-    "alert_recover_seconds": 0.2
+    "alert_recover_seconds": 0.2,
+    "odor_history": {
+      "_comment": "M1.8-B3b. Encounter history H in [0,1] replaces the odor timers: odor_bout_seconds, search_seconds and the relocation after a forced end are no longer read by the ROOM ecology (relocation_seconds is still read by the ecology's own landing path, disabled in ROOM). H rises while odor is detected and decays otherwise (E17: weaker upwind responses with history); ODOR_TRACK upwind gain is scaled by 1 - upwind_attenuation*H and the plume is left at rate H/abandon_seconds; ODOR_SEARCH ends on reacquisition or, after search_min_seconds, at rate 1/search_give_up_seconds. All class C; means held at the accepted 8 s and 6 s. See game/M1_8_B_COMPLETION_DESIGN.md section 5.",
+      "build_seconds": 10.0,
+      "recovery_seconds": 30.0,
+      "upwind_attenuation": 0.5,
+      "abandon_seconds": 3.0,
+      "refractory_seconds": 1.0,
+      "search_min_seconds": 1.0,
+      "search_give_up_seconds": 5.0
+    }
   },
   "ecology_threat_input": {
     "_comment": "M1.8-B3a. Which ThreatState the ecology receives; the lifecycle always receives the accepted mapping. executed_response_v1: the fixed policy's ALERT state alone (no saccade requested on the tick and no ALERT saccade executing) reaches the ecology as CALM; ESCAPE and executed alert responses pass unchanged. policy_state_v0, the default when this block is absent, hands the ecology the same threat as the lifecycle. Class C interface choice, not a biological claim. See game/M1_8_B3A_DESIGN.md.",
