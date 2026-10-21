@@ -274,3 +274,43 @@ replay (schema 4, `config_version` 22); escape/cruise study and swatter fixtures
 resolves 1.45 through the B3b record.
 
 **B3b passes and is adopted.**
+
+
+## 8. B4b: wind reliability and a still-air search
+
+Implementation (`4fb5ef5`): `game/ecology.py` (the `wind_reliability` block),
+`game_room_config.json` (`config_version` 26), `results/game/calibration_room_m1_8_b4b.json`.
+Section 5 to 7 (B3c, B3d, B4a) follow when their paired checks finish.
+
+**Checks 1 and 2.** With the new code and `config_version` 25 all seven trace scenarios are
+bit-identical to the B4a capture (combined SHA256 `679fd494...`), and with `config_version` 26
+they are bit-identical as well: ROOM wind never falls below 38.25 units/s, so the reliability
+is 1 throughout and multiplying the upwind steering by it is exact. As preregistered, the
+paired check is therefore not re-run for B4b.
+
+**Check 3.** B4b tests: the reliability ramp (0 at or below 5 units/s, 0.5 at 12.5, 1 from
+20), ROOM's minimum wind above the reliable threshold, a still-air ODOR_SEARCH that still
+casts both ways without an upwind reference, and exact reproduction of B4a's commands in
+reliable wind. **491 tests pass.**
+
+**Low-wind control** (diagnostic only, not a runtime configuration: ROOM with wind speed 3
+units/s, three seeds, 180 s each, the same code):
+
+| Measure | B4a configuration | B4b configuration |
+| --- | --- | --- |
+| Reliability | not modelled (ideal wind) | 0 (still air) |
+| ODOR_TRACK / ODOR_SEARCH share of ecology-driven ticks | 12.9 % / 14.9 % | 17.3 % / 14.3 % |
+| Upwind heading share while tracking | 53.9 % | 16.1 % |
+| Odor detected | 36.5 % of alive time | 24.7 % |
+| Food touchdowns / perched share | 8 / 22.5 % | 3 / 5.3 % |
+| Visited cells | 50.2 % | 66.9 % |
+
+Under the ideal estimate the fly still steers upwind in a 3 units/s breeze it could not
+reliably sense; with the reliability term it casts around its course, keeps tracking by the
+bilateral cue only, and finds the food less often. This is the intended difference; the ROOM
+runtime is unaffected.
+
+**Check 7.** The ROOM traces are bit-identical to B4a, so the lifecycle, recorder, swatter and
+escape/cruise results of B4a carry over; ROOM resolves 1.45 through the B4b record.
+
+**B4b passes and is adopted.**
