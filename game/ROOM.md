@@ -4,9 +4,11 @@
 # M1.6 ecological ROOM foundation
 
 M1.7 preserves this ecology and adds the [session recorder and physical paddle](SESSIONS.md).
-The active ROOM config is version 9, calibrated separately in
-`results/game/calibration_room_m1_7_1.json` (threshold 1.45). The M1.6 calibration
-and result files remain historical evidence; they do not match the new config.
+At M1.7.1 the ROOM config was version 9, calibrated separately in
+`results/game/calibration_room_m1_7_1.json` (threshold 1.45). The active ROOM record is now
+the record named by `policy.calibration_paths` in `game_room_config.json` (`results/game/calibration_room_m1_8_b3a.json` as of M1.8-B3a), a transfer record that reuses the M1.7.1 measurement; later M1.8 stages
+are summarized in [TECHNICAL_REPORT.md](../TECHNICAL_REPORT.md) section 9. The M1.6
+calibration and result files remain historical evidence; they do not match the new config.
 
 ROOM is the primary PLAY environment; LAB remains the controlled experiment,
 and the preserved M1.5 GAME preset remains selectable. M1.6 implements no
@@ -237,7 +239,8 @@ still statistics, with no learned checkpoint or updates.
 & .\.venv\Scripts\python.exe -m game.app --arena room --mode evaluation --seed 101 --smoke 3
 ```
 
-ROOM uses independent calibration_room_m1_7_1.json artifacts/results. The full config
+ROOM uses its own calibration records, separate from LAB and GAME; the active one is named
+by `policy.calibration_paths`. The full config
 hash includes environmental/controller settings, conservatively rejecting any
 mismatch. Recalibrate custom configs with the same `--config PATH` in tool/game.
 Calibration disables flight and collision; ecology does not advance or affect

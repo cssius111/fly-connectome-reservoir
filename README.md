@@ -72,10 +72,9 @@ See [recording, replay, physics and playtest guide](game/SESSIONS.md),
 M1.6 evidence remains unchanged in [its historical report](results/game/M1_6.md).
 The edge repair allows partially offscreen paddle heads without changing fly bounds
 or motor limits. See the [edge audit and validation](results/game/M1_7_EDGE.md).
-M1.7.1 measured ROOM threshold **1.45**. The active `calibration_room_m1_8_b2a.json`
+M1.7.1 measured ROOM threshold **1.45**. The active ROOM record is the record named by `policy.calibration_paths` in `game_room_config.json` (`results/game/calibration_room_m1_8_b3a.json` as of M1.8-B3a). It
 reuses that one unchanged fixed-fly measurement with exact current provenance, via a
-recorded transfer chain through `calibration_room_m1_8_a.json`. No threshold has been
-re-measured since M1.7.1.
+recorded transfer chain of later records. No threshold has been re-measured since M1.7.1.
 See the [pre-tuning human diagnosis](results/game/HUMAN_M1_7_DIAGNOSIS.md) and
 [M1.7.1 validation and acceptance checklist](results/game/M1_7_1.md).
 Reports separate all-tick and alive-only threat/ecology/speed statistics.
@@ -83,8 +82,11 @@ Manifests retain the actual CPU thread count for exact replay.
 See [final human acceptance and regression](results/game/M1_7_1_ACCEPTANCE.md).
 The swatter, swept collision, offscreen geometry and WORLD/policy boundary remain
 frozen. The explicitly authorized M1.8-A recorder extension is described above.
-The broader [M1.8 proposal](game/M1_8_PROPOSAL.md) remains a future plan beyond
-this lifecycle implementation; M1.8-B and RL are not implemented.
+M1.8-B (flight kinematics and activity budget) is in progress on top of this lifecycle;
+its stages, status and accepted runtime branch are in [TECHNICAL_REPORT.md](TECHNICAL_REPORT.md)
+section 9 and [the M1.8-B plan](game/M1_8_B_PLAN.md). The learned controllers (M2) live on
+`feature/m2-0-learning-infra` and are not part of the runtime; the runtime policy is the fixed
+N4B1C decoder.
 
 Validation commands:
 

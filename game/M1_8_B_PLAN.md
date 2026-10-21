@@ -295,3 +295,40 @@ highest sampled ecological band tops out at 13 BL/s = 312 units/s, far below all
 1000 units/s caps and below the 880 units/s escape impulse. No cap binds, so its six
 decisions are deferred rather than answered. They become blocking again only if the scale
 changes.
+
+## 14. Completing M1.8-B: authorization of 2026-10-21
+
+After accepting B3a, the user asked on 2026-10-21 to complete every remaining M1.8-B stage
+in one continuous run, and answered three questions:
+
+1. **Scope: all remaining stages** (sections 3, 4, 6, 7 and 10), except that **TRANSIT speed
+   stays locked**: its 9-13 BL/s envelope and its legacy speed profile are unchanged.
+2. **When TRANSIT happens may change.** Replacing the EXPLORE and TRANSIT dwell timers may
+   change TRANSIT timing and frequency; only its speed is locked.
+3. **One human playtest at the end.** Each stage is validated automatically and pushed
+   without waiting for the user; one combined playtest and acceptance follow the last stage
+   (B5).
+
+This authorizes the stages below and nothing else. The frozen systems in `AGENTS.md`
+(M1.7.1, M1.8-A, B1-B2b-iii, B3a), the policy, the decoder, the geometry, the caps and
+`room_kinematic_scale` = 1.0 stay unchanged, and nothing is tuned toward difficulty.
+
+| Stage | Content | Plan section |
+| --- | --- | --- |
+| B2c | `tools/kinematics_sanity.py`: the evaluation metrics, defined before any behavioural change and measured on the accepted B3a runtime | 10 |
+| B2d | ODOR_SEARCH and RECOVER speed sampling, by the B2b-ii/iii method | 3 |
+| B2e | Sampled speed-transition time constant | 4 |
+| B3b | Odor timers: `odor_bout_seconds`, `search_seconds`, `relocation_seconds` | 7 |
+| B3c | EXPLORE and TRANSIT dwell timers replaced by evidence-gated transitions | 6, 7 |
+| B3d | Fixed oscillators: `search_period_seconds` and `fly.curvature` periods | 7 |
+| B4a | Odor-guided flight consumes the odor derivative and the bilateral difference | 6 |
+| B4b | Wind reliability term and a still-air search strategy | 6 |
+| B5 | Combined validation, local checks and the human playtest | 11 |
+
+Each stage is preregistered in [M1_8_B_COMPLETION_DESIGN.md](M1_8_B_COMPLETION_DESIGN.md)
+before its code changes and reported in
+[results/game/M1_8_B_COMPLETION.md](../results/game/M1_8_B_COMPLETION.md).
+
+Section 5's flight-bout termination is not in this list: in ROOM the frozen M1.8-A
+lifecycle decides when a flight bout ends (landing), so changing it would break that
+freeze. Flight-bout and perch-bout durations are measured by B2c and reported, not changed.

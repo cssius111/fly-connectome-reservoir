@@ -196,8 +196,9 @@ circular hit area intentionally does not depend on decorative handle orientation
 
 ## Calibration and preserved science
 
-The active ROOM record is `results/game/calibration_room_m1_7_1.json` (threshold
-1.45), with exact config/runtime provenance. Run:
+At M1.7.1 the active ROOM record was `results/game/calibration_room_m1_7_1.json` (threshold
+1.45), with exact config/runtime provenance. The active record is now the record named by `policy.calibration_paths` in `game_room_config.json` (`results/game/calibration_room_m1_8_b3a.json` as of M1.8-B3a),
+which transfers that measurement unchanged. Run:
 
 ```text
 python tools/calibrate_escape.py --config game_room_config.json --trials 28
