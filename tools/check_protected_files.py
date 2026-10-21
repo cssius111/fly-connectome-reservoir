@@ -6,9 +6,12 @@ common layouts {"path": "sha256"} / {"path": {"sha256": ...}} or a list of
 {"path": ..., "sha256": ...} objects, at any nesting depth, and compares every file's
 current bytes with its recorded hash. It changes nothing.
 
-A file whose working copy was expanded to CRLF by core.autocrlf is reported as
-"LF content matches": its committed content is intact, but byte-exact checks such as
-verify_results.py will fail until it is checked out with LF.
+Each file is compared in three forms: its bytes as they are, with CRLF normalised to
+LF, and with LF expanded to CRLF. A match in either converted form means the content is
+intact and only the line endings differ from when the manifest was written; for example,
+the original experiment's results/ outputs were written by Python on Windows with CRLF,
+while git stores and checks them out with LF. Byte-exact source checks such as
+verify_results.py still need the source files with the line endings they were hashed with.
 
     python tools/check_protected_files.py D:\\Projects\\flybrain-lab\\artifacts\\m1-2\\protected-before.json
 """
@@ -51,7 +54,7 @@ def main():
     found = dict(pairs(json.loads(args.manifest.read_text(encoding='utf-8'))))
     if not found:
         raise SystemExit('no (path, sha256) pairs found in ' + str(args.manifest))
-    exact = lf_only = 0
+    counts = {'byte-exact': 0, 'as LF': 0, 'as CRLF': 0}
     failures = []
     for rel, digest in sorted(found.items()):
         path = args.root / rel
@@ -59,19 +62,23 @@ def main():
             failures.append(rel + ': missing')
             continue
         data = path.read_bytes()
-        if hashlib.sha256(data).hexdigest() == digest:
-            exact += 1
-        elif hashlib.sha256(data.replace(b'\r\n', b'\n')).hexdigest() == digest:
-            lf_only += 1
-            print('LF content matches, working copy has CRLF:', rel)
-        else:
-            failures.append(rel + ': hash differs')
-    print('%d of %d protected files match byte-exactly' % (exact, len(found)))
-    if lf_only:
-        print('%d match only after CRLF -> LF; re-check them out with LF before verify_results.py' % lf_only)
+        lf = data.replace(b'\r\n', b'\n')
+        forms = {'byte-exact': data, 'as LF': lf, 'as CRLF': lf.replace(b'\n', b'\r\n')}
+        match = next((name for name, form in forms.items()
+                      if hashlib.sha256(form).hexdigest() == digest), None)
+        if match is None:
+            failures.append('%s: no form matches (recorded %s..., byte-exact %s...)'
+                            % (rel, digest[:12], hashlib.sha256(data).hexdigest()[:12]))
+            continue
+        counts[match] += 1
+        if match != 'byte-exact':
+            print('content matches %s, line endings differ from the manifest: %s' % (match, rel))
+    matched = sum(counts.values())
+    print('%d of %d protected files match (%s)' % (matched, len(found),
+          ', '.join('%s %d' % (k, v) for k, v in counts.items())))
     for line in failures:
         print('FAIL', line)
-    return 1 if failures or lf_only else 0
+    return 1 if failures else 0
 
 
 if __name__ == '__main__':

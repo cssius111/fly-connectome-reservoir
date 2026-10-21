@@ -257,15 +257,22 @@ $py = "D:\Projects\flybrain-lab\.venv\Scripts\python.exe"
 Automated checks, each with its expected result:
 
 ```powershell
-& $py tools\check_protected_files.py D:\Projects\flybrain-lab\artifacts\m1-2\protected-before.json   # 20 of 20 byte-exact
+& $py tools\check_protected_files.py D:\Projects\flybrain-lab\artifacts\m1-2\protected-before.json   # 20 of 20 match
 & $py verify_results.py                                  # 36 records, source hashes match, 2 exact replays
 & $py -m unittest discover                               # Ran 440 tests ... OK
 & $py tools\approach_sanity.py --session D:\Projects\flybrain-lab\results\game\sessions\20260921T013555.126134Z-cb64aa1a --report artifacts\approach.json
 ```
 
-The last command must finish without an assertion error; its `fixed_human_input` block
-should equal the one in `results/game/approach_m1_7_1.json`, because the swatter is
-unchanged.
+The last command must finish without an assertion error, which proves the recorded
+configuration reproduces the recorded paddle exactly, and in its `fixed_human_input` block
+every `old_*` field must equal the matching `new_*` field, because the swatter is unchanged.
+(`results/game/approach_m1_7_1.json` used a different recording to compare the M1.7 and
+M1.7.1 controllers, so its block is not the reference here.)
+
+`check_protected_files.py` compares each file as it is, with CRLF normalised to LF and
+with LF expanded to CRLF. The original `results/` outputs were written by Python on Windows
+with CRLF, while git stores them with LF, so in an LF worktree they match in the CRLF form.
+Run it with `--root D:\Projects\flybrain-lab` as well to check the main working copy.
 
 Optional human playtest, about 5 minutes:
 
