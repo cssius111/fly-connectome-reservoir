@@ -22,7 +22,13 @@ from game.session import (ECOLOGY_THREAT_EXECUTED, ECOLOGY_THREAT_POLICY_STATE, 
 from test_game import same_content, shared_brain
 
 ROOT = Path(__file__).parent
-ROOM = load_config(ROOT/'game_room_config.json')
+# The accepted M1.8-B3a ROOM configuration, bound to its commit: from M1.8-B2d on,
+# game_room_config.json carries later stages (test_game_m1_8_b_stages.py), which keep
+# the executed-response threat input.
+B3A_COMMIT = '6b43c0fd2cf5537216bb5f663b4e606e0fac76f6'
+ROOM = json.loads(subprocess.check_output(
+    ['git', 'show', B3A_COMMIT + ':game_room_config.json'], cwd=ROOT, text=True))
+CURRENT_ROOM = load_config(ROOT/'game_room_config.json')
 GAME = load_config(ROOT/'game_play_config.json')
 LAB = load_config(ROOT/'game_config.json')
 B2B_III_COMMIT = 'c4f9b8f8f4a1fc69959e1d74e5d76b4cc5b6e87f'
@@ -66,6 +72,7 @@ class TestMapping(unittest.TestCase):
 
     def test_modes_and_defaults(self):
         self.assertEqual(ecology_threat_mode(ROOM), ECOLOGY_THREAT_EXECUTED)
+        self.assertEqual(ecology_threat_mode(CURRENT_ROOM), ECOLOGY_THREAT_EXECUTED)
         for config in (GAME, LAB, B2B_III_ROOM):
             self.assertNotIn('ecology_threat_input', config)
             self.assertEqual(ecology_threat_mode(config), ECOLOGY_THREAT_POLICY_STATE)

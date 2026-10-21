@@ -39,7 +39,10 @@ def _rng_states(world, session):
               # reports independently whether any kinematics stream was drawn from.
               'kinematics': world.kinematic_sampler.rng.bit_generator.state,
               # M1.8-B2b-iii: the separate ODOR_TRACK sampling stream.
-              'kinematics_odor_track': world.kinematic_sampler.odor_track_rng.bit_generator.state}
+              'kinematics_odor_track': world.kinematic_sampler.odor_track_rng.bit_generator.state,
+              # M1.8-B2d: the ODOR_SEARCH and RECOVER sampling streams.
+              'kinematics_odor_search': world.kinematic_sampler.odor_search_rng.bit_generator.state,
+              'kinematics_recover': world.kinematic_sampler.recover_rng.bit_generator.state}
     if session.ecology is not None:
         states['ecology'] = session.ecology.rng.bit_generator.state
     if world.lifecycle is not None:

@@ -184,6 +184,9 @@ def resolve_escape_threshold(config: dict, root: Path = ROOT) -> ThresholdSource
                 command = "python tools/b2b_iii_record.py"
             if config.get("ecology_threat_input"):
                 command = "python tools/b3a_record.py"
+                # M1.8-B completion stages (config_version 20 on) share one record writer.
+                if config.get("config_version", 0) > 19:
+                    command = "python tools/m1_8_b_stage_record.py STAGE"
     expected = calibration_provenance(config)
     tried = []
     for rel in policy["calibration_paths"]:

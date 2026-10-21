@@ -234,6 +234,14 @@ class TestLocalLifecycle(unittest.TestCase):
         for key in ('tilt_geometry','_tilt_geometry_comment'):after['swatter']['directional'].pop(key)
         # M1.8-B3a changes only the ecology's threat input (versioned in test_game_b3a).
         after.pop('ecology_threat_input')
+        # M1.8-B completion stages change only their preregistered paths (versioned in
+        # test_game_m1_8_b_stages).
+        from tools.m1_8_b_stage_record import STAGES
+        for spec in STAGES.values():
+            for path in spec['paths']:
+                *parents,leaf=path.split('.');node=after
+                for key in parents:node=node.get(key,{})
+                node.pop(leaf,None)
         self.assertEqual(after,before)
         # The active record chains M1.8-B2a -> M1.8-A -> the M1.7.1 measurement, and every
         # link must name the exact bytes it transfers from.
@@ -257,7 +265,11 @@ class TestLocalLifecycle(unittest.TestCase):
         self.assertTrue(same_content(b2bii,active['source_sha256']))
         self.assertEqual(active['original_measurement'],'results/game/calibration_room_m1_7_1.json')
         self.assertEqual(resolve_escape_threshold(ROOM).threshold,1.45)
-        self.assertEqual(resolve_escape_threshold(ROOM).origin,
+        # From M1.8-B2d on, ROOM resolves the newest completion-stage record, whose chain
+        # back to the B3a record is tested in test_game_m1_8_b_stages.
+        from tools.m1_8_b_stage_record import STAGES
+        self.assertEqual(resolve_escape_threshold(ROOM).origin,list(STAGES.values())[-1]['record'])
+        self.assertEqual(list(STAGES.values())[0]['source_record'],
                          'results/game/calibration_room_m1_8_b3a.json')
         # M1.8-B3a transfers the B2b-iii record unchanged and still names the M1.7.1 bytes.
         b3a=load_config(ROOT/'results/game/calibration_room_m1_8_b3a.json')['measurement_reuse']

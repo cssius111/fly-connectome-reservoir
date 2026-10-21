@@ -25,6 +25,7 @@ Each run is 180 s with no player and the pointer parked, as in the occupancy aud
     NUMBA_NUM_THREADS=1 python tools/kinematics_sanity.py run --lane 0 --lanes 3 --out DIR
     python tools/kinematics_sanity.py summary --out DIR
     NUMBA_NUM_THREADS=1 python tools/kinematics_sanity.py run --commit 6b43c0f --out DIR
+    python tools/kinematics_sanity.py compare --before DIR_A --out DIR_B --stage-states ODOR_SEARCH
 """
 from __future__ import annotations
 
@@ -270,6 +271,50 @@ def pooled(runs):
     }
 
 
+def screen(before, after, stage_states=()):
+    """The preregistered pathology screen (game/M1_8_B_COMPLETION_DESIGN.md section 1, check 5).
+
+    Fails on: chatter (a state outside `stage_states` whose median completed episode falls
+    below 0.5 s where it was at least 1 s), a visited-cell share below half, no touchdown
+    where there were some, or a perched share more than doubled.
+    """
+    failures = []
+    for state, b in before['episode_seconds'].items():
+        a = after['episode_seconds'].get(state, {})
+        if state in stage_states or b.get('n', 0) == 0 or a.get('n', 0) == 0:
+            continue
+        if b['p50'] >= 1.0 and a['p50'] < 0.5:
+            failures.append('chatter in %s: median episode %.2f s -> %.2f s' % (state, b['p50'], a['p50']))
+    if after['space']['visited_cell_share'] < 0.5*before['space']['visited_cell_share']:
+        failures.append('visited-cell share halved')
+    touchdowns = lambda s: s['odor']['food_touchdowns'] + s['odor']['other_touchdowns']
+    if touchdowns(before) > 0 and touchdowns(after) == 0:
+        failures.append('no touchdown')
+    if after['lifecycle_fractions']['perched'] > 2*before['lifecycle_fractions']['perched']:
+        failures.append('perched share more than doubled')
+    return failures
+
+
+def compare(before, after, stage_states=()):
+    def mean(block, state):
+        return block.get(state, {}).get('mean')
+    rows = []
+    for state in sorted(set(before['occupancy']) | set(after['occupancy'])):
+        rows.append((state, before['ecology_driving_share'].get(state), after['ecology_driving_share'].get(state),
+                     mean(before['speed_bl_s'], state), mean(after['speed_bl_s'], state),
+                     mean(before['episode_seconds'], state), mean(after['episode_seconds'], state),
+                     before['episode_seconds'].get(state, {}).get('p50'),
+                     after['episode_seconds'].get(state, {}).get('p50')))
+    return {'per_state': [dict(zip(('state', 'driving_share_before', 'driving_share_after', 'speed_mean_before',
+                                    'speed_mean_after', 'episode_mean_before', 'episode_mean_after',
+                                    'episode_median_before', 'episode_median_after'), r)) for r in rows],
+            'lifecycle_fractions': {'before': before['lifecycle_fractions'], 'after': after['lifecycle_fractions']},
+            'odor': {'before': before['odor'], 'after': after['odor']},
+            'space': {'before': before['space'], 'after': after['space']},
+            'safety': {'before': before['safety'], 'after': after['safety']},
+            'pathology_screen_failures': screen(before, after, stage_states)}
+
+
 def load_arm(commit):
     if commit is None:
         return load_config(ROOT/'game_room_config.json')
@@ -279,8 +324,10 @@ def load_arm(commit):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument('mode', choices=('run', 'summary'))
+    parser.add_argument('mode', choices=('run', 'summary', 'compare'))
     parser.add_argument('--out', type=Path, required=True)
+    parser.add_argument('--before', type=Path, help='compare: the previous stage output directory')
+    parser.add_argument('--stage-states', default='', help='compare: states the stage targets (comma list)')
     parser.add_argument('--commit', help='read game_room_config.json from this commit')
     parser.add_argument('--lane', type=int, default=0)
     parser.add_argument('--lanes', type=int, default=1)
@@ -297,6 +344,12 @@ def main():
             (args.out/('seed%d.json' % seed)).write_text(json.dumps(run)+'\n', encoding='utf-8')
             print('seed', seed, 'config', config['config_version'],
                   '%.0f s' % (time.perf_counter() - started), flush=True)
+        return
+    if args.mode == 'compare':
+        load = lambda d: json.loads((d/'summary.json').read_text(encoding='utf-8'))
+        result = compare(load(args.before), load(args.out), tuple(filter(None, args.stage_states.split(','))))
+        (args.out/'compare.json').write_text(json.dumps(result, indent=1)+'\n', encoding='utf-8')
+        print(json.dumps(result, indent=1))
         return
     runs = [json.loads((args.out/('seed%d.json' % s)).read_text(encoding='utf-8')) for s in SEEDS]
     summary = pooled(runs)

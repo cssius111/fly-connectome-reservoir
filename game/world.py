@@ -179,10 +179,12 @@ class World:
             self.kinematic_caps)
         # The sampler holds the kinematics random streams, so the resolver stays pure.
         # It draws only for the contexts configured here (EXPLORE from B2b-ii,
-        # ODOR_TRACK from B2b-iii); without a kinematics block it never draws.
+        # ODOR_TRACK from B2b-iii, ODOR_SEARCH and RECOVER from B2d); without a
+        # kinematics block it never draws.
         kinematics = config.get("kinematics", {})
         self.kinematic_sampler = KinematicSampler(
-            seed, kinematics.get("explore_speed_bl_s"), kinematics.get("odor_track_speed_bl_s"))
+            seed, kinematics.get("explore_speed_bl_s"), kinematics.get("odor_track_speed_bl_s"),
+            kinematics.get("odor_search_speed_bl_s"), kinematics.get("recover_speed_bl_s"))
         self.kinematic_profile = self.kinematics.airborne(None, False)
         # Measurement escape hatch: tools/calibrate_escape.py turns this off so
         # a full strike can be observed without the fly dying part-way through.

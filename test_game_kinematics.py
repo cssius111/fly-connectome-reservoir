@@ -604,8 +604,9 @@ class TestB2biiiProvenance(unittest.TestCase):
         self.assertEqual(vars(p), vars(q))
         record = load_config(ROOT/self.RECORD)
         self.assertEqual(record['provenance'], calibration_provenance(b2biii))
-        # The current ROOM keeps the accepted B2b-iii kinematics.
-        self.assertEqual(ROOM['kinematics'], b2biii['kinematics'])
+        # The current ROOM keeps every accepted B2b-iii kinematics value; M1.8-B completion
+        # stages only add keys (test_game_m1_8_b_stages).
+        self.assertEqual({k: ROOM['kinematics'][k] for k in b2biii['kinematics']}, b2biii['kinematics'])
         self.assertEqual(record['escape_decoder'], load_config(ROOT/self.SOURCE)['escape_decoder'])
         self.assertEqual(sorted(record['measurement_reuse']['changed_config_paths']),
                          ['config_version', 'kinematics.odor_track_speed_bl_s', 'policy._comment',

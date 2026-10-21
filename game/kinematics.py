@@ -285,33 +285,47 @@ class KinematicSampler:
 
     M1.8-B2a made the sampler a seeded, inert hook. B2b-ii samples EXPLORE from the
     original stream (`rng`, offset +24593). B2b-iii adds ODOR_TRACK on its own stream
-    (`odor_track_rng`), so the EXPLORE draw sequence is unchanged by construction. Each
-    context is sampled only when its specification is configured; without any, every
-    call returns None and no draw is taken.
+    (`odor_track_rng`), and B2d adds ODOR_SEARCH and RECOVER on theirs, so every earlier
+    draw sequence is unchanged by construction. Each context is sampled only when its
+    specification is configured; without any, every call returns None and no draw is
+    taken.
     """
 
     # Unique among the seeded streams: flight +3907, room +6011, ecology +7013,
     # spawn +8191, lifecycle +18001. Asserted pairwise-unique by test_game_kinematics.
     SEED_OFFSET = 24593
     ODOR_TRACK_SEED_OFFSET = 30011
+    ODOR_SEARCH_SEED_OFFSET = 36263   # M1.8-B2d
+    RECOVER_SEED_OFFSET = 42061       # M1.8-B2d
+    # Context -> public spec attribute, stream attribute and seed offset.
+    CONTEXTS = {'EXPLORE': ('explore', 'rng', SEED_OFFSET),
+                'ODOR_TRACK': ('odor_track', 'odor_track_rng', ODOR_TRACK_SEED_OFFSET),
+                'ODOR_SEARCH': ('odor_search', 'odor_search_rng', ODOR_SEARCH_SEED_OFFSET),
+                'RECOVER': ('recover', 'recover_rng', RECOVER_SEED_OFFSET)}
 
     def __init__(self, seed: int, explore: dict | None = None,
-                 odor_track: dict | None = None):
+                 odor_track: dict | None = None, odor_search: dict | None = None,
+                 recover: dict | None = None):
         self.explore = dict(explore) if explore else None
         self.odor_track = dict(odor_track) if odor_track else None
+        self.odor_search = dict(odor_search) if odor_search else None
+        self.recover = dict(recover) if recover else None
         self._supports = {}
-        if self.explore is not None:
-            self._supports['EXPLORE'] = _triangular_support(self.explore, 'explore')
-        if self.odor_track is not None:
-            self._supports['ODOR_TRACK'] = _triangular_support(self.odor_track, 'odor track')
+        for state, (spec, _, _) in self.CONTEXTS.items():
+            if getattr(self, spec) is not None:
+                self._supports[state] = _triangular_support(getattr(self, spec),
+                                                            state.lower().replace('_', ' '))
         self.reset(seed)
 
     def reset(self, seed: int) -> None:
         self.seed = int(seed)
-        self.rng = np.random.default_rng(self.seed + self.SEED_OFFSET)
-        self.odor_track_rng = np.random.default_rng(self.seed + self.ODOR_TRACK_SEED_OFFSET)
-        self.initial_state = copy.deepcopy(self.rng.bit_generator.state)
-        self.odor_track_initial_state = copy.deepcopy(self.odor_track_rng.bit_generator.state)
+        self._initial = {}
+        for _, stream, offset in self.CONTEXTS.values():
+            rng = np.random.default_rng(self.seed + offset)
+            setattr(self, stream, rng)
+            self._initial[stream] = copy.deepcopy(rng.bit_generator.state)
+        self.initial_state = self._initial['rng']
+        self.odor_track_initial_state = self._initial['odor_track_rng']
         self.draws = 0
         self.draws_by_context = {}
         self._episode_state = None
@@ -320,22 +334,21 @@ class KinematicSampler:
     @property
     def untouched(self) -> bool:
         """True while no draw has been taken from any kinematics stream."""
-        return (self.draws == 0 and self.rng.bit_generator.state == self.initial_state
-                and self.odor_track_rng.bit_generator.state == self.odor_track_initial_state)
+        return self.draws == 0 and all(getattr(self, stream).bit_generator.state == state
+                                       for stream, state in self._initial.items())
 
     def _configured(self, state) -> bool:
         # Read the public specs, so a diagnostic tool can still disable one context by
         # setting, for example, `sampler.explore = None`.
-        return ((state == 'EXPLORE' and self.explore is not None)
-                or (state == 'ODOR_TRACK' and self.odor_track is not None))
+        return state in self.CONTEXTS and getattr(self, self.CONTEXTS[state][0]) is not None
 
     @property
     def enabled(self) -> bool:
-        return self.explore is not None or self.odor_track is not None
+        return any(getattr(self, spec) is not None for spec, _, _ in self.CONTEXTS.values())
 
     def _draw(self, state: str) -> float:
         low, mode, high = self._supports[state]
-        rng = self.rng if state == 'EXPLORE' else self.odor_track_rng
+        rng = getattr(self, self.CONTEXTS[state][1])
         self.draws += 1
         self.draws_by_context[state] = self.draws_by_context.get(state, 0) + 1
         return float(rng.triangular(low, mode, high))
