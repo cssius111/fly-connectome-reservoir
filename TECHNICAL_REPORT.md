@@ -654,12 +654,12 @@ preregistered stage, or design another ecology-side rule) and selects none.
 | Branch | Content |
 |---|---|
 | `main` @ `309abd9` | The original reservoir experiment (Part I) |
-| `feature/m1-8-n4b5r-geometry` @ `363a1a9` | The accepted runtime (Parts II and III) |
 | `feature/m1-8-n4b1c-runtime` @ `e3c55b3` | The previous accepted runtime |
 | `wip/m1-4-enclosure` | The decoder research N4B2 to N4B8 and the operational handoff state |
 | `archive/m1-8-n2b-rejected` @ `2c30617` | The rejected N2b runtime |
 | `feature/m2-0-learning-infra` | The learned-controller study (Part IV) |
-| `claude/gracious-galileo-mxnbs9` | The accepted runtime plus M1.8-B2b-iii (accepted 2026-10-21), the ALERT study and this report |
+| `feature/m1-8-b2b-iii` | **The current accepted runtime**: N4B5R plus M1.8-B2b-iii (accepted 2026-10-21), the ALERT study and this report |
+| `feature/m1-8-n4b5r-geometry` @ `363a1a9` | The previous accepted runtime |
 
 The validated environment is Windows with Python 3.11.16 and the CPU path; versions are
 pinned in `requirements-lock.txt`, and the learning code additionally needs PyTorch
