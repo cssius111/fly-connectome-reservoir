@@ -1,5 +1,5 @@
 {
-  "config_version": 23,
+  "config_version": 24,
   "_comment": "M1.6 horizontal ROOM slice. Logical units and state speeds are gameplay mappings, not universal biological constants.",
   "sim": {
     "tick_seconds": 0.02,
@@ -103,7 +103,12 @@
       "periods_seconds": [
         7.0,
         13.0
-      ]
+      ],
+      "period_sampling": {
+        "_comment": "M1.8-B3d. Each drift component keeps its amplitude; its half-period is redrawn every half-cycle from a symmetric triangle on (1 +/- relative_half_width) times the accepted half-period, instead of the fixed 7 s and 13 s periods. Class C; mean periods held.",
+        "distribution": "triangular_symmetric",
+        "relative_half_width": 0.5
+      }
     },
     "sideslip": {
       "max_degrees": 80.0,
@@ -135,11 +140,11 @@
     "virtual_distance": 100.0
   },
   "policy": {
-    "_comment": "Exact provenance required. The M1.8-N4B1C lateral dual-path decoder (unchanged) under the M1.8-N4B5R elevation-aware geometry, the M1.8-B2b-iii kinematics and the M1.8-B3a ecology threat input loads the M1.8-B3c transfer record, which carries the identical decoder block for this configuration: rebuild it with python tools/m1_8_b_stage_record.py B3c. Earlier records are preserved unchanged. tools/calibrate_escape.py measures the scalar single-sample criterion only and does not calibrate this decoder.",
+    "_comment": "Exact provenance required. The M1.8-N4B1C lateral dual-path decoder (unchanged) under the M1.8-N4B5R elevation-aware geometry, the M1.8-B2b-iii kinematics and the M1.8-B3a ecology threat input loads the M1.8-B3d transfer record, which carries the identical decoder block for this configuration: rebuild it with python tools/m1_8_b_stage_record.py B3d. Earlier records are preserved unchanged. tools/calibrate_escape.py measures the scalar single-sample criterion only and does not calibrate this decoder.",
     "escape_threshold": null,
     "calibration_paths": [
-      "artifacts/game/calibration_room_m1_8_b3c.json",
-      "results/game/calibration_room_m1_8_b3c.json"
+      "artifacts/game/calibration_room_m1_8_b3d.json",
+      "results/game/calibration_room_m1_8_b3d.json"
     ],
     "escape_decoder": {
       "_comment": "M1.8-N4B1C combined DNp01 criterion. Escape when EITHER path qualifies outside the shared refractory period. LATERAL: the same DNp01 side produces lateral_required_spikes inferred spikes within lateral_same_side_window_ms (per-side spikes inferred from that side's own trace; a left spike followed by a right spike never qualifies). Summed N2b path: FAST when left + right >= summed_fast_threshold; SUSTAINED when the current summed sample is >= sustained_threshold AND at least sustained_required_samples of the most recent sustained_window_samples summed samples are >= sustained_threshold. All values are Class C engineering decoder parameters derived from simulator evidence, not biological constants. sustained_threshold must equal the record's escape_threshold.",
@@ -397,6 +402,13 @@
       "transit_hazard_seconds": 2.5,
       "structure_reference": 0.2,
       "structure_gain": 0.5
+    },
+    "search_half_period_seconds": {
+      "_comment": "M1.8-B3d. The ODOR_SEARCH casting offset keeps its amplitude but its half-period is redrawn every half-cycle instead of the fixed 3.6 s period (search_period_seconds is no longer read). Class C; mean half-period held at 1.8 s.",
+      "distribution": "triangular_symmetric",
+      "min_seconds": 1.2,
+      "mode_seconds": 1.8,
+      "max_seconds": 2.4
     }
   },
   "ecology_threat_input": {

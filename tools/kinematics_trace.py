@@ -45,8 +45,12 @@ def _rng_states(world, session):
               'kinematics_recover': world.kinematic_sampler.recover_rng.bit_generator.state,
               # M1.8-B2e: the speed relaxation-rate stream.
               'kinematics_relaxation': world.kinematic_sampler.relaxation_rng.bit_generator.state}
+    # M1.8-B3d: the drift half-period stream.
+    states['curvature'] = world._curve_rng.bit_generator.state
     if session.ecology is not None:
         states['ecology'] = session.ecology.rng.bit_generator.state
+        # M1.8-B3d: the casting half-period stream.
+        states['casting'] = session.ecology.cast_rng.bit_generator.state
         # M1.8-B3b: the odor-history hazard stream.
         states['odor_history'] = session.ecology.history_rng.bit_generator.state
         # M1.8-B3c: the EXPLORE/TRANSIT hazard stream.

@@ -43,7 +43,7 @@ class EcologicalController:
         'transit_duration_seconds','speed_bl_s','speed_tau_seconds','steering_tau_seconds','steering_cap_rad_s',
         'upwind_gain','search_period_seconds','search_amplitude_radians','visual_gain_floor',
         'landing_affordance_threshold','landing_dwell_seconds','landing_attempt_seconds','landing_cooldown_seconds',
-        'spontaneous_clock_rate','odor_history','intent_hazards'}
+        'spontaneous_clock_rate','odor_history','intent_hazards','search_half_period_seconds'}
     # M1.8-B3b: encounter history replacing the odor timers (game/M1_8_B_COMPLETION_DESIGN.md).
     ODOR_HISTORY_KEYS = {'_comment','build_seconds','recovery_seconds','upwind_attenuation','abandon_seconds',
                          'refractory_seconds','search_min_seconds','search_give_up_seconds'}
@@ -52,6 +52,8 @@ class EcologicalController:
     INTENT_KEYS = {'_comment','min_dwell_seconds','explore_hazard_seconds','transit_hazard_seconds',
                    'structure_reference','structure_gain'}
     INTENT_SEED_OFFSET = 59011
+    # M1.8-B3d: the ODOR_SEARCH casting half-period is redrawn every half-cycle.
+    CASTING_SEED_OFFSET = 64747
 
     def __init__(self, config, seed, landing_enabled=True):
         if set(config)-self.CONFIG_KEYS: raise ValueError('only ecological controller parameters are allowed')
@@ -76,6 +78,15 @@ class EcologicalController:
             for name in self.INTENT_KEYS - {'_comment','structure_gain'}:
                 if not math.isfinite(i[name]) or i[name] <= 0: raise ValueError('intent_hazards.'+name+' must be positive')
             if not 0 <= i['structure_gain'] <= 1: raise ValueError('intent_hazards.structure_gain must be in [0,1]')
+        self.casting = config.get('search_half_period_seconds')
+        if self.casting is not None:
+            s = self.casting
+            if s.get('distribution') != 'triangular_symmetric':
+                raise ValueError('search_half_period_seconds must be triangular_symmetric')
+            low, mode, high = (float(s[k]) for k in ('min_seconds','mode_seconds','max_seconds'))
+            if not 0 < low < high or abs((low+high)/2-mode) > 1e-9:
+                raise ValueError('search half-period support must be positive, ordered and symmetric')
+            self._casting_support = (low, mode, high)
         self.reset(seed)
 
     def reset(self, seed):
@@ -95,6 +106,9 @@ class EcologicalController:
         # Local visual structure and the EXPLORE/TRANSIT hazard stream; inert without intent_hazards.
         self.structure=0.0
         self.intent_rng=np.random.default_rng(seed+self.INTENT_SEED_OFFSET)
+        # Casting oscillator phase, its next half-cycle boundary and current half-period.
+        self.cast_rng=np.random.default_rng(seed+self.CASTING_SEED_OFFSET)
+        self.cast_phase=0.0;self.cast_boundary=math.pi;self.cast_half=None
         self.steering=0.0;self.last_threat=ThreatState.CALM
         self.last_command=EcologicalCommand(self.state,self.speed,0.0,1.0)
 
@@ -176,7 +190,10 @@ class EcologicalController:
         visual_gain=c['visual_gain_floor']+(1-c['visual_gain_floor'])*sense.visual_contrast
         if self.state in ('ODOR_TRACK','ODOR_SEARCH') and wind_speed>1e-6:
             error=upwind
-            if self.state=='ODOR_SEARCH':
+            if self.state=='ODOR_SEARCH' and self.casting is not None:
+                error+=c['search_amplitude_radians']*math.sin(self._cast_phase(dt)+self.phase)
+                error=(error+math.pi)%(2*math.pi)-math.pi
+            elif self.state=='ODOR_SEARCH':
                 error+=c['search_amplitude_radians']*math.sin(2*math.pi*self.elapsed/c['search_period_seconds']+self.phase)
                 error=(error+math.pi)%(2*math.pi)-math.pi
             # atan2 has a sign ambiguity exactly downwind; retain a seeded side.
@@ -204,6 +221,22 @@ class EcologicalController:
         else:rate=(1+i['structure_gain']*self.structure)/i['transit_hazard_seconds']
         return float(self.intent_rng.random()) < 1-math.exp(-rate*dt)
 
+    def _cast_phase(self, dt):
+        """A phase oscillator whose half-period is redrawn at every half-cycle boundary.
+
+        The phase restarts at zero on the tick ODOR_SEARCH is entered, as the accepted sine
+        did through `elapsed`.
+        """
+        if self.elapsed == 0.0 or self.cast_half is None:
+            self.cast_phase, self.cast_boundary = 0.0, math.pi
+            self.cast_half = float(self.cast_rng.triangular(*self._casting_support))
+            return self.cast_phase
+        self.cast_phase += math.pi*dt/self.cast_half
+        while self.cast_phase >= self.cast_boundary:
+            self.cast_boundary += math.pi
+            self.cast_half = float(self.cast_rng.triangular(*self._casting_support))
+        return self.cast_phase
+
     def _hazard(self, rate, dt):
         """One seeded Bernoulli draw for a constant-rate event over this tick."""
         return float(self.history_rng.random()) < 1-math.exp(-rate*dt)
@@ -211,6 +244,7 @@ class EcologicalController:
     def diagnostics(self):
         extra = {} if self.odor_history is None else {'odor_history':self.history}
         if self.intent is not None:extra['visual_structure']=self.structure
+        if self.casting is not None:extra['cast_half_period_seconds']=self.cast_half
         return {**self._diagnostics(), **extra}
 
     def _diagnostics(self):

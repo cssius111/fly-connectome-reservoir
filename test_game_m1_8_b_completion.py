@@ -308,5 +308,45 @@ class TestB3cIntentHazards(unittest.TestCase):
         self.assertIn('visual_structure', new.diagnostics())
 
 
+class TestB3dOscillators(unittest.TestCase):
+    def config(self):
+        return stage_config('B3d')
+
+    def test_casting_half_periods_are_resampled_within_support(self):
+        e = eco(self.config(), 3)
+        e._enter('ODOR_SEARCH')
+        self.assertEqual(e._cast_phase(0.02), 0.0)
+        halves = {e.cast_half}
+        for _ in range(2000):
+            e.elapsed += 0.02
+            e._cast_phase(0.02)
+            halves.add(e.cast_half)
+        self.assertGreater(len(halves), 5)
+        self.assertTrue(all(1.2 <= h <= 2.4 for h in halves))
+
+    def test_drift_amplitude_unchanged_and_half_periods_resampled(self):
+        from game.action import Action
+        world = World(self.config(), 11)
+        world.ecological_command = command('EXPLORE')
+        halves = [set(), set()]
+        bound = sum(self.config()['fly']['curvature']['amplitudes_rad_s'])
+        for _ in range(3000):
+            world.tick(0.02, Action())
+            for i in range(2):
+                halves[i].add(world._curve_half[i])
+            self.assertLessEqual(abs(world._wander_turn), bound + 1e-12)
+        for i, period in enumerate(self.config()['fly']['curvature']['periods_seconds']):
+            self.assertGreater(len(halves[i]), 3)
+            self.assertTrue(all(0.25*period <= h <= 0.75*period for h in halves[i]))
+
+    def test_gated_and_game_unchanged(self):
+        cfg = read_commit(STAGES['B3d']['baseline_commit'])
+        self.assertNotIn('search_half_period_seconds', cfg['ecology'])
+        self.assertNotIn('period_sampling', cfg['fly']['curvature'])
+        game = load_config(ROOT/'game_play_config.json')
+        self.assertIsNone(World(game, 1)._curve_half)
+        self.assertIsNone(World(cfg, 1)._curve_half)
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -68,6 +68,13 @@ STAGES = {
             'paths': ('ecology.intent_hazards',),
             'rule': ('EXPLORE and TRANSIT dwell timers replaced by a minimum dwell and hazards conditioned '
                      'on local visual structure; TRANSIT speed unchanged.')},
+    'B3d': {'config_version': 24, 'record': 'results/game/calibration_room_m1_8_b3d.json',
+            'source_record': 'results/game/calibration_room_m1_8_b3c.json',
+            'baseline_commit': 'ddd702d9c2ebbc27ad166ad72583e4cd3f443f4a',
+            'paths': ('ecology.search_half_period_seconds', 'fly.curvature.period_sampling'),
+            'rule': ('Fixed oscillators replaced by resampled-period oscillators: the ODOR_SEARCH casting '
+                     'half-period and the two drift half-periods are redrawn every half-cycle, with the '
+                     'accepted amplitudes and mean periods.')},
 }
 
 

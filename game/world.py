@@ -129,6 +129,14 @@ class World:
             raise ValueError(f"unknown swatter.directional.tilt_geometry {self.tilt_geometry!r}; "
                              f"expected one of {sorted(TILT_GEOMETRIES)}")
         self.curvature = f.get("curvature")
+        # M1.8-B3d: optional resampled half-periods for the drift oscillators (ROOM only).
+        self.curvature_sampling = (self.curvature or {}).get("period_sampling")
+        if self.curvature_sampling is not None:
+            if self.curvature_sampling.get("distribution") != "triangular_symmetric":
+                raise ValueError("fly.curvature.period_sampling must be triangular_symmetric")
+            width = float(self.curvature_sampling["relative_half_width"])
+            if not 0.0 < width < 1.0:
+                raise ValueError("fly.curvature.period_sampling.relative_half_width must be in (0, 1)")
         self.sideslip = f.get("sideslip")
         self.width = float(w["width"])
         self.height = float(w["height"])
@@ -234,6 +242,12 @@ class World:
         self.pointer_history.append((0.0, self.swatter.x, self.swatter.y))
         self._spawn_rng = np.random.default_rng(seed + 8191)
         self._curve_phases = self._spawn_rng.uniform(0, 2*math.pi, 2)
+        # Its own stream, so the spawn and world streams keep their call order.
+        self._curve_rng = np.random.default_rng(seed + 70001)
+        self._curve_phi = [0.0, 0.0]
+        self._curve_next = [math.pi, math.pi]
+        self._curve_half = ([self._draw_curve_half(i) for i in range(2)]
+                            if self.curvature_sampling is not None else None)
         if self.spawn_config.get("randomized", False) and self.fly_motion_enabled:
             self._randomize_spawn()
         self.spawn_state = {"x": self.fly.x, "y": self.fly.y,
@@ -482,6 +496,20 @@ class World:
         if self.directional and math.hypot(step_x, step_y) > 1e-6:
             sw.orientation = math.atan2(step_y, step_x)
 
+    def _draw_curve_half(self, i: int) -> float:
+        half = 0.5*float(self.curvature["periods_seconds"][i])
+        width = float(self.curvature_sampling["relative_half_width"])
+        return float(self._curve_rng.triangular((1-width)*half, half, (1+width)*half))
+
+    def _advance_curvature(self, dt: float) -> list[float]:
+        """Advance each drift phase; redraw its half-period at every half-cycle boundary."""
+        for i in range(2):
+            self._curve_phi[i] += math.pi*dt/self._curve_half[i]
+            while self._curve_phi[i] >= self._curve_next[i]:
+                self._curve_next[i] += math.pi
+                self._curve_half[i] = self._draw_curve_half(i)
+        return self._curve_phi
+
     def _resample_wander(self) -> None:
         # Tonic exploration changes angular velocity, never screen direction.
         self._wander_target = float(self.rng.uniform(-self.wander_turn_rate,
@@ -510,7 +538,11 @@ class World:
             self._resample_wander()
         self._wander_turn += (self._wander_target - self._wander_turn) * (
             1.0 - math.exp(-dt / self.wander_turn_tau))
-        if self.curvature:
+        if self.curvature and self.curvature_sampling is not None:
+            self._wander_turn = sum(a*math.sin(phi+phase)
+                                    for a,phi,phase in zip(self.curvature["amplitudes_rad_s"],
+                                                           self._advance_curvature(dt), self._curve_phases))
+        elif self.curvature:
             self._wander_turn = sum(a*math.sin(2*math.pi*self._flight_time/p+phase)
                                    for a,p,phase in zip(self.curvature["amplitudes_rad_s"],
                                                         self.curvature["periods_seconds"], self._curve_phases))
