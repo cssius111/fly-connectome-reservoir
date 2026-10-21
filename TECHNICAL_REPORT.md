@@ -283,7 +283,7 @@ and never tunes kinematics for difficulty.
 | B2b caps and escape/cruise study | `e504499`, `bea44d0` | The shared 1000 units/s ceiling also binds the neural escape; above scale ~3.2 escape would make a fast fly slower, and above ~30 BL/s it erases the graded escape strength |
 | B2b-i | `924ccc3` | Three separated class C ceilings, all still 1000 units/s; bit-identical |
 | B2b-ii | `0d8c254` | EXPLORE speed: one symmetric triangular draw on the accepted 5-8 BL/s support per EXPLORE episode, replacing a deterministic 8 s sinusoid with a U-shaped time density; mean kept at 6.5 BL/s, sd 1.06 to 0.61. First intended divergence at tick 0; LAB, GAME and no-ecology runs stay bit-identical |
-| B2b-iii | `7b9fa05` | ODOR_TRACK speed by the same method on its accepted 9-13 BL/s support, from its own random stream; mean 11.0, sd 1.41 to 0.82. Code alone is bit-identical; the first divergences are exactly the first airborne ODOR_TRACK ticks. Paired 240-minute free-flight check passes (section 9.2). Implemented and validated, awaiting acceptance |
+| B2b-iii | `7b9fa05` | ODOR_TRACK speed by the same method on its accepted 9-13 BL/s support, from its own random stream; mean 11.0, sd 1.41 to 0.82. Code alone is bit-identical; the first divergences are exactly the first airborne ODOR_TRACK ticks. Paired 240-minute free-flight check passes (section 9.2). **Accepted 2026-10-21** |
 
 On 2026-10-20 the user answered the plan's remaining questions: the arena stays
 160 x 90 BL, the recorder moves to schema 5 only when a stage needs new fields, and
@@ -576,10 +576,10 @@ The same rules were applied from the first experiment to the last study:
 
 ## 9. Current state and next steps
 
-As of 2026-10-20 the accepted runtime is `363a1a9` (N4B1C decoder, N4B5R geometry), the
-slow-approach line and the learning line are closed by the user's decisions, and M1.8-B
-flight kinematics is the only active line. B2b-iii is implemented on top of the accepted
-runtime and awaits acceptance.
+As of 2026-10-21 the accepted runtime is the M1.8-B2b-iii configuration (ROOM
+`config_version` 18) on top of `363a1a9` (N4B1C decoder, N4B5R geometry), accepted by the
+user on 2026-10-21. The slow-approach line and the learning line are closed by the user's
+decisions, and M1.8-B flight kinematics is the only active line.
 
 ### 9.1 A measurement made for this report: where flight time goes
 
@@ -617,8 +617,10 @@ research-only ALERT study and a paired free-flight check on 2026-10-20. Validati
   the accepted configuration (0.050/min) and 9 under the candidate (0.037/min), with no
   no-drive escape in either and candidate category B at 2 (upper bound 0.026/min, below the
   0.1/min criterion);
-- 440 tests pass, and lifecycle and recorder replays are exact. The protected-file and
-  swatter-fixture checks need the local Windows checkout.
+- 440 tests pass, and lifecycle and recorder replays are exact. On the local Windows
+  checkout the 20 protected files match byte-exactly, `verify_results.py` passes and the
+  swatter reproduces the M1.7.1 acceptance recording exactly.
+- The user accepted B2b-iii on 2026-10-21.
 
 ### 9.3 The ALERT study
 
@@ -657,6 +659,7 @@ preregistered stage, or design another ecology-side rule) and selects none.
 | `wip/m1-4-enclosure` | The decoder research N4B2 to N4B8 and the operational handoff state |
 | `archive/m1-8-n2b-rejected` @ `2c30617` | The rejected N2b runtime |
 | `feature/m2-0-learning-infra` | The learned-controller study (Part IV) |
+| `claude/gracious-galileo-mxnbs9` | The accepted runtime plus M1.8-B2b-iii (accepted 2026-10-21), the ALERT study and this report |
 
 The validated environment is Windows with Python 3.11.16 and the CPU path; versions are
 pinned in `requirements-lock.txt`, and the learning code additionally needs PyTorch

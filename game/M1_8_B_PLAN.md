@@ -3,8 +3,8 @@
 Status: **planning document.** Section 2 is decided (see section 2.1) and the section 13
 decisions were answered on 2026-10-20. B1, B2a, B2b-i and B2b-ii were each authorized
 separately and are accepted (reports under `results/game/M1_8_B*.md`). B2b-iii (ODOR_TRACK
-speed, [design](M1_8_B2B_III_DESIGN.md)) was approved on 2026-10-20 and is implemented and
-validated, awaiting acceptance. Before B3, read
+speed, [design](M1_8_B2B_III_DESIGN.md)) was approved on 2026-10-20, implemented, and
+accepted on 2026-10-21. Before B3, read
 [M1_8_ALERT_INTERRUPTION.md](M1_8_ALERT_INTERRUPTION.md): neural ALERT interruptions
 currently override most ecological dwell timers. Every later stage still requires its own
 explicit user approval before implementation.

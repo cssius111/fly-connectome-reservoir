@@ -1,6 +1,8 @@
 # M1.8-B2b-iii validation: ODOR_TRACK speed distribution
 
-Status: **implemented and validated; awaiting the user's acceptance.**
+Status: **accepted by the user on 2026-10-21.** Accepted on the automated and local
+checks of sections 2-7; no human playtest was reported for this stage. B2b-iii is frozen
+unless recorded evidence demonstrates a real defect.
 
 Baseline: the accepted runtime `363a1a9` (M1.8-N4B5R, ROOM `config_version` 17). Design,
 scope and acceptance checks were fixed before implementation in
@@ -227,8 +229,7 @@ to the git-ignored `artifacts/m1_8_b2b_iii/`.
 All seven preregistered checks pass. The checks that need the local Windows checkout (the
 protected files, `verify_results.py`, the test suite on Windows and the swatter comparison
 on a human recording) were run there by the user on 2026-10-21 following section 11, and
-all pass. B2b-iii is implemented and validated; acceptance, including whether a human
-playtest is wanted for this stage, is the user's decision.
+all pass. The user accepted B2b-iii on 2026-10-21; no human playtest was reported.
 
 Not done, deliberately: TRANSIT, ODOR_SEARCH or RECOVER sampling, acceleration or
 deceleration models, timer removal, any change to the scale, the caps, the escape impulse,

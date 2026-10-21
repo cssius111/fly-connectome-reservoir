@@ -1,6 +1,6 @@
 # M1.8-B2b-iii design: the next speed context, and why it is not TRANSIT
 
-Status: **approved by the user on 2026-10-20 and implemented.** The user approved all
+Status: **approved by the user on 2026-10-20, implemented, and accepted on 2026-10-21.** The user approved all
 three section 5 items: B2b-iii as the ODOR_TRACK speed distribution (implemented in
 `7b9fa05`, validated in [results/game/M1_8_B2B_III.md](../results/game/M1_8_B2B_III.md)),
 a research-only investigation of the ALERT interruption
