@@ -44,7 +44,7 @@ class EcologicalController:
         'upwind_gain','search_period_seconds','search_amplitude_radians','visual_gain_floor',
         'landing_affordance_threshold','landing_dwell_seconds','landing_attempt_seconds','landing_cooldown_seconds',
         'spontaneous_clock_rate','odor_history','intent_hazards','search_half_period_seconds',
-        'odor_cues'}
+        'odor_cues','wind_reliability'}
     # M1.8-B3b: encounter history replacing the odor timers (game/M1_8_B_COMPLETION_DESIGN.md).
     ODOR_HISTORY_KEYS = {'_comment','build_seconds','recovery_seconds','upwind_attenuation','abandon_seconds',
                          'refractory_seconds','search_min_seconds','search_give_up_seconds'}
@@ -57,6 +57,8 @@ class EcologicalController:
     CASTING_SEED_OFFSET = 64747
     # M1.8-B4a: ODOR_TRACK consumes the odor derivative and the bilateral difference.
     ODOR_CUE_KEYS = {'_comment','bilateral_gain','bilateral_scale','rate_gain','rate_scale'}
+    # M1.8-B4b: reliability of the sensed wind and a still-air search strategy.
+    WIND_KEYS = {'_comment','unreliable_below','reliable_above'}
 
     def __init__(self, config, seed, landing_enabled=True):
         if set(config)-self.CONFIG_KEYS: raise ValueError('only ecological controller parameters are allowed')
@@ -98,6 +100,12 @@ class EcologicalController:
                 if not math.isfinite(o[name]) or o[name] <= 0: raise ValueError('odor_cues.'+name+' must be positive')
             if not 0 <= o['bilateral_gain'] <= config['steering_cap_rad_s']: raise ValueError('odor_cues.bilateral_gain must be within the steering cap')
             if not 0 <= o['rate_gain'] < 1: raise ValueError('odor_cues.rate_gain must be in [0,1)')
+        self.wind_reliability = config.get('wind_reliability')
+        if self.wind_reliability is not None:
+            w = self.wind_reliability
+            if set(w) != self.WIND_KEYS: raise ValueError('wind_reliability requires exactly its documented keys')
+            if not 0 <= w['unreliable_below'] < w['reliable_above']:
+                raise ValueError('wind_reliability thresholds must be ordered and nonnegative')
         self.reset(seed)
 
     def reset(self, seed):
@@ -120,6 +128,7 @@ class EcologicalController:
         # Casting oscillator phase, its next half-cycle boundary and current half-period.
         self.cast_rng=np.random.default_rng(seed+self.CASTING_SEED_OFFSET)
         self.cast_phase=0.0;self.cast_boundary=math.pi;self.cast_half=None
+        self.reliability=1.0
         self.steering=0.0;self.last_threat=ThreatState.CALM
         self.last_command=EcologicalCommand(self.state,self.speed,0.0,1.0)
 
@@ -199,8 +208,15 @@ class EcologicalController:
         upwind=math.atan2(-sense.wind_lateral,-sense.wind_forward) if wind_speed>1e-6 else 0.0
         steer=0.0
         visual_gain=c['visual_gain_floor']+(1-c['visual_gain_floor'])*sense.visual_contrast
-        if self.state in ('ODOR_TRACK','ODOR_SEARCH') and wind_speed>1e-6:
+        w=self.wind_reliability
+        if w is not None:
+            self.reliability=min(1.0,max(0.0,(wind_speed-w['unreliable_below'])/(w['reliable_above']-w['unreliable_below'])))
+        still_air=w is not None and self.reliability<0.5
+        if self.state in ('ODOR_TRACK','ODOR_SEARCH') and (wind_speed>1e-6 or w is not None):
             error=upwind
+            if still_air and self.state=='ODOR_SEARCH':
+                # E19: without reliable wind, cast around the current course, not around upwind.
+                error=0.0
             if self.state=='ODOR_SEARCH' and self.casting is not None:
                 error+=c['search_amplitude_radians']*math.sin(self._cast_phase(dt)+self.phase)
                 error=(error+math.pi)%(2*math.pi)-math.pi
@@ -210,6 +226,8 @@ class EcologicalController:
             # atan2 has a sign ambiguity exactly downwind; retain a seeded side.
             if abs(abs(error)-math.pi)<1e-8:error=self.tie_side*math.pi
             steer=c['upwind_gain']*error*visual_gain
+            if w is not None and not (still_air and self.state=='ODOR_SEARCH'):
+                steer*=self.reliability
             if h is not None and self.state=='ODOR_TRACK':
                 # E17: later encounters elicit weaker upwind responses.
                 steer*=1-h['upwind_attenuation']*self.history
@@ -264,6 +282,7 @@ class EcologicalController:
         extra = {} if self.odor_history is None else {'odor_history':self.history}
         if self.intent is not None:extra['visual_structure']=self.structure
         if self.casting is not None:extra['cast_half_period_seconds']=self.cast_half
+        if self.wind_reliability is not None:extra['wind_reliability']=self.reliability
         return {**self._diagnostics(), **extra}
 
     def _diagnostics(self):

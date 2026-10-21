@@ -82,6 +82,12 @@ STAGES = {
             'rule': ('ODOR_TRACK consumes the odor derivative (rate-modulated upwind gain) and the bilateral '
                      'difference (steering toward the stronger side), both bounded and relative to the '
                      'concentration.')},
+    'B4b': {'config_version': 26, 'record': 'results/game/calibration_room_m1_8_b4b.json',
+            'source_record': 'results/game/calibration_room_m1_8_b4a.json',
+            'baseline_commit': 'f00ca74cc9cf08c327ba14b65f0bb1552f05cdd7',
+            'paths': ('ecology.wind_reliability',),
+            'rule': ('Reliability of the sensed wind scales upwind steering; without reliable wind ODOR_SEARCH '
+                     'casts around the current course. ROOM wind is always reliable.')},
 }
 
 

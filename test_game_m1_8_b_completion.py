@@ -394,5 +394,38 @@ class TestB4aOdorCues(unittest.TestCase):
             self.assertLessEqual(abs(c.steering_rad_s), cap + 1e-12)
 
 
+class TestB4bWindReliability(unittest.TestCase):
+    def config(self):
+        return stage_config('B4b')
+
+    def test_reliability_ramp(self):
+        e = eco(self.config())
+        for speed, expected in ((0.0, 0.0), (5.0, 0.0), (12.5, 0.5), (20.0, 1.0), (45.0, 1.0)):
+            e.step(sense(odor=0.0, wind_forward=-speed), calm(), 0.02)
+            self.assertAlmostEqual(e.reliability, expected)
+
+    def test_room_wind_is_always_reliable(self):
+        wind = self.config()['room']['wind']
+        self.assertGreater(wind['speed']*(1 - wind['speed_fraction']),
+                           self.config()['ecology']['wind_reliability']['reliable_above'])
+
+    def test_still_air_search_casts_without_an_upwind_reference(self):
+        cfg = copy.deepcopy(self.config())
+        cfg['ecology']['odor_history']['search_give_up_seconds'] = 1e9   # keep searching
+        e = eco(cfg)
+        e._enter('ODOR_SEARCH')
+        steer = [e.step(sense(odor=0.0, wind_forward=0.0, wind_lateral=0.0), calm(), 0.02).steering_rad_s
+                 for _ in range(300)]
+        self.assertTrue(any(s > 0.05 for s in steer) and any(s < -0.05 for s in steer))
+
+    def test_reliable_wind_reproduces_the_previous_stage(self):
+        previous = read_commit(STAGES['B4b']['baseline_commit'])
+        a, b = tracking(self.config()), tracking(previous)
+        for tick in range(400):
+            s = sense(odor=1.0 + 0.5*math.sin(tick/7), odor_rate=3*math.cos(tick/7),
+                      odor_bilateral=0.02*math.sin(tick/5), wind_forward=-40.0, wind_lateral=10*math.sin(tick/11))
+            self.assertEqual(a.step(s, calm(), 0.02), b.step(s, calm(), 0.02))
+
+
 if __name__ == '__main__':
     unittest.main()
