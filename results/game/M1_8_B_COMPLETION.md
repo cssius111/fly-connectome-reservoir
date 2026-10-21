@@ -106,3 +106,74 @@ operations, schema 4, `config_version` 20); escape/cruise study and M1.7.1 swatt
 identical; ROOM resolves 1.45 through the B2d record.
 
 **B2d passes and is adopted.**
+
+
+## 3. B2e: sampled speed-transition time constant
+
+Implementation (`72eb8e7`): `game/kinematics.py` (the sampler draws one damping rate per new
+episode target from its own stream, +47933; the resolver applies it to ecological profiles
+only), `game/world.py`, `game_room_config.json` (`config_version` 21,
+`kinematics.speed_relaxation_per_second`), `results/game/calibration_room_m1_8_b2e.json`.
+
+**Check 1.** Code alone: bit-identical; combined SHA256 `68231e29...` before and `68231e29...` after; new streams: kinematics_relaxation. The relaxation stream is untouched under `config_version` 20.
+
+**Check 2.** Every ROOM scenario with ecology diverges at tick 0, its first ecology-driven
+EXPLORE tick, where the first drawn rate replaces 3.0 /s:
+
+| Scenario | Identical | First divergence | First ecology-driven EXPLORE / ODOR_TRACK / ODOR_SEARCH / RECOVER tick |
+| --- | --- | --- | --- |
+| `room_quiet` | no | tick 0: x | 0 |
+| `room_perched_threat` | no | tick 0: x | 0 |
+| `room_approach_threat` | no | tick 0: x | 0 |
+| `room_airborne_seed101` | no | tick 0: x | 0 |
+| `room_no_ecology` | **yes** | none | None |
+| `game_preset` | **yes** | none | None |
+| `lab_preset` | **yes** | none | None |
+
+Combined SHA256 `68231e29...` -> `ad233ba0...`.
+
+**Check 3.** B2e tests: the configured support, one rate per sampled episode from its own stream
+and seed offset, the accepted rate kept for TRANSIT and threat-priority ticks, speed draws
+unchanged by the new stream, the resolver applying the rate only to ecological profiles, a
+300-tick World run with every drawn rate replaced by 3.0 equal to the B2d configuration, and
+rejection of a degenerate support. **471 tests pass.**
+
+**Checks 4 and 5.** Metrics, B2d -> B2e:
+
+| State | Driving share | Speed mean BL/s | Episode mean s | Episode median s |
+| --- | --- | --- | --- | --- |
+| ALERT | 0.0 % -> 0.0 % | - -> - | 0.06 -> 0.05 | 0.06 -> 0.06 |
+| ESCAPE | 0.0 % -> 0.0 % | - -> 16.94 | - -> 0.42 | - -> 0.42 |
+| EXPLORE | 46.0 % -> 45.9 % | 6.87 -> 6.84 | 4.04 -> 4.37 | 4.14 -> 4.54 |
+| ODOR_SEARCH | 11.4 % -> 13.8 % | 5.94 -> 5.95 | 5.18 -> 5.16 | 6.02 -> 6.02 |
+| ODOR_TRACK | 15.0 % -> 12.5 % | 10.36 -> 10.52 | 5.45 -> 5.31 | 7.14 -> 5.66 |
+| RECOVER | 0.7 % -> 0.6 % | 8.18 -> 8.78 | 0.22 -> 0.30 | 0.22 -> 0.22 |
+| TRANSIT | 26.9 % -> 27.2 % | 9.69 -> 9.71 | 3.24 -> 3.17 | 3.32 -> 3.22 |
+
+Lifecycle airborne / perched / feeding: 81.0 / 19.0 / 18.4 % -> 84.8 / 15.2 / 14.9 %; touchdowns food+other 14+2 -> 12+1; visited cells 56.4 % -> 52.2 %; upwind share while tracking 60.0 % -> 58.8 %; escape onsets 0 -> 2. Pathology screen: pass.
+
+Settling time to within 0.5 BL/s of the target, median (s), B2d -> B2e: EXPLORE 0.50 -> 0.58,
+ODOR_TRACK 0.70 -> 0.78, ODOR_SEARCH 0.82 -> 0.80, RECOVER 0.00 -> 0.12. The 90th percentiles of
+acceleration and deceleration move by at most a few tenths of a BL/s^2 except RECOVER
+deceleration (9.7 -> 13.8 BL/s^2, 77 -> 274 samples in short post-escape episodes).
+
+**Check 6.** Paired free flight, the B2d arm reused:
+
+| | Previous stage | B2e |
+| --- | --- | --- |
+| Alive minutes | 240.0 | 240.0 |
+| Escapes (rate, exact 95 % upper bound) | 11 (0.046/min, 0.076) | 14 (0.058/min, 0.091) |
+| A | 0 (upper 0.012) | 0 (upper 0.012) |
+| B | 2 (upper 0.026) | 2 (upper 0.026) |
+| C | 0 (upper 0.012) | 1 (upper 0.020) |
+| D | 9 (upper 0.065) | 11 (upper 0.076) |
+| Perched escapes | 0 | 0 |
+
+Seeds with identical escape ticks: 58. Category B criterion met: True. Category D rises from 9 to 11; individually these counts are within Poisson noise
+(about 10 +/- 3), and B5 compares the whole chain with B3a on fresh seeds.
+
+**Check 7.** Lifecycle scenarios replay exactly with their accepted event sets; recorder exact
+replay (1,200 ticks, schema 4, `config_version` 21); escape/cruise study and swatter fixtures
+identical; ROOM resolves 1.45 through the B2e record.
+
+**B2e passes and is adopted.**
