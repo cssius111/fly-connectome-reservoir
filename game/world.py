@@ -184,7 +184,8 @@ class World:
         kinematics = config.get("kinematics", {})
         self.kinematic_sampler = KinematicSampler(
             seed, kinematics.get("explore_speed_bl_s"), kinematics.get("odor_track_speed_bl_s"),
-            kinematics.get("odor_search_speed_bl_s"), kinematics.get("recover_speed_bl_s"))
+            kinematics.get("odor_search_speed_bl_s"), kinematics.get("recover_speed_bl_s"),
+            kinematics.get("speed_relaxation_per_second"))
         self.kinematic_profile = self.kinematics.airborne(None, False)
         # Measurement escape hatch: tools/calibrate_escape.py turns this off so
         # a full strike can be observed without the fly dying part-way through.
@@ -498,7 +499,8 @@ class World:
             raise TypeError("world accepts only EcologicalCommand for ecological modulation")
         threat_priority = self._neural_active(action) or self.saccades.kind in ("ALERT","ESCAPE")
         sampled = self.kinematic_sampler.target_speed_bl_s(command, threat_priority)
-        profile = self.kinematics.airborne(command, threat_priority, sampled)
+        profile = self.kinematics.airborne(command, threat_priority, sampled,
+                                           self.kinematic_sampler.relaxation_rate_per_second())
         self.kinematic_profile = profile
         self.applied_target_speed = profile.target_speed
         self._flight_time += dt

@@ -49,6 +49,12 @@ STAGES = {
             'paths': ('kinematics.odor_search_speed_bl_s', 'kinematics.recover_speed_bl_s'),
             'rule': ('ODOR_SEARCH and RECOVER speed: one symmetric triangular draw per ecological '
                      'episode on the accepted envelopes, each from its own random stream.')},
+    'B2e': {'config_version': 21, 'record': 'results/game/calibration_room_m1_8_b2e.json',
+            'source_record': 'results/game/calibration_room_m1_8_b2d.json',
+            'baseline_commit': '066f7685ea47338a468c1c9ed862dc3a75d2e64f',
+            'paths': ('kinematics.speed_relaxation_per_second',),
+            'rule': ('Speed relaxation: one symmetric triangular damping-rate draw per ecological episode '
+                     'of the sampled contexts, from its own random stream, mean held at the accepted 3.0 /s.')},
 }
 
 

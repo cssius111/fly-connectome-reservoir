@@ -329,12 +329,13 @@ def main():
     parser.add_argument('--before', type=Path, help='compare: the previous stage output directory')
     parser.add_argument('--stage-states', default='', help='compare: states the stage targets (comma list)')
     parser.add_argument('--commit', help='read game_room_config.json from this commit')
+    parser.add_argument('--config', type=Path, help='read this configuration file (sensitivity variants)')
     parser.add_argument('--lane', type=int, default=0)
     parser.add_argument('--lanes', type=int, default=1)
     parser.add_argument('--ticks', type=int, default=TICKS)
     args = parser.parse_args()
     if args.mode == 'run':
-        config = load_arm(args.commit)
+        config = load_config(args.config) if args.config else load_arm(args.commit)
         args.out.mkdir(parents=True, exist_ok=True)
         brain = None
         for seed in SEEDS[args.lane::args.lanes]:
@@ -351,7 +352,8 @@ def main():
         (args.out/'compare.json').write_text(json.dumps(result, indent=1)+'\n', encoding='utf-8')
         print(json.dumps(result, indent=1))
         return
-    runs = [json.loads((args.out/('seed%d.json' % s)).read_text(encoding='utf-8')) for s in SEEDS]
+    runs = [json.loads((args.out/('seed%d.json' % s)).read_text(encoding='utf-8')) for s in SEEDS
+            if (args.out/('seed%d.json' % s)).exists()]
     summary = pooled(runs)
     (args.out/'summary.json').write_text(json.dumps(summary, indent=1)+'\n', encoding='utf-8')
     print(json.dumps(summary, indent=1))

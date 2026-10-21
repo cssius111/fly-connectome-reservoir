@@ -42,7 +42,9 @@ def _rng_states(world, session):
               'kinematics_odor_track': world.kinematic_sampler.odor_track_rng.bit_generator.state,
               # M1.8-B2d: the ODOR_SEARCH and RECOVER sampling streams.
               'kinematics_odor_search': world.kinematic_sampler.odor_search_rng.bit_generator.state,
-              'kinematics_recover': world.kinematic_sampler.recover_rng.bit_generator.state}
+              'kinematics_recover': world.kinematic_sampler.recover_rng.bit_generator.state,
+              # M1.8-B2e: the speed relaxation-rate stream.
+              'kinematics_relaxation': world.kinematic_sampler.relaxation_rng.bit_generator.state}
     if session.ecology is not None:
         states['ecology'] = session.ecology.rng.bit_generator.state
     if world.lifecycle is not None:

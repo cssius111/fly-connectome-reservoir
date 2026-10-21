@@ -3,6 +3,7 @@
 See game/M1_8_B_COMPLETION_DESIGN.md. Configuration scope and provenance are tested in
 test_game_m1_8_b_stages.py.
 """
+import copy
 import math
 import os
 from pathlib import Path
@@ -15,7 +16,7 @@ from game.ecology import EcologicalCommand
 from game.kinematics import KinematicSampler
 from game.session import load_config
 from game.world import World
-from tools.m1_8_b_stage_record import read_commit
+from tools.m1_8_b_stage_record import STAGES, read_commit, stage_config
 
 ROOT = Path(__file__).parent
 ROOM = load_config(ROOT/'game_room_config.json')
@@ -100,6 +101,79 @@ class TestB2dSampling(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'odor search speed'):
             KinematicSampler(1, odor_search={'distribution': 'uniform', 'min_bl_s': 4, 'mode_bl_s': 5,
                                              'max_bl_s': 6})
+
+
+class PinnedRate:
+    """Stands in for the relaxation stream and always draws the accepted 3.0 /s."""
+
+    def triangular(self, *args):
+        return 3.0
+
+
+class TestB2eRelaxation(unittest.TestCase):
+    SPEC = ROOM['kinematics']['speed_relaxation_per_second']
+
+    def test_room_configures_the_accepted_mean(self):
+        self.assertEqual((self.SPEC['min_per_second'], self.SPEC['mode_per_second'], self.SPEC['max_per_second']),
+                         (2.0, 3.0, 4.0))
+        self.assertEqual(ROOM['fly']['damping_per_second'], 3.0)
+
+    def test_one_rate_per_sampled_episode_from_its_own_stream(self):
+        import numpy as np
+        k = ROOM['kinematics']
+        sampler = KinematicSampler(255, k['explore_speed_bl_s'], relaxation=self.SPEC)
+        sampler.target_speed_bl_s(command('EXPLORE'), False)
+        first = sampler.relaxation_rate_per_second()
+        self.assertTrue(2.0 <= first <= 4.0)
+        self.assertEqual(first, float(np.random.default_rng(255 + KinematicSampler.RELAXATION_SEED_OFFSET)
+                                      .triangular(2.0, 3.0, 4.0)))
+        sampler.target_speed_bl_s(command('EXPLORE'), False)
+        self.assertEqual(sampler.relaxation_rate_per_second(), first)
+        # Unsampled contexts (TRANSIT is locked) and threat-priority ticks keep the accepted rate.
+        sampler.target_speed_bl_s(command('TRANSIT'), False)
+        self.assertIsNone(sampler.relaxation_rate_per_second())
+        sampler.target_speed_bl_s(command('EXPLORE'), True)
+        self.assertIsNone(sampler.relaxation_rate_per_second())
+        sampler.target_speed_bl_s(command('EXPLORE'), False)
+        self.assertNotEqual(sampler.relaxation_rate_per_second(), first)
+        self.assertEqual(sampler.relaxation_draws, 2)
+
+    def test_speed_draws_are_unchanged_by_the_relaxation_stream(self):
+        k = ROOM['kinematics']
+        a = KinematicSampler(101, k['explore_speed_bl_s'], k['odor_track_speed_bl_s'])
+        b = KinematicSampler(101, k['explore_speed_bl_s'], k['odor_track_speed_bl_s'], relaxation=self.SPEC)
+        for state in ('EXPLORE', 'ODOR_TRACK', 'TRANSIT', 'EXPLORE'):
+            self.assertEqual(a.target_speed_bl_s(command(state), False), b.target_speed_bl_s(command(state), False))
+
+    def test_resolver_uses_the_rate_only_for_ecological_profiles(self):
+        world = World(ROOM, 1)
+        resolver = world.kinematics
+        self.assertEqual(resolver.airborne(command('EXPLORE'), False, 6.0, 2.5).relaxation_rate, 2.5)
+        self.assertEqual(resolver.airborne(command('EXPLORE'), False, 6.0, None).relaxation_rate, 3.0)
+        self.assertEqual(resolver.airborne(command('EXPLORE'), True, 6.0, 2.5).relaxation_rate, 3.0)
+        self.assertEqual(resolver.airborne(None, False, None, 2.5).relaxation_rate, 3.0)
+
+    def test_a_rate_pinned_at_the_accepted_value_reproduces_b2d(self):
+        """With every drawn rate replaced by 3.0 the trajectory equals the B2d configuration."""
+        from game.action import Action
+        b2d = read_commit(STAGES['B2e']['baseline_commit'])
+        runs = []
+        for config, pin in ((b2d, False), (stage_config('B2e'), True)):
+            world = World(config, 255)
+            if pin:
+                world.kinematic_sampler.relaxation_rng = PinnedRate()
+            world.ecological_command = command('EXPLORE')
+            path = []
+            for _ in range(300):
+                world.tick(0.02, Action())
+                path.append((world.fly.x, world.fly.y, world.fly.vx, world.fly.vy))
+            runs.append(path)
+        self.assertEqual(runs[0], runs[1])
+
+    def test_invalid_specification_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, 'non-degenerate'):
+            KinematicSampler(1, relaxation={'distribution': 'triangular_symmetric', 'min_per_second': 3.0,
+                                            'mode_per_second': 3.0, 'max_per_second': 3.0})
 
 
 if __name__ == '__main__':

@@ -1,5 +1,5 @@
 {
-  "config_version": 20,
+  "config_version": 21,
   "_comment": "M1.6 horizontal ROOM slice. Logical units and state speeds are gameplay mappings, not universal biological constants.",
   "sim": {
     "tick_seconds": 0.02,
@@ -135,11 +135,11 @@
     "virtual_distance": 100.0
   },
   "policy": {
-    "_comment": "Exact provenance required. The M1.8-N4B1C lateral dual-path decoder (unchanged) under the M1.8-N4B5R elevation-aware geometry, the M1.8-B2b-iii kinematics and the M1.8-B3a ecology threat input loads the M1.8-B2d transfer record, which carries the identical decoder block for this configuration: rebuild it with python tools/m1_8_b_stage_record.py B2d. Earlier records are preserved unchanged. tools/calibrate_escape.py measures the scalar single-sample criterion only and does not calibrate this decoder.",
+    "_comment": "Exact provenance required. The M1.8-N4B1C lateral dual-path decoder (unchanged) under the M1.8-N4B5R elevation-aware geometry, the M1.8-B2b-iii kinematics and the M1.8-B3a ecology threat input loads the M1.8-B2e transfer record, which carries the identical decoder block for this configuration: rebuild it with python tools/m1_8_b_stage_record.py B2e. Earlier records are preserved unchanged. tools/calibrate_escape.py measures the scalar single-sample criterion only and does not calibrate this decoder.",
     "escape_threshold": null,
     "calibration_paths": [
-      "artifacts/game/calibration_room_m1_8_b2d.json",
-      "results/game/calibration_room_m1_8_b2d.json"
+      "artifacts/game/calibration_room_m1_8_b2e.json",
+      "results/game/calibration_room_m1_8_b2e.json"
     ],
     "escape_decoder": {
       "_comment": "M1.8-N4B1C combined DNp01 criterion. Escape when EITHER path qualifies outside the shared refractory period. LATERAL: the same DNp01 side produces lateral_required_spikes inferred spikes within lateral_same_side_window_ms (per-side spikes inferred from that side's own trace; a left spike followed by a right spike never qualifies). Summed N2b path: FAST when left + right >= summed_fast_threshold; SUSTAINED when the current summed sample is >= sustained_threshold AND at least sustained_required_samples of the most recent sustained_window_samples summed samples are >= sustained_threshold. All values are Class C engineering decoder parameters derived from simulator evidence, not biological constants. sustained_threshold must equal the record's escape_threshold.",
@@ -443,6 +443,13 @@
       "min_bl_s": 5.0,
       "mode_bl_s": 6.5,
       "max_bl_s": 8.0
+    },
+    "speed_relaxation_per_second": {
+      "_comment": "M1.8-B2e. One sampled damping rate per ecological episode of the sampled contexts (EXPLORE, ODOR_TRACK, ODOR_SEARCH, RECOVER), drawn from its own random stream, replacing the fixed fly.damping_per_second for those episodes only. Class C: no reviewed source gives a matched acceleration distribution; the mean is held at the accepted 3.0 /s. Neural-priority, lifecycle and TRANSIT profiles keep the accepted rate.",
+      "distribution": "triangular_symmetric",
+      "min_per_second": 2.0,
+      "mode_per_second": 3.0,
+      "max_per_second": 4.0
     }
   }
 }

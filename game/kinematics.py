@@ -170,11 +170,14 @@ class KinematicResolver:
         return speed_bl_s*self.body_length*self.room_kinematic_scale
 
     def airborne(self, command, threat_priority: bool,
-                 sampled_speed_bl_s: float | None = None) -> KinematicProfile:
+                 sampled_speed_bl_s: float | None = None,
+                 relaxation_rate: float | None = None) -> KinematicProfile:
         """Ordinary flight. Neural threat and pulses outrank the ecological command.
 
         `sampled_speed_bl_s` is the M1.8-B2b hook. None means "no sample taken; use the
         ecological command unchanged", which is the only behavior B2a produces.
+        `relaxation_rate` is the M1.8-B2e hook for the sampled episode damping rate; None
+        keeps the accepted damping. Neither applies on threat-priority ticks.
         """
         if command is None or threat_priority:
             # Threat-priority cruise and the neural escape impulse share the accepted
@@ -193,7 +196,8 @@ class KinematicResolver:
         return KinematicProfile(
             context='ecology_' + command.state.lower(), relaxation=DAMPED_CRUISE,
             target_speed=min(cap, self.ecological_units(requested)),
-            relaxation_rate=self.damping, steering_rad_s=command.steering_rad_s,
+            relaxation_rate=self.damping if relaxation_rate is None else float(relaxation_rate),
+            steering_rad_s=command.steering_rad_s,
             spontaneous_clock_rate=command.spontaneous_clock_rate,
             effective_cap=self.caps.effective(cap), profile_cap=cap,
             safety_ceiling=self.caps.safety_ceiling, clamp_speed=True)
@@ -260,6 +264,18 @@ class KinematicExecutor:
                              -max_yaw_rate, max_yaw_rate))
 
 
+def _triangular_rate(spec: dict) -> tuple[float, float, float]:
+    """Validate a `triangular_symmetric` relaxation-rate specification (M1.8-B2e)."""
+    if spec.get('distribution') != 'triangular_symmetric':
+        raise ValueError('unsupported speed relaxation distribution: ' + str(spec.get('distribution')))
+    low, mode, high = (float(spec[k]) for k in ('min_per_second', 'mode_per_second', 'max_per_second'))
+    if not 0.0 < low < high or not low <= mode <= high:
+        raise ValueError('speed relaxation support must be positive, ordered and non-degenerate')
+    if abs((low + high)/2.0 - mode) > 1e-9:
+        raise ValueError('triangular_symmetric requires the mode at the midpoint')
+    return low, mode, high
+
+
 def _triangular_support(spec: dict, label: str) -> tuple[float, float, float]:
     """Validate a `triangular_symmetric` speed specification and return its support."""
     shape = spec.get('distribution')
@@ -289,6 +305,11 @@ class KinematicSampler:
     draw sequence is unchanged by construction. Each context is sampled only when its
     specification is configured; without any, every call returns None and no draw is
     taken.
+
+    M1.8-B2e adds an optional relaxation rate: whenever a new episode target is drawn, a
+    damping rate for that episode is drawn from its own stream (`relaxation_rng`) and
+    reported by `relaxation_rate_per_second()`; without the specification it is None and
+    the resolver keeps the accepted `fly.damping_per_second`.
     """
 
     # Unique among the seeded streams: flight +3907, room +6011, ecology +7013,
@@ -297,6 +318,7 @@ class KinematicSampler:
     ODOR_TRACK_SEED_OFFSET = 30011
     ODOR_SEARCH_SEED_OFFSET = 36263   # M1.8-B2d
     RECOVER_SEED_OFFSET = 42061       # M1.8-B2d
+    RELAXATION_SEED_OFFSET = 47933    # M1.8-B2e
     # Context -> public spec attribute, stream attribute and seed offset.
     CONTEXTS = {'EXPLORE': ('explore', 'rng', SEED_OFFSET),
                 'ODOR_TRACK': ('odor_track', 'odor_track_rng', ODOR_TRACK_SEED_OFFSET),
@@ -305,7 +327,9 @@ class KinematicSampler:
 
     def __init__(self, seed: int, explore: dict | None = None,
                  odor_track: dict | None = None, odor_search: dict | None = None,
-                 recover: dict | None = None):
+                 recover: dict | None = None, relaxation: dict | None = None):
+        self.relaxation = dict(relaxation) if relaxation else None
+        self._relaxation_support = _triangular_rate(self.relaxation) if self.relaxation else None
         self.explore = dict(explore) if explore else None
         self.odor_track = dict(odor_track) if odor_track else None
         self.odor_search = dict(odor_search) if odor_search else None
@@ -324,12 +348,17 @@ class KinematicSampler:
             rng = np.random.default_rng(self.seed + offset)
             setattr(self, stream, rng)
             self._initial[stream] = copy.deepcopy(rng.bit_generator.state)
+        self.relaxation_rng = np.random.default_rng(self.seed + self.RELAXATION_SEED_OFFSET)
+        self._initial['relaxation_rng'] = copy.deepcopy(self.relaxation_rng.bit_generator.state)
         self.initial_state = self._initial['rng']
         self.odor_track_initial_state = self._initial['odor_track_rng']
         self.draws = 0
         self.draws_by_context = {}
         self._episode_state = None
         self._episode_sample = None
+        self._episode_rate = None
+        self._current_rate = None
+        self.relaxation_draws = 0
 
     @property
     def untouched(self) -> bool:
@@ -365,6 +394,7 @@ class KinematicSampler:
         or an ODOR_TRACK bout) and no new persistence parameter is invented. No ecology,
         flight, world, spawn, room or lifecycle random stream is consumed here.
         """
+        self._current_rate = None
         if command is None or threat_priority or not self.enabled:
             return None
         state = getattr(command, 'state', None)
@@ -376,4 +406,12 @@ class KinematicSampler:
         if self._episode_state != state or self._episode_sample is None:
             self._episode_sample = self._draw(state)
             self._episode_state = state
+            if self.relaxation is not None:
+                self.relaxation_draws += 1
+                self._episode_rate = float(self.relaxation_rng.triangular(*self._relaxation_support))
+        self._current_rate = self._episode_rate if self.relaxation is not None else None
         return self._episode_sample
+
+    def relaxation_rate_per_second(self) -> float | None:
+        """The episode's sampled damping rate for the last sampled target, else None."""
+        return self._current_rate
