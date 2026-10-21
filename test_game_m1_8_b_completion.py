@@ -348,5 +348,51 @@ class TestB3dOscillators(unittest.TestCase):
         self.assertIsNone(World(cfg, 1)._curve_half)
 
 
+def tracking(config, history=0.0):
+    e = eco(config)
+    e.state, e.has_odor, e.on_time, e.history = 'ODOR_TRACK', True, 1.0, history
+    return e
+
+
+class TestB4aOdorCues(unittest.TestCase):
+    def config(self):
+        return stage_config('B4a')
+
+    def test_bilateral_difference_turns_toward_the_stronger_side(self):
+        right = tracking(self.config()).step(sense(odor=1.0, wind_forward=-40.0, odor_bilateral=0.05), calm(), 0.02)
+        left = tracking(self.config()).step(sense(odor=1.0, wind_forward=-40.0, odor_bilateral=-0.05), calm(), 0.02)
+        self.assertGreater(right.steering_rad_s, 0.0)
+        self.assertLess(left.steering_rad_s, 0.0)
+        self.assertAlmostEqual(right.steering_rad_s, -left.steering_rad_s)
+
+    def test_rising_odor_strengthens_and_falling_odor_weakens_the_upwind_turn(self):
+        # A small upwind error, so the turn stays below the steering cap in every case.
+        s = dict(odor=1.0, wind_forward=-40.0, wind_lateral=-10.0)
+        rising = tracking(self.config()).step(sense(odor_rate=4.0, **s), calm(), 0.02).steering_rad_s
+        flat = tracking(self.config()).step(sense(odor_rate=0.0, **s), calm(), 0.02).steering_rad_s
+        falling = tracking(self.config()).step(sense(odor_rate=-4.0, **s), calm(), 0.02).steering_rad_s
+        self.assertGreater(abs(rising), abs(flat))
+        self.assertLess(abs(falling), abs(flat))
+        self.assertEqual(math.copysign(1, rising), math.copysign(1, falling))
+
+    def test_zero_gains_reproduce_the_previous_stage(self):
+        cfg = copy.deepcopy(self.config())
+        cfg['ecology']['odor_cues']['bilateral_gain'] = 0.0
+        cfg['ecology']['odor_cues']['rate_gain'] = 0.0
+        previous = read_commit(STAGES['B4a']['baseline_commit'])
+        a, b = tracking(cfg), tracking(previous)
+        for tick in range(400):
+            s = sense(odor=1.0 + 0.5*math.sin(tick/7), odor_rate=3*math.cos(tick/7),
+                      odor_bilateral=0.02*math.sin(tick/5), wind_lateral=10*math.sin(tick/11))
+            self.assertEqual(a.step(s, calm(), 0.02), b.step(s, calm(), 0.02))
+
+    def test_steering_stays_within_the_cap(self):
+        e = tracking(self.config())
+        cap = self.config()['ecology']['steering_cap_rad_s']
+        for tick in range(500):
+            c = e.step(sense(odor=0.2, odor_rate=50.0, odor_bilateral=0.5, wind_lateral=60.0), calm(), 0.02)
+            self.assertLessEqual(abs(c.steering_rad_s), cap + 1e-12)
+
+
 if __name__ == '__main__':
     unittest.main()

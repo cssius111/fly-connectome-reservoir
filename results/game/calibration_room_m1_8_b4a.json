@@ -1,0 +1,246 @@
+{
+  "record_kind": "m1-8-b-stage-transfer-provenance-v1",
+  "stage": "M1.8-B4a",
+  "not_a_scalar_calibration": true,
+  "not_a_decoder_recalibration": true,
+  "decoder_unchanged": true,
+  "geometry_unchanged": true,
+  "rule": "ODOR_TRACK consumes the odor derivative (rate-modulated upwind gain) and the bilateral difference (steering toward the stronger side), both bounded and relative to the concentration.",
+  "escape_threshold": 1.45,
+  "escape_decoder": {
+    "kind": "lateral_dual_path_v1",
+    "sustained_threshold": 1.45,
+    "summed_fast_threshold": 2.1,
+    "sustained_window_samples": 5,
+    "sustained_required_samples": 3,
+    "require_current_qualifying": true,
+    "lateral_same_side_window_ms": 60.0,
+    "lateral_required_spikes": 2,
+    "lateral_window_samples": 3,
+    "spike_inference_rule": "per side: spike_t = trace_t - decay * trace_{t-1} >= 0.5, with decay = float32(exp(-tick_seconds / trace_tau_seconds)); no spike is inferred on the first sample after reset",
+    "lateral_rule": "left and right tracked independently; the qualifying spike must be on the current sample; the previous spike of the SAME side must be at most lateral_window_samples samples earlier; a left spike followed by a right spike never qualifies",
+    "window_rule": "one summed qualification flag per sample, refractory samples included; cleared when an escape fires and on reset",
+    "escape_clears": [
+      "summed window and streak",
+      "lateral last-spike memory, both sides"
+    ],
+    "reset_clears": [
+      "summed window and streak",
+      "lateral spike history and previous trace values",
+      "trigger channel and paths"
+    ],
+    "channel_precedence": [
+      "LATERAL",
+      "FAST",
+      "SUSTAINED"
+    ],
+    "motor_semantics": "unchanged: strength, side, steering, saccade, forward bias and refractory do not depend on the path that fired",
+    "parameter_class": "C"
+  },
+  "parameter_basis": {
+    "sustained_threshold": {
+      "value": 1.45,
+      "basis": "inherited unchanged from the scalar single-sample calibration, used here only as the summed qualification level",
+      "source_record": "results/game/calibration_room_m1_8_b2b_ii.json",
+      "source_sha256": "8c5456520b0b02063377c93670970aefecc8fd22540b012cb176ca25511fc098",
+      "original_measurement": "results/game/calibration_room_m1_7_1.json",
+      "original_measurement_sha256": "1df05b3f85885f6074253fccc407b451f998cd8302cc318baa86f832316f1a44"
+    },
+    "summed_path": {
+      "summed_fast_threshold": 2.1,
+      "sustained_window_samples": 5,
+      "sustained_required_samples": 3,
+      "require_current_qualifying": true,
+      "class": "C",
+      "basis": "the M1.8-N2b summed criterion, unchanged; N2b itself failed its second human re-acceptance and is retained here only as the path that keeps alternating-side hover evidence"
+    },
+    "lateral_path": {
+      "lateral_same_side_window_ms": 60.0,
+      "lateral_required_spikes": 2,
+      "class": "C",
+      "basis": "M1.8-N4A: spontaneous DNp01 spikes are noise driven and independent per side, and the summed trace turns bilateral coincidences into apparent multi-spike evidence; M1.8-N4B1: a same-side 60 ms rule (frozen Rule A) restores legacy-level committed-strike timing with 0 false events on a fresh 280-minute N0; M1.8-N4B1C: combined with the N2b path it restores alternating-side hover coverage and passes a new pre-registered 280-minute N0 holdout. The window is a simulator property (LIF reset to 0 plus independent noise), not a biological refractory constant."
+    },
+    "not_biological_constants": true
+  },
+  "geometry": {
+    "tilt_geometry": "elevation_aware_tilt_v1",
+    "previous_tilt_geometry": "bearing_only_v0",
+    "tilt_anisotropy": 0.25,
+    "formula": "half = paddle_radius * (e + (1 - e) * face) * (1 - tilt_anisotropy * cos(elevation) * (1 - face) * abs(sin(bearing - orientation))), with cos(elevation) = horizontal fly-paddle distance / 3-D fly-paddle distance",
+    "previous_formula": "half = paddle_radius * (e + (1 - e) * face) * (1 - tilt_anisotropy * (1 - face) * abs(sin(bearing - orientation)))",
+    "scope": "ROOM configuration only; GAME and LAB configurations are unchanged",
+    "reason": "correction of the overhead tilt-foreshortening artifact: the bearing-only term turns horizontal bearing rate into apparent expansion of up to 6.9 rad/s under a stationary paddle (0.13 rad/s from range change), producing all overhead free-flight escapes of M1.8-N4B4 and the episode-5 slow-close signal",
+    "research": {
+      "milestone": "M1.8-N4B5",
+      "candidate": "G3_elevation_aware",
+      "research_commit": "0e9d2d9",
+      "frozen_geometry_sha256": "a11cafa09750b50bf3cad6e032746336981cc99b481edcdbd45656ddaa830b49",
+      "geometry_module_sha256_raw_worktree": "c3884e644df5c51ee95489b8f204795e1eb36648d5da14415de3abe0f3d7066a",
+      "files": {
+        "game/M1_8_N4B5_PADDLE_VISUAL_GEOMETRY.md": "08cac01953dd1cba95c124b18c89d389bb4c1586a62af09a46bbce6e826a8b43",
+        "tools/n4b5_geometry.py": "c3884e644df5c51ee95489b8f204795e1eb36648d5da14415de3abe0f3d7066a",
+        "tools/n4b5_analysis.py": "bcb66a0b6dde953e77bf974722f50d636aa46b8e867538e91d9a0365e3639215",
+        "tools/n4b5_resim.py": "4095aa5a82937276cec71364587073cbf69750fc875b928018b502c0d770957d",
+        "tools/n4b5_evaluate.py": "65e372c62e41922c4d2ffaa51cc105d7fcd5b9ef4087e9855f1f8609537dc9b9",
+        "game/M1_8_N4B4_FREE_FLIGHT_ESCAPE_INTERPRETATION.md": "c21d6be173c2d9b4358ab97f511d12801e97ffd10f67abc684982d30b854841b"
+      }
+    },
+    "parameter_class": "C (geometric rendering correction, not a biological parameter)"
+  },
+  "kinematics": {
+    "_comment": "M1.8-B2a. room_kinematic_scale is a Class C simulator/environment mapping from body-length-normalized ecological speed to ROOM world units. It is NOT a measured biological constant and no literature magnitude has been adopted. 1.0 is the accepted no-op value. It applies only to non-neural ecological locomotion; threat-priority, landing approach and takeoff are excluded. M1.8-B2b-i separates the overloaded fly.max_speed into three Class C engineering ceilings: ecological locomotion, the accepted legacy neural/escape and lifecycle constraint, and a global numerical safety guard. All three are held at the legacy 1000.0 units/s so behavior is unchanged. None is a species flight maximum.",
+    "room_kinematic_scale": 1.0,
+    "ecological_cap_units_s": 1000.0,
+    "legacy_accepted_cap_units_s": 1000.0,
+    "safety_ceiling_units_s": 1000.0,
+    "explore_speed_bl_s": {
+      "_comment": "M1.8-B2b-ii. One sampled EXPLORE target per ecological EXPLORE episode, replacing the shared deterministic 8 s speed sinusoid for this context only. The shape is PHENOMENOLOGICAL: no reviewed source measures a free-flight speed distribution shape, and E02/E03 do not supply a usable central tendency, spread or support for ROOM. Support and mean are held at the accepted EXPLORE envelope so this stage changes the sampling model, not the magnitude. Persistence is the existing ecology.explore_duration_seconds dwell; no new persistence parameter is added.",
+      "distribution": "triangular_symmetric",
+      "min_bl_s": 5.0,
+      "mode_bl_s": 6.5,
+      "max_bl_s": 8.0
+    },
+    "odor_track_speed_bl_s": {
+      "_comment": "M1.8-B2b-iii. One sampled ODOR_TRACK target per ecological ODOR_TRACK episode, replacing the shared deterministic 8 s speed sinusoid for this context only, drawn from its own random stream. The shape is PHENOMENOLOGICAL, as for EXPLORE: no reviewed source gives a usable groundspeed central tendency, spread or shape for odor tracking in ROOM, and E05 reports a wind-tunnel airspeed, a different quantity that could enter only through room_kinematic_scale, which stays 1.0. Support and mean are held at the accepted ODOR_TRACK envelope. Persistence is the existing ODOR_TRACK episode; no new persistence parameter is added.",
+      "distribution": "triangular_symmetric",
+      "min_bl_s": 9.0,
+      "mode_bl_s": 11.0,
+      "max_bl_s": 13.0
+    },
+    "odor_search_speed_bl_s": {
+      "_comment": "M1.8-B2d. One sampled ODOR_SEARCH target per ecological ODOR_SEARCH episode, replacing the shared deterministic 8 s speed sinusoid for this context only, drawn from its own random stream. The shape is PHENOMENOLOGICAL, as for EXPLORE and ODOR_TRACK; support and mean are held at the accepted ODOR_SEARCH envelope. See game/M1_8_B_COMPLETION_DESIGN.md.",
+      "distribution": "triangular_symmetric",
+      "min_bl_s": 4.0,
+      "mode_bl_s": 5.5,
+      "max_bl_s": 7.0
+    },
+    "recover_speed_bl_s": {
+      "_comment": "M1.8-B2d. One sampled RECOVER target per ecological RECOVER episode, from its own random stream, replacing the shared 8 s sinusoid for this context only. PHENOMENOLOGICAL shape; support and mean held at the accepted RECOVER envelope.",
+      "distribution": "triangular_symmetric",
+      "min_bl_s": 5.0,
+      "mode_bl_s": 6.5,
+      "max_bl_s": 8.0
+    },
+    "speed_relaxation_per_second": {
+      "_comment": "M1.8-B2e. One sampled damping rate per ecological episode of the sampled contexts (EXPLORE, ODOR_TRACK, ODOR_SEARCH, RECOVER), drawn from its own random stream, replacing the fixed fly.damping_per_second for those episodes only. Class C: no reviewed source gives a matched acceleration distribution; the mean is held at the accepted 3.0 /s. Neural-priority, lifecycle and TRANSIT profiles keep the accepted rate.",
+      "distribution": "triangular_symmetric",
+      "min_per_second": 2.0,
+      "mode_per_second": 3.0,
+      "max_per_second": 4.0
+    }
+  },
+  "ecology_threat_input": {
+    "_comment": "M1.8-B3a. Which ThreatState the ecology receives; the lifecycle always receives the accepted mapping. executed_response_v1: the fixed policy's ALERT state alone (no saccade requested on the tick and no ALERT saccade executing) reaches the ecology as CALM; ESCAPE and executed alert responses pass unchanged. policy_state_v0, the default when this block is absent, hands the ecology the same threat as the lifecycle. Class C interface choice, not a biological claim. See game/M1_8_B3A_DESIGN.md.",
+    "mode": "executed_response_v1"
+  },
+  "stage_paths": [
+    "ecology.odor_cues"
+  ],
+  "stage_values": {
+    "ecology.odor_cues": {
+      "_comment": "M1.8-B4a. ODOR_TRACK consumes the odor derivative and the bilateral difference, both divided by max(odor, odor_on): steering += bilateral_gain*tanh(relative bilateral / bilateral_scale) toward the stronger side (E18), and the upwind gain is scaled by 1 + rate_gain*tanh(relative rate / rate_scale) (E16). Class C; no transferable gain exists. See game/M1_8_B_COMPLETION_DESIGN.md section 8.",
+      "bilateral_gain": 0.3,
+      "bilateral_scale": 0.05,
+      "rate_gain": 0.25,
+      "rate_scale": 2.0
+    }
+  },
+  "design_note": "game/M1_8_B_COMPLETION_DESIGN.md",
+  "hash_convention": "source records: SHA256 of committed content with CRLF normalised to LF; config_sha256: raw working-file bytes",
+  "source_record": {
+    "record": "results/game/calibration_room_m1_8_b3d.json",
+    "sha256": "4ddfc1c7bc755fd12c5e3fd72cabc12b7fc198468b5496119aa70e94401c8d8b",
+    "provenance": {
+      "schema_version": 2,
+      "measurement_protocol": "fixed-fly-v2",
+      "config_hash_format": "canonical-json-sort-keys-ascii-compact",
+      "game_config_sha256": "7a9bd86dad5ddf79b44296ef0006252c27aa191c15b311a3948cd5536716527a",
+      "flybrain_version": "0.1.0",
+      "encoder_population_rule": "min-per-type-per-side-v1",
+      "encoder_seed": 20260917,
+      "encoder_types": {
+        "loom": [
+          "LPLC2"
+        ],
+        "threat": [
+          "LC4"
+        ]
+      },
+      "sensory_input": false,
+      "tick_seconds": 0.02,
+      "brain_dt_seconds": 0.02
+    },
+    "record_kind": "m1-8-b-stage-transfer-provenance-v1",
+    "modified": false
+  },
+  "tick_seconds": 0.02,
+  "config_sha256": "0d9199e5388a0982a269e417b6dc982fcb8e49171f64345b26668a275198c533",
+  "provenance": {
+    "schema_version": 2,
+    "measurement_protocol": "fixed-fly-v2",
+    "config_hash_format": "canonical-json-sort-keys-ascii-compact",
+    "game_config_sha256": "04b304d9a881dc4da7045827e34c8f9dd6442faa5a44e0dc629e03af1c3187bd",
+    "flybrain_version": "0.1.0",
+    "encoder_population_rule": "min-per-type-per-side-v1",
+    "encoder_seed": 20260917,
+    "encoder_types": {
+      "loom": [
+        "LPLC2"
+      ],
+      "threat": [
+        "LC4"
+      ]
+    },
+    "sensory_input": false,
+    "tick_seconds": 0.02,
+    "brain_dt_seconds": 0.02
+  },
+  "measurement_conditions": {
+    "collisions_enabled": false,
+    "escape_disabled": true,
+    "fly_motion_enabled": false,
+    "swatter_settle_ticks": 300,
+    "note": "fly position and heading are fixed; velocity stays zero, wander is disabled, and collisions/escape actions are disabled"
+  },
+  "measurement_reuse": {
+    "kind": "ecological stage; decoder and geometry transferred unchanged; not a new measurement",
+    "source_record": "results/game/calibration_room_m1_8_b3d.json",
+    "source_sha256": "4ddfc1c7bc755fd12c5e3fd72cabc12b7fc198468b5496119aa70e94401c8d8b",
+    "original_measurement": "results/game/calibration_room_m1_7_1.json",
+    "original_measurement_sha256": "9275558aa05f05d285adc08b89682de19a26e4e72aeb1976165d59a0b8ec4afb",
+    "baseline_commit": "c488c170cb7f715232dabf7714542b5f95d172db",
+    "reason": "The threshold and decoder are not re-derived. fixed-fly-v2 disables ecology, fly motion and collisions, so this stage cannot change the retinal or neural input of the measurement behind them.",
+    "changed_config_paths": [
+      "config_version",
+      "ecology.odor_cues",
+      "policy._comment",
+      "policy.calibration_paths"
+    ]
+  },
+  "neurons": 166700,
+  "connections": 25088107,
+  "input_populations": {
+    "loom": {
+      "types": [
+        "LPLC2"
+      ],
+      "available_L": 94,
+      "available_R": 91,
+      "used_per_side": 91
+    },
+    "threat": {
+      "types": [
+        "LC4"
+      ],
+      "available_L": 71,
+      "available_R": 55,
+      "used_per_side": 55
+    }
+  },
+  "versions": {
+    "flybrain": "0.1.0",
+    "numpy": "2.4.6",
+    "scipy": "1.17.1",
+    "numba": "0.67.0"
+  }
+}

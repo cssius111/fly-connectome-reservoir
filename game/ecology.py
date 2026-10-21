@@ -43,7 +43,8 @@ class EcologicalController:
         'transit_duration_seconds','speed_bl_s','speed_tau_seconds','steering_tau_seconds','steering_cap_rad_s',
         'upwind_gain','search_period_seconds','search_amplitude_radians','visual_gain_floor',
         'landing_affordance_threshold','landing_dwell_seconds','landing_attempt_seconds','landing_cooldown_seconds',
-        'spontaneous_clock_rate','odor_history','intent_hazards','search_half_period_seconds'}
+        'spontaneous_clock_rate','odor_history','intent_hazards','search_half_period_seconds',
+        'odor_cues'}
     # M1.8-B3b: encounter history replacing the odor timers (game/M1_8_B_COMPLETION_DESIGN.md).
     ODOR_HISTORY_KEYS = {'_comment','build_seconds','recovery_seconds','upwind_attenuation','abandon_seconds',
                          'refractory_seconds','search_min_seconds','search_give_up_seconds'}
@@ -54,6 +55,8 @@ class EcologicalController:
     INTENT_SEED_OFFSET = 59011
     # M1.8-B3d: the ODOR_SEARCH casting half-period is redrawn every half-cycle.
     CASTING_SEED_OFFSET = 64747
+    # M1.8-B4a: ODOR_TRACK consumes the odor derivative and the bilateral difference.
+    ODOR_CUE_KEYS = {'_comment','bilateral_gain','bilateral_scale','rate_gain','rate_scale'}
 
     def __init__(self, config, seed, landing_enabled=True):
         if set(config)-self.CONFIG_KEYS: raise ValueError('only ecological controller parameters are allowed')
@@ -87,6 +90,14 @@ class EcologicalController:
             if not 0 < low < high or abs((low+high)/2-mode) > 1e-9:
                 raise ValueError('search half-period support must be positive, ordered and symmetric')
             self._casting_support = (low, mode, high)
+        self.odor_cues = config.get('odor_cues')
+        if self.odor_cues is not None:
+            o = self.odor_cues
+            if set(o) != self.ODOR_CUE_KEYS: raise ValueError('odor_cues requires exactly its documented keys')
+            for name in ('bilateral_scale','rate_scale'):
+                if not math.isfinite(o[name]) or o[name] <= 0: raise ValueError('odor_cues.'+name+' must be positive')
+            if not 0 <= o['bilateral_gain'] <= config['steering_cap_rad_s']: raise ValueError('odor_cues.bilateral_gain must be within the steering cap')
+            if not 0 <= o['rate_gain'] < 1: raise ValueError('odor_cues.rate_gain must be in [0,1)')
         self.reset(seed)
 
     def reset(self, seed):
@@ -202,6 +213,14 @@ class EcologicalController:
             if h is not None and self.state=='ODOR_TRACK':
                 # E17: later encounters elicit weaker upwind responses.
                 steer*=1-h['upwind_attenuation']*self.history
+            if self.odor_cues is not None and self.state=='ODOR_TRACK':
+                # E16: a stronger upwind response while the concentration rises, weaker while it falls.
+                o=self.odor_cues
+                steer*=1+o['rate_gain']*math.tanh(sense.odor_rate/max(sense.odor,c['odor_on'])/o['rate_scale'])
+        if self.odor_cues is not None and self.state=='ODOR_TRACK':
+            # E18: turn toward the antenna sensing the stronger concentration (positive is right).
+            o=self.odor_cues
+            steer+=o['bilateral_gain']*math.tanh(sense.odor_bilateral/max(sense.odor,c['odor_on'])/o['bilateral_scale'])
         obstacle_turn=2*(sense.visual_left-sense.visual_right)
         if abs(obstacle_turn)<.01 and sense.visual_front>.08:
             obstacle_turn=self.tie_side*sense.visual_front*2

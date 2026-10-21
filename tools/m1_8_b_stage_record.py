@@ -75,6 +75,13 @@ STAGES = {
             'rule': ('Fixed oscillators replaced by resampled-period oscillators: the ODOR_SEARCH casting '
                      'half-period and the two drift half-periods are redrawn every half-cycle, with the '
                      'accepted amplitudes and mean periods.')},
+    'B4a': {'config_version': 25, 'record': 'results/game/calibration_room_m1_8_b4a.json',
+            'source_record': 'results/game/calibration_room_m1_8_b3d.json',
+            'baseline_commit': 'c488c170cb7f715232dabf7714542b5f95d172db',
+            'paths': ('ecology.odor_cues',),
+            'rule': ('ODOR_TRACK consumes the odor derivative (rate-modulated upwind gain) and the bilateral '
+                     'difference (steering toward the stronger side), both bounded and relative to the '
+                     'concentration.')},
 }
 
 
