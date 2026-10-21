@@ -6,8 +6,9 @@ separately and are accepted (reports under `results/game/M1_8_B*.md`). B2b-iii (
 speed, [design](M1_8_B2B_III_DESIGN.md)) was approved on 2026-10-20, implemented, and
 accepted on 2026-10-21. B3a ([design](M1_8_B3A_DESIGN.md)), which stops the policy's ALERT
 state alone from interrupting the ecology (see
-[M1_8_ALERT_INTERRUPTION.md](M1_8_ALERT_INTERRUPTION.md)), is implemented and validated,
-awaiting acceptance. Every later stage still requires its own
+[M1_8_ALERT_INTERRUPTION.md](M1_8_ALERT_INTERRUPTION.md)), was implemented, validated and
+accepted on 2026-10-21; TRANSIT speed stays unchanged by the user's decision. Every later stage
+still requires its own
 explicit user approval before implementation.
 
 Baseline: M1.8-A accepted and committed (`bfbef04`). Biological authority remains the

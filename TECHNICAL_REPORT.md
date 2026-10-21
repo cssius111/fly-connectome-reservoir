@@ -1,6 +1,6 @@
 # A frozen fly connectome in a real-time escape game
 
-**Technical report, 2026-10-20.** Covers all work from 2026-09-17 to 2026-10-20:
+**Technical report, 2026-10-21.** Covers all work from 2026-09-17 to 2026-10-21:
 the original reservoir experiment, the interactive fly-swatter runtime, the escape-decoder
 research and the learned-controller study. Every number below is copied from a committed
 report or record, named where it appears. Only the test suites in section 10 and the
@@ -284,13 +284,13 @@ and never tunes kinematics for difficulty.
 | B2b-i | `924ccc3` | Three separated class C ceilings, all still 1000 units/s; bit-identical |
 | B2b-ii | `0d8c254` | EXPLORE speed: one symmetric triangular draw on the accepted 5-8 BL/s support per EXPLORE episode, replacing a deterministic 8 s sinusoid with a U-shaped time density; mean kept at 6.5 BL/s, sd 1.06 to 0.61. First intended divergence at tick 0; LAB, GAME and no-ecology runs stay bit-identical |
 | B2b-iii | `7b9fa05` | ODOR_TRACK speed by the same method on its accepted 9-13 BL/s support, from its own random stream; mean 11.0, sd 1.41 to 0.82. Code alone is bit-identical; the first divergences are exactly the first airborne ODOR_TRACK ticks. Paired 240-minute free-flight check passes (section 9.2). **Accepted 2026-10-21** |
-| B3a | `0e463bc` | The ecology receives CALM when the policy reports ALERT but no saccade is requested or executing; the lifecycle keeps the accepted threat. ALERT entries fall from about 45 to about 2 per minute and TRANSIT rises to about 23 % of alive time. Paired check passes; self-approach escapes rise 2 -> 8 (section 9.4). Awaiting acceptance |
+| B3a | `0e463bc` | The ecology receives CALM when the policy reports ALERT but no saccade is requested or executing; the lifecycle keeps the accepted threat. ALERT entries fall from about 45 to about 2 per minute and TRANSIT rises to about 23 % of alive time. Paired check passes; self-approach escapes rise 2 -> 8 (section 9.4). **Accepted 2026-10-21** |
 
 On 2026-10-20 the user answered the plan's remaining questions: the arena stays
 160 x 90 BL, the recorder moves to schema 5 only when a stage needs new fields, and
 M1.8-B stays phenomenological at `room_kinematic_scale` = 1.0. At that scale no ceiling
-binds, so the escape/cruise questions are deferred. Section 9 describes B2b-iii and the
-ALERT finding that shapes what comes next.
+binds, so the escape/cruise questions are deferred. Section 9 describes B2b-iii, the
+ALERT finding and B3a, which follows from it.
 
 ## 5. Part III: escape decoding and visual geometry (M1.8-N0 to N4B8)
 
@@ -577,9 +577,9 @@ The same rules were applied from the first experiment to the last study:
 
 ## 9. Current state and next steps
 
-As of 2026-10-21 the accepted runtime is the M1.8-B2b-iii configuration (ROOM
-`config_version` 18) on top of `363a1a9` (N4B1C decoder, N4B5R geometry), accepted by the
-user on 2026-10-21. The slow-approach line and the learning line are closed by the user's
+As of 2026-10-21 the accepted runtime is the M1.8-B3a configuration (ROOM
+`config_version` 19): M1.8-B2b-iii on top of `363a1a9` (N4B1C decoder, N4B5R geometry) with
+the ecology's executed-response threat input, both accepted by the user on 2026-10-21. The slow-approach line and the learning line are closed by the user's
 decisions, and M1.8-B flight kinematics is the only active line.
 
 ### 9.1 A measurement made for this report: where flight time goes
@@ -650,10 +650,16 @@ named: the fly now spends about a quarter of its time in TRANSIT, still at the l
 sinusoidal 9-13 BL/s. 451 tests pass, and the local Windows checks pass. In a 219 s human
 playtest no ecology ALERT entry arrived without an executed alert response and no escape was
 a fly-driven self-approach (2.2 parked minutes, 0.07 expected); the player found transit fast
-but not very fast, which is the configured 9-13 BL/s band. Acceptance is the user's decision.
+but not very fast, which is the configured 9-13 BL/s band. The user accepted B3a on
+2026-10-21 and left TRANSIT speed unchanged for now.
 
 ### 9.5 Other open items
 
+- **TRANSIT speed** still follows the legacy shared 8 s sinusoid over 9-13 BL/s. A sampling
+  stage that holds the envelope (as B2b-ii and B2b-iii did) would not make transit faster;
+  a faster TRANSIT would change the magnitude and reopen the `room_kinematic_scale` = 1.0
+  decision, against the frozen 1000 units/s ceilings and swatter. The user left it unchanged
+  on 2026-10-21.
 - **M2.4-B** can be reopened only by finishing sessions 13-30 under the unchanged
   protocol or by a pre-unblinding amendment for an exploratory six-block analysis; the
   sealed data are on the original local machine.
@@ -676,8 +682,9 @@ but not very fast, which is the configured 9-13 BL/s band. Acceptance is the use
 | `wip/m1-4-enclosure` | The decoder research N4B2 to N4B8 and the operational handoff state |
 | `archive/m1-8-n2b-rejected` @ `2c30617` | The rejected N2b runtime |
 | `feature/m2-0-learning-infra` | The learned-controller study (Part IV) |
-| `feature/m1-8-b2b-iii` | **The current accepted runtime**: N4B5R plus M1.8-B2b-iii (accepted 2026-10-21), the ALERT study and this report |
-| `feature/m1-8-n4b5r-geometry` @ `363a1a9` | The previous accepted runtime |
+| `feature/m1-8-b3a` | **The current accepted runtime**: N4B5R plus M1.8-B2b-iii and M1.8-B3a (both accepted 2026-10-21), the ALERT study and this report |
+| `feature/m1-8-b2b-iii` @ `c4f9b8f` | The previous accepted runtime (M1.8-B2b-iii) |
+| `feature/m1-8-n4b5r-geometry` @ `363a1a9` | An earlier accepted runtime (N4B5R geometry) |
 
 The validated environment is Windows with Python 3.11.16 and the CPU path; versions are
 pinned in `requirements-lock.txt`, and the learning code additionally needs PyTorch
@@ -685,7 +692,8 @@ pinned in `requirements-lock.txt`, and the learning code additionally needs PyTo
 values (`brain.npz` `cc9bd1ec...`, `weights.npz` `c29919aa...`). On 2026-10-20 the
 accepted runtime's suite passed 427 of 427 tests on a Linux checkout, the session branch
 with B2b-iii 440 of 440, and the learning branch 516 of 517 with one CUDA-only test
-skipped, after a line-ending fix to two provenance tests.
+skipped, after a line-ending fix to two provenance tests. On 2026-10-21 the B3a runtime passed
+451 of 451 on Linux and on the local Windows checkout.
 
 ```text
 python first_run.py                                   # data integrity and replay smoke test
