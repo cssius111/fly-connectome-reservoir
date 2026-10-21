@@ -1,5 +1,5 @@
 {
-  "config_version": 18,
+  "config_version": 19,
   "_comment": "M1.6 horizontal ROOM slice. Logical units and state speeds are gameplay mappings, not universal biological constants.",
   "sim": {
     "tick_seconds": 0.02,
@@ -135,11 +135,11 @@
     "virtual_distance": 100.0
   },
   "policy": {
-    "_comment": "Exact provenance required. The M1.8-N4B1C lateral dual-path decoder (unchanged) under the M1.8-N4B5R elevation-aware geometry loads the M1.8-B2b-iii transfer record, which carries the identical decoder block for the configuration with ODOR_TRACK speed sampling: rebuild it with python tools/b2b_iii_record.py. The N4B5R and N4B1C records are preserved unchanged. tools/calibrate_escape.py measures the scalar single-sample criterion only and does not calibrate this decoder.",
+    "_comment": "Exact provenance required. The M1.8-N4B1C lateral dual-path decoder (unchanged) under the M1.8-N4B5R elevation-aware geometry and the M1.8-B2b-iii kinematics loads the M1.8-B3a transfer record, which carries the identical decoder block for the configuration with the executed-response ecology threat input: rebuild it with python tools/b3a_record.py. The B2b-iii, N4B5R and N4B1C records are preserved unchanged. tools/calibrate_escape.py measures the scalar single-sample criterion only and does not calibrate this decoder.",
     "escape_threshold": null,
     "calibration_paths": [
-      "artifacts/game/calibration_room_m1_8_b2b_iii.json",
-      "results/game/calibration_room_m1_8_b2b_iii.json"
+      "artifacts/game/calibration_room_m1_8_b3a.json",
+      "results/game/calibration_room_m1_8_b3a.json"
     ],
     "escape_decoder": {
       "_comment": "M1.8-N4B1C combined DNp01 criterion. Escape when EITHER path qualifies outside the shared refractory period. LATERAL: the same DNp01 side produces lateral_required_spikes inferred spikes within lateral_same_side_window_ms (per-side spikes inferred from that side's own trace; a left spike followed by a right spike never qualifies). Summed N2b path: FAST when left + right >= summed_fast_threshold; SUSTAINED when the current summed sample is >= sustained_threshold AND at least sustained_required_samples of the most recent sustained_window_samples summed samples are >= sustained_threshold. All values are Class C engineering decoder parameters derived from simulator evidence, not biological constants. sustained_threshold must equal the record's escape_threshold.",
@@ -380,6 +380,10 @@
       "RECOVER": 0.7
     },
     "alert_recover_seconds": 0.2
+  },
+  "ecology_threat_input": {
+    "_comment": "M1.8-B3a. Which ThreatState the ecology receives; the lifecycle always receives the accepted mapping. executed_response_v1: the fixed policy's ALERT state alone (no saccade requested on the tick and no ALERT saccade executing) reaches the ecology as CALM; ESCAPE and executed alert responses pass unchanged. policy_state_v0, the default when this block is absent, hands the ecology the same threat as the lifecycle. Class C interface choice, not a biological claim. See game/M1_8_B3A_DESIGN.md.",
+    "mode": "executed_response_v1"
   },
   "lifecycle": {
     "enabled": true,

@@ -568,17 +568,24 @@ class TestB2biiiProvenance(unittest.TestCase):
     RECORD = 'results/game/calibration_room_m1_8_b2b_iii.json'
     SOURCE = 'results/game/calibration_room_m1_8_n4b5r.json'
     N4B5R_COMMIT = '363a1a94cf3f5e33efab08cb28594c24ca694a03'
+    # The accepted B2b-iii configuration. Later stages (M1.8-B3a onward) carry their own
+    # records, so the B2b-iii record is checked against its own frozen configuration.
+    B2B_III_COMMIT = 'c4f9b8f8f4a1fc69959e1d74e5d76b4cc5b6e87f'
 
-    def accepted(self):
+    @staticmethod
+    def frozen(commit):
         import json, subprocess
         return json.loads(subprocess.check_output(
-            ['git', 'show', self.N4B5R_COMMIT + ':game_room_config.json'], cwd=ROOT, text=True))
+            ['git', 'show', commit + ':game_room_config.json'], cwd=ROOT, text=True))
+
+    def accepted(self):
+        return self.frozen(self.N4B5R_COMMIT)
 
     def test_room_differs_from_the_accepted_n4b5r_config_only_in_odor_track_sampling(self):
         import copy
-        accepted = self.accepted()
-        self.assertEqual(ROOM['config_version'], accepted['config_version'] + 1)
-        after = copy.deepcopy(ROOM)
+        accepted, b2biii = self.accepted(), self.frozen(self.B2B_III_COMMIT)
+        self.assertEqual(b2biii['config_version'], accepted['config_version'] + 1)
+        after = copy.deepcopy(b2biii)
         after['config_version'] = accepted['config_version']
         after['kinematics'].pop('odor_track_speed_bl_s')
         after['policy']['_comment'] = accepted['policy']['_comment']
@@ -587,15 +594,18 @@ class TestB2biiiProvenance(unittest.TestCase):
 
     def test_room_resolves_the_transfer_record_with_the_unchanged_decoder(self):
         from game.session import build_policy, calibration_provenance, resolve_escape_threshold
-        source = resolve_escape_threshold(ROOM)
+        b2biii = self.frozen(self.B2B_III_COMMIT)
+        source = resolve_escape_threshold(b2biii)
         self.assertEqual(source.origin, self.RECORD)
         self.assertEqual(source.threshold, 1.45)
         accepted = self.accepted()
         self.assertEqual(source.decoder, resolve_escape_threshold(accepted).decoder)
-        p, q = build_policy(ROOM)[0], build_policy(accepted)[0]
+        p, q = build_policy(b2biii)[0], build_policy(accepted)[0]
         self.assertEqual(vars(p), vars(q))
         record = load_config(ROOT/self.RECORD)
-        self.assertEqual(record['provenance'], calibration_provenance(ROOM))
+        self.assertEqual(record['provenance'], calibration_provenance(b2biii))
+        # The current ROOM keeps the accepted B2b-iii kinematics.
+        self.assertEqual(ROOM['kinematics'], b2biii['kinematics'])
         self.assertEqual(record['escape_decoder'], load_config(ROOT/self.SOURCE)['escape_decoder'])
         self.assertEqual(sorted(record['measurement_reuse']['changed_config_paths']),
                          ['config_version', 'kinematics.odor_track_speed_bl_s', 'policy._comment',

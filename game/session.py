@@ -182,6 +182,8 @@ def resolve_escape_threshold(config: dict, root: Path = ROOT) -> ThresholdSource
             command = "python tools/n4b5r_geometry_record.py"
             if config.get("kinematics", {}).get("odor_track_speed_bl_s"):
                 command = "python tools/b2b_iii_record.py"
+            if config.get("ecology_threat_input"):
+                command = "python tools/b3a_record.py"
     expected = calibration_provenance(config)
     tried = []
     for rel in policy["calibration_paths"]:
@@ -271,6 +273,36 @@ def build_policy(config: dict, root: Path = ROOT) -> tuple[FixedEscapePolicy, Th
     return policy, source
 
 
+# Which ThreatState the ecology receives (ROOM `ecology_threat_input.mode`). The lifecycle
+# always receives the accepted mapping. M1.8-B3a, game/M1_8_B3A_DESIGN.md.
+ECOLOGY_THREAT_POLICY_STATE = "policy_state_v0"
+ECOLOGY_THREAT_EXECUTED = "executed_response_v1"
+ECOLOGY_THREAT_MODES = (ECOLOGY_THREAT_POLICY_STATE, ECOLOGY_THREAT_EXECUTED)
+
+
+def ecology_threat_mode(config: dict) -> str:
+    """Absent block: the accepted mapping, so LAB, GAME and older configurations are unchanged."""
+    mode = (config.get("ecology_threat_input") or {}).get("mode", ECOLOGY_THREAT_POLICY_STATE)
+    if mode not in ECOLOGY_THREAT_MODES:
+        raise ValueError("unknown ecology_threat_input.mode: " + str(mode))
+    return mode
+
+
+def ecological_threat(threat: ThreatState, mode: str, saccade_requested: bool,
+                      saccade_kind: str) -> ThreatState:
+    """The ThreatState handed to the ecology.
+
+    Under executed_response_v1 the policy's ALERT state alone, with no saccade requested
+    on this tick and no ALERT saccade executing, reaches the ecology as CALM. ESCAPE and
+    executed alert responses pass unchanged. A Class C interface choice, not a claim about
+    how a fly's ongoing behaviour treats sub-threshold descending activity.
+    """
+    if (mode == ECOLOGY_THREAT_EXECUTED and threat is ThreatState.ALERT
+            and not saccade_requested and saccade_kind != "ALERT"):
+        return ThreatState.CALM
+    return threat
+
+
 class Session:
     """One playable run. Deterministic for a fixed seed and input sequence."""
 
@@ -300,6 +332,7 @@ class Session:
         enabled = config.get("ecology", {}).get("enabled", False) if ecology_enabled is None else ecology_enabled
         self.ecology = EcologicalController(config["ecology"],self.seed, landing_enabled=self.world.lifecycle is None) if enabled and self.world.room is not None else None
         self.ecological_projector = EcologicalProjector(config["room"]["sensing"]) if self.ecology is not None else None
+        self.ecology_threat_mode = ecology_threat_mode(config)
         self.last_ecological_sense = None
         self.last_retina: Retina | None = None
         self.ticks = 0
@@ -359,7 +392,11 @@ class Session:
             threat = (ThreatState.ESCAPE if action.escape or neural_state=="ESCAPE" or self.world.saccades.kind=="ESCAPE"
                       else ThreatState.ALERT if neural_state=="ALERT" or action.saccade or self.world.saccades.kind=="ALERT"
                       else ThreatState.CALM)
-            self.world.ecological_command = self.ecology.step(self.last_ecological_sense,threat,self.tick_seconds)
+            # M1.8-B3a: the ecology's input may differ from the lifecycle's, which below
+            # keeps the accepted threat.
+            ecological = ecological_threat(threat, self.ecology_threat_mode, action.saccade != 0,
+                                           self.world.saccades.kind)
+            self.world.ecological_command = self.ecology.step(self.last_ecological_sense,ecological,self.tick_seconds)
             if self.world.lifecycle is not None:
                 sense = self.world.room.landing_sense(self.world.fly, self.world.time_seconds, self.world.contact_surface_id)
                 motion = self.world.motion_state()

@@ -154,6 +154,7 @@ class TestLocalLifecycle(unittest.TestCase):
             # M1.8-N4B1C: ROOM loads the lateral dual-path decoder record.
             # M1.8-N4B5R: ROOM loads the geometry-candidate record (identical N4B1C decoder).
             # M1.8-B2b-iii: ROOM loads the kinematics transfer record (same decoder again).
+            # M1.8-B3a: ROOM loads the ecology threat-input transfer record (same decoder).
             valid=load_config(ROOT/ROOM['policy']['calibration_paths'][1])
             stale=copy.deepcopy(valid);stale['provenance']['encoder_seed']+=1
             stale['escape_threshold']=99
@@ -231,6 +232,8 @@ class TestLocalLifecycle(unittest.TestCase):
         after['policy'].pop('escape_decoder');after['policy']['_comment']=before['policy']['_comment']
         # M1.8-N4B5R changes only the paddle tilt geometry (versioned in test_game_n4b5r_geometry).
         for key in ('tilt_geometry','_tilt_geometry_comment'):after['swatter']['directional'].pop(key)
+        # M1.8-B3a changes only the ecology's threat input (versioned in test_game_b3a).
+        after.pop('ecology_threat_input')
         self.assertEqual(after,before)
         # The active record chains M1.8-B2a -> M1.8-A -> the M1.7.1 measurement, and every
         # link must name the exact bytes it transfers from.
@@ -255,7 +258,12 @@ class TestLocalLifecycle(unittest.TestCase):
         self.assertEqual(active['original_measurement'],'results/game/calibration_room_m1_7_1.json')
         self.assertEqual(resolve_escape_threshold(ROOM).threshold,1.45)
         self.assertEqual(resolve_escape_threshold(ROOM).origin,
-                         'results/game/calibration_room_m1_8_b2b_iii.json')
+                         'results/game/calibration_room_m1_8_b3a.json')
+        # M1.8-B3a transfers the B2b-iii record unchanged and still names the M1.7.1 bytes.
+        b3a=load_config(ROOT/'results/game/calibration_room_m1_8_b3a.json')['measurement_reuse']
+        self.assertEqual(b3a['source_record'],'results/game/calibration_room_m1_8_b2b_iii.json')
+        self.assertTrue(same_content(ROOT/b3a['source_record'],b3a['source_sha256']))
+        self.assertTrue(same_content(original,b3a['original_measurement_sha256']))
         # M1.8-B2b-iii transfers the N4B5R record unchanged and still names the M1.7.1 bytes.
         b2biii=load_config(ROOT/'results/game/calibration_room_m1_8_b2b_iii.json')['measurement_reuse']
         self.assertEqual(b2biii['source_record'],'results/game/calibration_room_m1_8_n4b5r.json')
