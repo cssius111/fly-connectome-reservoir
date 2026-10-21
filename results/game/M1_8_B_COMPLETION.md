@@ -177,3 +177,100 @@ replay (1,200 ticks, schema 4, `config_version` 21); escape/cruise study and swa
 identical; ROOM resolves 1.45 through the B2e record.
 
 **B2e passes and is adopted.**
+
+
+## 4. B3b: odor timers replaced by encounter history
+
+Implementation (`bf04652`): `game/ecology.py` (the `odor_history` block, the history H, the
+abandonment and give-up hazards on their own stream, +53113), `game_room_config.json`
+(`config_version` 22), `results/game/calibration_room_m1_8_b3b.json`.
+
+**Check 1.** Code alone: bit-identical; combined SHA256 `ad233ba0...` before and `ad233ba0...` after; new streams: odor_history. The odor-history stream is untouched under `config_version` 21.
+
+**Check 2.** With `config_version` 22:
+
+| Scenario | Identical | First divergence | First ecology-driven ODOR_TRACK tick |
+| --- | --- | --- | --- |
+| `room_quiet` | no | tick 196: label[15] | 908 |
+| `room_perched_threat` | no | tick 196: label[15] | None |
+| `room_approach_threat` | **yes** | none | None |
+| `room_airborne_seed101` | no | tick 107: vx | 87 |
+| `room_no_ecology` | **yes** | none | None |
+| `game_preset` | **yes** | none | None |
+| `lab_preset` | **yes** | none | None |
+
+Combined SHA256 `ad233ba0...` -> `ef762a10...`.
+
+- Seed 255 (`room_quiet`, `room_perched_threat`) diverges at tick 196 in the ecology label
+  (ODOR_TRACK -> TRANSIT): an abandonment draw ends the plume episode, which the accepted 8 s
+  timer would have ended at tick 405. Its earlier ODOR_TRACK ticks are lifecycle-owned (landing
+  approach and perching), so their attenuated steering is not executed.
+- Seed 101 diverges at tick 107. Its first ecology-driven ODOR_TRACK tick is 87, but the upwind
+  steering target exceeds the 0.9 rad/s cap in both configurations until tick 106; a direct run
+  shows the smoothed ecological steering first differing at tick 107, when the attenuated target
+  falls below the cap.
+- `room_approach_threat` keeps identical rows; it consumes hazard draws without an event.
+
+**Check 3.** B3b tests: H rises in odor and decays outside, within [0, 1]; over 40 seeds of
+alternating 8 s odor and no-odor blocks fewer than a tenth of the ODOR_TRACK bouts last
+8.00 +/- 0.03 s and fewer than a tenth of the searches 6.00 +/- 0.03 s, and every search ended by
+giving up lasts at least 1 s; abandonment enters TRANSIT with the 1 s refractory; history weakens
+the upwind turn; the mechanism is gated by its block. Three accepted-timer tests now pin the
+M1.6 mechanism on the ecology parameters without the completion blocks (`test_game_m1_6.py`,
+`test_game_lifecycle.py`). **477 tests pass.**
+
+**Checks 4 and 5.** Metrics, B2e -> B3b:
+
+| State | Driving share | Speed mean BL/s | Episode mean s | Episode median s |
+| --- | --- | --- | --- | --- |
+| ALERT | 0.0 % -> 0.0 % | - -> - | 0.05 -> 0.06 | 0.06 -> 0.06 |
+| ESCAPE | 0.0 % -> 0.0 % | 16.94 -> - | 0.42 -> - | 0.42 -> - |
+| EXPLORE | 45.9 % -> 48.5 % | 6.84 -> 6.82 | 4.37 -> 3.67 | 4.54 -> 4.00 |
+| ODOR_SEARCH | 13.8 % -> 12.5 % | 5.95 -> 6.06 | 5.16 -> 3.99 | 6.02 -> 2.82 |
+| ODOR_TRACK | 12.5 % -> 12.9 % | 10.52 -> 10.38 | 5.31 -> 3.00 | 5.66 -> 2.02 |
+| RECOVER | 0.6 % -> 0.7 % | 8.78 -> 7.92 | 0.30 -> 0.22 | 0.22 -> 0.22 |
+| TRANSIT | 27.2 % -> 25.3 % | 9.71 -> 9.72 | 3.17 -> 2.09 | 3.22 -> 1.62 |
+
+Lifecycle airborne / perched / feeding: 84.8 / 15.2 / 14.9 % -> 85.2 / 14.8 / 13.8 %; touchdowns food+other 12+1 -> 12+1; visited cells 52.2 % -> 55.0 %; upwind share while tracking 58.8 % -> 48.3 %; escape onsets 2 -> 0. Pathology screen: pass.
+
+Hard checks: 1 of 87 completed ODOR_TRACK episodes lasts within one tick of 8.02 s (a hazard
+coincidence; 17 of 58 at B3a) and none of 27 searches within one tick of 6.02 s (23 of 27 at
+B3a); the 4 searches shorter than 1 s ended by reacquisition or a threat. The episode counts
+show an emergent pattern the design did not anticipate: ODOR_TRACK -> TRANSIT (54) and
+TRANSIT -> ODOR_TRACK (60) alternate while a habituated fly stays in the plume, because the 1 s
+refractory rarely carries it out; median ODOR_TRACK and TRANSIT episodes fall to 2.0 s and 1.6 s.
+Nothing is retuned for it.
+
+Sensitivity (three seeds, 101 / 4242 / 1729, 180 s each; the stage value first):
+
+| Variant | ODOR_TRACK mean / median s | Upwind share | Perched | Food touchdowns | Visited cells |
+| --- | --- | --- | --- | --- | --- |
+| stage (attenuation 0.5, abandon 3 s) | 3.02 / 1.86 | 41.0 % | 12.9 % | 6 | 56.7 % |
+| `upwind_attenuation` 0 (ablation) | 2.81 / 1.98 | 65.1 % | 14.5 % | 9 | 46.5 % |
+| `upwind_attenuation` 0.75 | 3.01 / 1.86 | 41.7 % | 21.3 % | 9 | 54.6 % |
+| `abandon_seconds` 2 | 2.41 / 1.66 | 37.1 % | 23.2 % | 11 | 49.5 % |
+| `abandon_seconds` 4.5 | 3.58 / 1.98 | 55.5 % | 11.4 % | 5 | 57.4 % |
+
+Removing the attenuation restores the upwind share; abandonment time shifts bout length in the
+expected direction. With three chaotic 180 s runs the perched and touchdown columns are noisy
+and are not read as trends.
+
+**Check 6.** Paired free flight, the B2e arm reused:
+
+| | Previous stage | B3b |
+| --- | --- | --- |
+| Alive minutes | 240.0 | 240.0 |
+| Escapes (rate, exact 95 % upper bound) | 14 (0.058/min, 0.091) | 10 (0.042/min, 0.071) |
+| A | 0 (upper 0.012) | 0 (upper 0.012) |
+| B | 2 (upper 0.026) | 2 (upper 0.026) |
+| C | 1 (upper 0.020) | 3 (upper 0.032) |
+| D | 11 (upper 0.076) | 5 (upper 0.044) |
+| Perched escapes | 0 | 0 |
+
+Seeds with identical escape ticks: 63. Category B criterion met: True.
+
+**Check 7.** Lifecycle scenarios replay exactly with their accepted event sets; recorder exact
+replay (schema 4, `config_version` 22); escape/cruise study and swatter fixtures identical; ROOM
+resolves 1.45 through the B3b record.
+
+**B3b passes and is adopted.**
