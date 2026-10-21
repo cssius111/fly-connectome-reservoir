@@ -49,6 +49,8 @@ def _rng_states(world, session):
         states['ecology'] = session.ecology.rng.bit_generator.state
         # M1.8-B3b: the odor-history hazard stream.
         states['odor_history'] = session.ecology.history_rng.bit_generator.state
+        # M1.8-B3c: the EXPLORE/TRANSIT hazard stream.
+        states['intent'] = session.ecology.intent_rng.bit_generator.state
     if world.lifecycle is not None:
         states['lifecycle'] = world.lifecycle.rng.bit_generator.state
     return json.loads(json.dumps(states, default=str))

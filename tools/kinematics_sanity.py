@@ -45,7 +45,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from game.lifecycle import LifecycleMetrics  # noqa: E402
-from game.session import Session, load_config  # noqa: E402
+from game.session import Session, build_policy, load_config  # noqa: E402
 
 DT = 0.02
 TICKS = 9000                      # 180 simulated seconds
@@ -75,9 +75,15 @@ def wrap(angle):
     return (angle + math.pi) % (2*math.pi) - math.pi
 
 
-def measure(config, seed, ticks=TICKS, brain=None):
-    """One no-player run; returns raw samples and counts for pooling."""
-    session = Session(config, brain=brain, seed=seed, mode='evaluation')
+def measure(config, seed, ticks=TICKS, brain=None, policy_config=None):
+    """One no-player run; returns raw samples and counts for pooling.
+
+    `policy_config` builds the fixed policy from another configuration: a sensitivity
+    variant that changes only ecological parameters has no calibration record of its own,
+    and its policy is identical to the stage's.
+    """
+    policy = None if policy_config is None else build_policy(policy_config)[0]
+    session = Session(config, brain=brain, policy=policy, seed=seed, mode='evaluation')
     world = session.world
     body = world.body_length
     turns, actions = [], []
@@ -101,7 +107,7 @@ def measure(config, seed, ticks=TICKS, brain=None):
     lifecycle = LifecycleMetrics()
     samples = {'speed': defaultdict(list), 'accel': defaultdict(list), 'decel': defaultdict(list),
                'settle': defaultdict(list), 'unsettled': Counter(), 'episodes': defaultdict(list),
-               'censored': Counter(), 'drift': []}
+               'censored': Counter(), 'drift': [], 'ends': []}
     counts = Counter()
     transitions = Counter()
     occupancy, lifecycle_modes, driving = Counter(), Counter(), Counter()
@@ -149,6 +155,7 @@ def measure(config, seed, ticks=TICKS, brain=None):
                 if previous_state is not None:
                     transitions[previous_state + '->' + state] += 1
                     samples['episodes'][previous_state].append((tick - episode_start)*DT)
+                    samples['ends'].append((previous_state, (tick - episode_start)*DT, state))
                     if not settled and episode_target is not None:
                         samples['unsettled'][previous_state] += 1
                 episode_start, episode_target, settled = tick, None, False
@@ -201,7 +208,8 @@ def measure(config, seed, ticks=TICKS, brain=None):
         'transitions': dict(sorted(transitions.items())),
         'raw': {'speed': samples['speed'], 'accel': samples['accel'], 'decel': samples['decel'],
                 'settle': samples['settle'], 'episodes': samples['episodes'],
-                'turn_degrees': by_kind, 'spontaneous_intervals': intervals, 'drift': samples['drift']},
+                'turn_degrees': by_kind, 'spontaneous_intervals': intervals, 'drift': samples['drift'],
+                'episode_ends': samples['ends']},
         'unsettled_episodes': dict(samples['unsettled']), 'censored_episodes': dict(samples['censored']),
         'counts': dict(counts), 'cells_visited': len(cells), 'grid_cells': grid[0]*grid[1],
         'first_food_touchdown_seconds': first_food,
@@ -330,6 +338,8 @@ def main():
     parser.add_argument('--stage-states', default='', help='compare: states the stage targets (comma list)')
     parser.add_argument('--commit', help='read game_room_config.json from this commit')
     parser.add_argument('--config', type=Path, help='read this configuration file (sensitivity variants)')
+    parser.add_argument('--policy-config', type=Path,
+                        help='build the fixed policy from this configuration (with --config variants)')
     parser.add_argument('--lane', type=int, default=0)
     parser.add_argument('--lanes', type=int, default=1)
     parser.add_argument('--ticks', type=int, default=TICKS)
@@ -340,7 +350,8 @@ def main():
         brain = None
         for seed in SEEDS[args.lane::args.lanes]:
             started = time.perf_counter()
-            run, brain = measure(config, seed, args.ticks, brain)
+            run, brain = measure(config, seed, args.ticks, brain,
+                                 load_config(args.policy_config) if args.policy_config else None)
             run['numba_threads'] = int(os.environ['NUMBA_NUM_THREADS'])
             (args.out/('seed%d.json' % seed)).write_text(json.dumps(run)+'\n', encoding='utf-8')
             print('seed', seed, 'config', config['config_version'],

@@ -43,11 +43,15 @@ class EcologicalController:
         'transit_duration_seconds','speed_bl_s','speed_tau_seconds','steering_tau_seconds','steering_cap_rad_s',
         'upwind_gain','search_period_seconds','search_amplitude_radians','visual_gain_floor',
         'landing_affordance_threshold','landing_dwell_seconds','landing_attempt_seconds','landing_cooldown_seconds',
-        'spontaneous_clock_rate','odor_history'}
+        'spontaneous_clock_rate','odor_history','intent_hazards'}
     # M1.8-B3b: encounter history replacing the odor timers (game/M1_8_B_COMPLETION_DESIGN.md).
     ODOR_HISTORY_KEYS = {'_comment','build_seconds','recovery_seconds','upwind_attenuation','abandon_seconds',
                          'refractory_seconds','search_min_seconds','search_give_up_seconds'}
     ODOR_HISTORY_SEED_OFFSET = 53113
+    # M1.8-B3c: EXPLORE/TRANSIT dwell timers replaced by evidence-gated hazards.
+    INTENT_KEYS = {'_comment','min_dwell_seconds','explore_hazard_seconds','transit_hazard_seconds',
+                   'structure_reference','structure_gain'}
+    INTENT_SEED_OFFSET = 59011
 
     def __init__(self, config, seed, landing_enabled=True):
         if set(config)-self.CONFIG_KEYS: raise ValueError('only ecological controller parameters are allowed')
@@ -65,6 +69,13 @@ class EcologicalController:
             for name in self.ODOR_HISTORY_KEYS - {'_comment','upwind_attenuation'}:
                 if not math.isfinite(h[name]) or h[name] <= 0: raise ValueError('odor_history.'+name+' must be positive')
             if not 0 <= h['upwind_attenuation'] <= 1: raise ValueError('odor_history.upwind_attenuation must be in [0,1]')
+        self.intent = config.get('intent_hazards')
+        if self.intent is not None:
+            i = self.intent
+            if set(i) != self.INTENT_KEYS: raise ValueError('intent_hazards requires exactly its documented keys')
+            for name in self.INTENT_KEYS - {'_comment','structure_gain'}:
+                if not math.isfinite(i[name]) or i[name] <= 0: raise ValueError('intent_hazards.'+name+' must be positive')
+            if not 0 <= i['structure_gain'] <= 1: raise ValueError('intent_hazards.structure_gain must be in [0,1]')
         self.reset(seed)
 
     def reset(self, seed):
@@ -81,6 +92,9 @@ class EcologicalController:
         # Encounter history H in [0,1] and its hazard stream; inert without odor_history.
         self.history=0.0
         self.history_rng=np.random.default_rng(seed+self.ODOR_HISTORY_SEED_OFFSET)
+        # Local visual structure and the EXPLORE/TRANSIT hazard stream; inert without intent_hazards.
+        self.structure=0.0
+        self.intent_rng=np.random.default_rng(seed+self.INTENT_SEED_OFFSET)
         self.steering=0.0;self.last_threat=ThreatState.CALM
         self.last_command=EcologicalCommand(self.state,self.speed,0.0,1.0)
 
@@ -143,7 +157,12 @@ class EcologicalController:
             elif self.elapsed>=h['search_min_seconds'] and self._hazard(1/h['search_give_up_seconds'],dt):
                 self._enter('EXPLORE')
         elif self.state=='RECOVER':self._enter('EXPLORE')
-        elif self.elapsed>=self.state_duration:
+        elif self.intent is None:
+            if self.elapsed>=self.state_duration:
+                self._enter('TRANSIT' if self.state=='EXPLORE' else 'EXPLORE')
+        elif self.elapsed>=self.intent['min_dwell_seconds'] and self._intent_switch(sense,dt):
+            # The accepted uniform dwell is still drawn on entry, so the ecology stream keeps
+            # its call order; its value is not used under intent_hazards.
             self._enter('TRANSIT' if self.state=='EXPLORE' else 'EXPLORE')
 
         lo,hi=c['speed_bl_s'][self.state]
@@ -177,12 +196,21 @@ class EcologicalController:
         self.last_command=EcologicalCommand(self.state,self.speed,self.steering,c['spontaneous_clock_rate'][self.state],attempt)
         return self.last_command
 
+    def _intent_switch(self, sense, dt):
+        """EXPLORE -> TRANSIT slows and TRANSIT -> EXPLORE quickens with local visual structure."""
+        i = self.intent
+        self.structure = min(1.0,(sense.visual_left+sense.visual_right+sense.landing_affordance)/i['structure_reference'])
+        if self.state=='EXPLORE':rate=(1-i['structure_gain']*self.structure)/i['explore_hazard_seconds']
+        else:rate=(1+i['structure_gain']*self.structure)/i['transit_hazard_seconds']
+        return float(self.intent_rng.random()) < 1-math.exp(-rate*dt)
+
     def _hazard(self, rate, dt):
         """One seeded Bernoulli draw for a constant-rate event over this tick."""
         return float(self.history_rng.random()) < 1-math.exp(-rate*dt)
 
     def diagnostics(self):
         extra = {} if self.odor_history is None else {'odor_history':self.history}
+        if self.intent is not None:extra['visual_structure']=self.structure
         return {**self._diagnostics(), **extra}
 
     def _diagnostics(self):

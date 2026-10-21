@@ -62,6 +62,12 @@ STAGES = {
             'rule': ('Odor timers replaced by an encounter history: weaker upwind response with history, '
                      'a plume-abandonment hazard with a short refractory, and a search give-up hazard after '
                      'a minimum search.')},
+    'B3c': {'config_version': 23, 'record': 'results/game/calibration_room_m1_8_b3c.json',
+            'source_record': 'results/game/calibration_room_m1_8_b3b.json',
+            'baseline_commit': 'bf04652fa68b03e7728f693f63441c8b2ee64556',
+            'paths': ('ecology.intent_hazards',),
+            'rule': ('EXPLORE and TRANSIT dwell timers replaced by a minimum dwell and hazards conditioned '
+                     'on local visual structure; TRANSIT speed unchanged.')},
 }
 
 

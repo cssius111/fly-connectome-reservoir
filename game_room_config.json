@@ -1,5 +1,5 @@
 {
-  "config_version": 22,
+  "config_version": 23,
   "_comment": "M1.6 horizontal ROOM slice. Logical units and state speeds are gameplay mappings, not universal biological constants.",
   "sim": {
     "tick_seconds": 0.02,
@@ -135,11 +135,11 @@
     "virtual_distance": 100.0
   },
   "policy": {
-    "_comment": "Exact provenance required. The M1.8-N4B1C lateral dual-path decoder (unchanged) under the M1.8-N4B5R elevation-aware geometry, the M1.8-B2b-iii kinematics and the M1.8-B3a ecology threat input loads the M1.8-B3b transfer record, which carries the identical decoder block for this configuration: rebuild it with python tools/m1_8_b_stage_record.py B3b. Earlier records are preserved unchanged. tools/calibrate_escape.py measures the scalar single-sample criterion only and does not calibrate this decoder.",
+    "_comment": "Exact provenance required. The M1.8-N4B1C lateral dual-path decoder (unchanged) under the M1.8-N4B5R elevation-aware geometry, the M1.8-B2b-iii kinematics and the M1.8-B3a ecology threat input loads the M1.8-B3c transfer record, which carries the identical decoder block for this configuration: rebuild it with python tools/m1_8_b_stage_record.py B3c. Earlier records are preserved unchanged. tools/calibrate_escape.py measures the scalar single-sample criterion only and does not calibrate this decoder.",
     "escape_threshold": null,
     "calibration_paths": [
-      "artifacts/game/calibration_room_m1_8_b3b.json",
-      "results/game/calibration_room_m1_8_b3b.json"
+      "artifacts/game/calibration_room_m1_8_b3c.json",
+      "results/game/calibration_room_m1_8_b3c.json"
     ],
     "escape_decoder": {
       "_comment": "M1.8-N4B1C combined DNp01 criterion. Escape when EITHER path qualifies outside the shared refractory period. LATERAL: the same DNp01 side produces lateral_required_spikes inferred spikes within lateral_same_side_window_ms (per-side spikes inferred from that side's own trace; a left spike followed by a right spike never qualifies). Summed N2b path: FAST when left + right >= summed_fast_threshold; SUSTAINED when the current summed sample is >= sustained_threshold AND at least sustained_required_samples of the most recent sustained_window_samples summed samples are >= sustained_threshold. All values are Class C engineering decoder parameters derived from simulator evidence, not biological constants. sustained_threshold must equal the record's escape_threshold.",
@@ -389,6 +389,14 @@
       "refractory_seconds": 1.0,
       "search_min_seconds": 1.0,
       "search_give_up_seconds": 5.0
+    },
+    "intent_hazards": {
+      "_comment": "M1.8-B3c. EXPLORE and TRANSIT dwell timers (explore_duration_seconds, transit_duration_seconds) replaced by a minimum dwell plus a hazard conditioned on local visual structure u = min(1, (visual_left + visual_right + landing_affordance) / structure_reference): EXPLORE -> TRANSIT at (1 - gain*u)/explore_hazard_seconds, TRANSIT -> EXPLORE at (1 + gain*u)/transit_hazard_seconds. Class C; with no structure the means are the accepted 5.0 s and 3.5 s. TRANSIT speed is unchanged. See game/M1_8_B_COMPLETION_DESIGN.md section 6.",
+      "min_dwell_seconds": 1.0,
+      "explore_hazard_seconds": 4.0,
+      "transit_hazard_seconds": 2.5,
+      "structure_reference": 0.2,
+      "structure_gain": 0.5
     }
   },
   "ecology_threat_input": {

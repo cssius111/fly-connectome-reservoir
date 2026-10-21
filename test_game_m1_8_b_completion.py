@@ -264,5 +264,49 @@ class TestB3bOdorHistory(unittest.TestCase):
         self.assertIn('odor_history', eco(self.config()).diagnostics())
 
 
+class TestB3cIntentHazards(unittest.TestCase):
+    def config(self):
+        return stage_config('B3c')
+
+    def episodes(self, structure, seeds=range(60)):
+        durations = {'EXPLORE': [], 'TRANSIT': []}
+        for seed in seeds:
+            e = eco(self.config(), seed)
+            state, start = e.state, 0
+            for tick in range(4000):
+                e.step(sense(odor=0.0, landing_affordance=structure), calm(), 0.02)
+                if e.state != state:
+                    durations[state].append((tick - start)*0.02)
+                    state, start = e.state, tick
+        return durations
+
+    def test_minimum_dwell_and_hazard_means(self):
+        d = self.episodes(0.0)
+        for state, mean in (('EXPLORE', 5.0), ('TRANSIT', 3.5)):
+            values = d[state]
+            self.assertGreater(len(values), 100)
+            self.assertTrue(all(v >= 1.0 - 1e-9 for v in values))
+            self.assertLess(abs(sum(values)/len(values) - mean), 0.6)
+
+    def test_structure_prolongs_explore_and_shortens_transit(self):
+        bare, rich = self.episodes(0.0, range(30)), self.episodes(0.2, range(30))
+        mean = lambda v: sum(v)/len(v)
+        self.assertGreater(mean(rich['EXPLORE']), mean(bare['EXPLORE']))
+        self.assertLess(mean(rich['TRANSIT']), mean(bare['TRANSIT']))
+
+    def test_gated_by_its_block(self):
+        cfg = read_commit(STAGES['B3c']['baseline_commit'])
+        self.assertNotIn('intent_hazards', cfg['ecology'])
+        old, new = eco(cfg), eco(self.config())
+        untouched = eco(cfg).intent_rng.bit_generator.state
+        for _ in range(2000):
+            old.step(sense(odor=0.0), calm(), 0.02)
+            new.step(sense(odor=0.0), calm(), 0.02)
+        self.assertEqual(old.intent_rng.bit_generator.state, untouched)
+        self.assertNotEqual(new.intent_rng.bit_generator.state, untouched)
+        self.assertNotIn('visual_structure', old.diagnostics())
+        self.assertIn('visual_structure', new.diagnostics())
+
+
 if __name__ == '__main__':
     unittest.main()
