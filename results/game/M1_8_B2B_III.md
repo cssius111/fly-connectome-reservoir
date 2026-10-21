@@ -292,3 +292,24 @@ Optional human playtest, about 5 minutes:
 
 Acceptance is the user's decision. If the fly is harder or easier to hit, that is recorded
 as an outcome, not used to tune anything.
+
+**Removing the worktree safely.** The worktree contains directory junctions to the main
+checkout's `data\` and `artifacts\results\`. Git for Windows follows junctions when it deletes
+a worktree, so `git worktree remove` on it empties those target folders; this happened once
+after the B2b-iii acceptance. Delete the junctions themselves first (`rmdir` removes only the
+link), then the worktree:
+
+```powershell
+Set-Location D:\Projects\flybrain-lab
+cmd /c rmdir artifacts\worktrees\b2b-iii\data
+cmd /c rmdir artifacts\worktrees\b2b-iii\artifacts\results
+git worktree remove --force artifacts\worktrees\b2b-iii
+```
+
+If it has already happened: FlyBrain re-downloads `data\` on first use (check the two SHA256
+values recorded in `results/manifest.json`), and the original experiment's arrays can be
+regenerated into `artifacts\results\` deterministically from the worktree with
+`NUMBA_NUM_THREADS=4` and `experiment.py --output <folder outside results>`; experiment.py
+derives its array folder from the output folder's name, so an output folder named `results`
+anywhere else writes the arrays to `artifacts\results\` without touching the protected
+`results\`. `verify_results.py` then proves the regeneration exact.
