@@ -693,9 +693,10 @@ B2c-B4b.
   a faster TRANSIT would change the magnitude and reopen the `room_kinematic_scale` = 1.0
   decision, against the frozen 1000 units/s ceilings and swatter. The user left it unchanged
   on 2026-10-21, and the completion stages keep its profile.
-- **M2.4-B** can be reopened only by finishing sessions 13-30 under the unchanged
-  protocol or by a pre-unblinding amendment for an exploratory six-block analysis; the
-  sealed data are on the original local machine.
+- **M2.4-B** was reopened by the participant on 2026-10-22 to finish sessions 13-30 under the
+  unchanged protocol ([game/M2_4_B_REOPENING.md](game/M2_4_B_REOPENING.md), recorded before
+  session 13, with the pause and the intervening practice declared as deviations); the sealed
+  data stay on the original local machine and unopened until all 30 ratings are locked.
 - **Stop-rotation transient** of the frozen swatter controller (Part III): frequency in
   real play unknown; any change needs recorded evidence and approval.
 - **Stale documentation** was corrected on the session branch on 2026-10-21 (README,
