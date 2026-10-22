@@ -36,8 +36,9 @@ data are in `artifacts/m3_0/` (git-ignored). No runtime file changed.
 
 Lateral azimuths, left and right pooled.
 
-- **E1. Escape probability.** The model escapes in all 384 lateral trials that E1 counts (and in
-  the front and rear trials too): 1.00 against 0.82 (X13), which is **partial**. Brain noise changes the escape tick, but never produces a miss.
+- **E1. Escape probability.** The model escapes in all 384 lateral trials that E1 counts, and in
+  the front and rear trials too. That is 1.00 against 0.82 (X13), which is **partial**. Brain
+  noise changes the escape tick, but never produces a miss.
 - **E2. Timing.** The fit `t_before = alpha * (l/v) + delta` gives alpha = 6.1 and
   delta = +14.7 ms. The real fly gives alpha = 2.0 and delta = -6 ms (X16). The implied threshold
   is 18.6° against 54° (X15), a **gap**.
