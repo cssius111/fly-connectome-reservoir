@@ -20,7 +20,8 @@ angle. A *size-driven episode* is a run of samples whose size-driven expansion i
 * A *stop-rotation transient* is a size-driven episode during which the paddle axis (modulo 180
   degrees, because the tilt term uses |sin(bearing - axis)|) turns by at least 60 degrees,
   counted from 0.3 s before its first source row to its last one. An *axis flip* is any turn of
-  at least 60 degrees within 0.3 s of hover.
+  at least 60 degrees within 0.3 s of hover. The axis is the M1.7.2 paddle line axis when the
+  recording carries one (swatter_control.paddle_line_axis), otherwise swatter.orientation.
 * A *reversal spin* is a transient whose paddle turns by at least 120 degrees but ends within 30
   degrees of its starting axis. The approach controller steers the paddle towards the 360-degree
   heading of its velocity, so reversing the motion spins the paddle although its axis line ends
@@ -112,8 +113,11 @@ def audit(folder, manifest):
             r = json.loads(line)
             sw, fly = r['swatter'], r['fly']
             life = r.get('lifecycle') or {}
+            # Since M1.7.2 the tilt term reads the paddle line axis when one is recorded.
+            line = (r.get('swatter_control') or {}).get('paddle_line_axis')
             rows.append({'episode': r['episode'], 'alive': fly['alive'], 'airborne': life.get('airborne', True),
-                         'phase': sw.get('phase'), 'orientation': sw.get('orientation', 0.0),
+                         'phase': sw.get('phase'),
+                         'orientation': line if line is not None else sw.get('orientation', 0.0),
                          'fx': fly['x'], 'fy': fly['y'], 'sx': sw['x'], 'sy': sw['y'], 'h': sw['height'],
                          'theta': r['retina']['theta'], 'escape': r['event_flags'].get('escape_onset', False)})
     n, window = len(rows), max(1, int(round(FLIP_WINDOW_S/dt)))

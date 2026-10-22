@@ -187,6 +187,8 @@ def resolve_escape_threshold(config: dict, root: Path = ROOT) -> ThresholdSource
                 # M1.8-B completion stages (config_version 20 on) share one record writer.
                 if config.get("config_version", 0) > 19:
                     command = "python tools/m1_8_b_stage_record.py STAGE"
+                if config["swatter"]["directional"].get("paddle_axis") == "line_symmetric_v1":
+                    command = "python tools/m1_7_2_axis_record.py"
     expected = calibration_provenance(config)
     tried = []
     for rel in policy["calibration_paths"]:

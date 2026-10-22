@@ -23,8 +23,11 @@ def swept_disk_hit(head0, head1, fly0, fly1, radius):
 
 
 class PhysicalSwatter:
-    def __init__(self, config, width, height, padding):
+    def __init__(self, config, width, height, padding, line_axis=False):
         self.config=config;self.width=width;self.height=height;self.padding=padding
+        # M1.7.2: a world-only paddle line axis for the visual geometry, kept next to the
+        # unchanged 360-degree heading tracker sw.orientation (strike direction).
+        self.line_axis_enabled=bool(line_axis)
         for key in ('speed_limit','acceleration_limit','approach_speed_limit','velocity_tau_seconds','integration_step_seconds'):
             if not math.isfinite(config[key]) or config[key]<=0:raise ValueError('invalid physical swatter '+key)
         if any(config['phases_seconds'][name]<=0 for name in PHASES):raise ValueError('strike durations must be positive')
@@ -39,6 +42,10 @@ class PhysicalSwatter:
         self.pointer_sample_valid = False
         self.approach_command = (0.0, 0.0)
         self.target_error = 0.0
+        self.line_axis = None
+        self.line_axis_velocity = 0.0
+        self.line_axis_target = None
+        self.line_axis_folded = False
 
     @staticmethod
     def _limit_vector(x, y, cap):
@@ -77,13 +84,31 @@ class PhysicalSwatter:
         self.approach_command = tuple(old+alpha*(new-old) for old,new in zip(self.approach_command,desired))
 
     def diagnostics(self):
-        return {'pointer_sample_valid':self.pointer_sample_valid,
-                'pointer_vx':self.pointer_velocity[0], 'pointer_vy':self.pointer_velocity[1],
-                'pointer_speed':math.hypot(*self.pointer_velocity),
-                'pointer_acceleration':self.pointer_acceleration,
-                'target_error_before_step':self.target_error,
-                'approach_command_vx':self.approach_command[0],
-                'approach_command_vy':self.approach_command[1]}
+        d={'pointer_sample_valid':self.pointer_sample_valid,
+           'pointer_vx':self.pointer_velocity[0], 'pointer_vy':self.pointer_velocity[1],
+           'pointer_speed':math.hypot(*self.pointer_velocity),
+           'pointer_acceleration':self.pointer_acceleration,
+           'target_error_before_step':self.target_error,
+           'approach_command_vx':self.approach_command[0],
+           'approach_command_vy':self.approach_command[1]}
+        if self.line_axis_enabled:
+            d.update({'paddle_line_axis':self.line_axis,'paddle_line_axis_velocity':self.line_axis_velocity,
+                      'paddle_line_axis_folded':self.line_axis_folded})
+        return d
+
+    def _turn_line_axis(self, sw, phase, speed, h):
+        """Steer the line axis like the heading tracker, but towards the nearer of the target
+        and its opposite: the tilt term cannot tell them apart (M1.7.2). Until the error is
+        first folded this repeats the tracker's arithmetic exactly."""
+        c=self.config
+        strike=self.line_axis_target if self.line_axis_target is not None else sw.attack_orientation
+        wanted=strike if phase!='approach' else (math.atan2(sw.vy,sw.vx) if speed>20 else self.line_axis)
+        error=(wanted-self.line_axis+math.pi)%(2*math.pi)-math.pi
+        if abs(error)>math.pi/2:
+            error-=math.copysign(math.pi,error);self.line_axis_folded=True
+        wanted_omega=max(-c['angular_speed_limit'],min(c['angular_speed_limit'],8*error))
+        delta=max(-c['angular_acceleration_limit']*h,min(c['angular_acceleration_limit']*h,wanted_omega-self.line_axis_velocity))
+        self.line_axis_velocity+=delta;self.line_axis+=self.line_axis_velocity*h
 
     def commit(self, sw, history):
         samples=np.asarray(history,dtype=float)
@@ -102,6 +127,11 @@ class PhysicalSwatter:
         speed=min(math.hypot(vx,vy),self.config['approach_speed_limit'])
         if speed>=20:sw.attack_orientation=math.atan2(vy,vx)
         else:sw.attack_orientation=sw.orientation;speed=0.0
+        if self.line_axis_enabled:
+            # A fast commit turns the line axis to the strike direction; after a slow commit
+            # it holds its own value, as the tracker holds its own.
+            axis=sw.orientation if self.line_axis is None else self.line_axis
+            self.line_axis_target=sw.attack_orientation if speed>0 else axis
         sw.attack_speed=speed
         sw.attack_acceleration=max(-self.config['acceleration_limit'],min(self.config['acceleration_limit'],float(trend)))
         sw.swing_speed=min(self.config['speed_limit'],self.config['base_swing_speed']+
@@ -139,6 +169,10 @@ class PhysicalSwatter:
         """Substeps resolve geometry/contact windows; brain stays on its 20 ms tick."""
         self._observe_pointer(sw, dt)
         c=self.config;self.segments=[];remaining=dt;elapsed=0.0;resolved=False
+        if self.line_axis_enabled:
+            if self.line_axis is None:
+                self.line_axis,self.line_axis_velocity=sw.orientation,sw.angular_velocity
+            self.line_axis_folded=False
         while remaining>1e-12:
             phase=sw.phase.value
             until=remaining if phase=='approach' else c['phases_seconds'][phase]-sw.phase_elapsed
@@ -175,6 +209,7 @@ class PhysicalSwatter:
             wanted_omega=max(-c['angular_speed_limit'],min(c['angular_speed_limit'],8*error))
             delta=max(-c['angular_acceleration_limit']*h,min(c['angular_acceleration_limit']*h,wanted_omega-sw.angular_velocity))
             sw.angular_velocity+=delta;sw.orientation+=sw.angular_velocity*h
+            if self.line_axis_enabled:self._turn_line_axis(sw,phase,speed,h)
             self.segments.append((elapsed/dt,(elapsed+h)/dt,start,(sw.x,sw.y),phase=='active_contact'))
             elapsed+=h;remaining-=h;sw.phase_elapsed+=h
             self._geometry(sw)

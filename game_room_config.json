@@ -1,5 +1,5 @@
 {
-  "config_version": 26,
+  "config_version": 27,
   "_comment": "M1.6 horizontal ROOM slice. Logical units and state speeds are gameplay mappings, not universal biological constants.",
   "sim": {
     "tick_seconds": 0.02,
@@ -31,7 +31,9 @@
       "min_speed": 20.0,
       "tilt_anisotropy": 0.25,
       "tilt_geometry": "elevation_aware_tilt_v1",
-      "_tilt_geometry_comment": "M1.8-N4B5R runtime candidate (ROOM only). The tilt foreshortening term is weighted by cos(elevation) = horizontal / 3-D fly-paddle distance, so the horizontal bearing no longer turns into apparent looming when the paddle is nearly overhead. bearing_only_v0 (the default when absent) is the accepted M1.5/M1.7 formula. Geometry only: the N4B1C decoder is unchanged."
+      "_tilt_geometry_comment": "M1.8-N4B5R runtime candidate (ROOM only). The tilt foreshortening term is weighted by cos(elevation) = horizontal / 3-D fly-paddle distance, so the horizontal bearing no longer turns into apparent looming when the paddle is nearly overhead. bearing_only_v0 (the default when absent) is the accepted M1.5/M1.7 formula. Geometry only: the N4B1C decoder is unchanged.",
+      "paddle_axis": "line_symmetric_v1",
+      "_paddle_axis_comment": "M1.7.2 (ROOM only). The tilt term and the sprite use a paddle line axis that steers like the heading tracker but towards the nearer of its target and the opposite direction, so reversing the paddle no longer spins it by up to 180 degrees (results/game/M1_8_STOP_ROTATION_AUDIT.md). heading_v0 (the default when absent) is the accepted M1.7.1 behaviour. swatter.orientation still sets the strike direction; the decoder is unchanged."
     },
     "physical": {
       "enabled": true,
@@ -140,11 +142,11 @@
     "virtual_distance": 100.0
   },
   "policy": {
-    "_comment": "Exact provenance required. The M1.8-N4B1C lateral dual-path decoder (unchanged) under the M1.8-N4B5R elevation-aware geometry, the M1.8-B2b-iii kinematics and the M1.8-B3a ecology threat input loads the M1.8-B4b transfer record, which carries the identical decoder block for this configuration: rebuild it with python tools/m1_8_b_stage_record.py B4b. Earlier records are preserved unchanged. tools/calibrate_escape.py measures the scalar single-sample criterion only and does not calibrate this decoder.",
+    "_comment": "Exact provenance required. The M1.8-N4B1C lateral dual-path decoder (unchanged) under the M1.8-N4B5R elevation-aware geometry, the M1.8-B2b-iii to B4b kinematics and ecology and the M1.7.2 paddle line axis loads the M1.7.2 transfer record, which carries the identical decoder block for this configuration: rebuild it with python tools/m1_7_2_axis_record.py. Earlier records are preserved unchanged. tools/calibrate_escape.py measures the scalar single-sample criterion only and does not calibrate this decoder.",
     "escape_threshold": null,
     "calibration_paths": [
-      "artifacts/game/calibration_room_m1_8_b4b.json",
-      "results/game/calibration_room_m1_8_b4b.json"
+      "artifacts/game/calibration_room_m1_7_2.json",
+      "results/game/calibration_room_m1_7_2.json"
     ],
     "escape_decoder": {
       "_comment": "M1.8-N4B1C combined DNp01 criterion. Escape when EITHER path qualifies outside the shared refractory period. LATERAL: the same DNp01 side produces lateral_required_spikes inferred spikes within lateral_same_side_window_ms (per-side spikes inferred from that side's own trace; a left spike followed by a right spike never qualifies). Summed N2b path: FAST when left + right >= summed_fast_threshold; SUSTAINED when the current summed sample is >= sustained_threshold AND at least sustained_required_samples of the most recent sustained_window_samples summed samples are >= sustained_threshold. All values are Class C engineering decoder parameters derived from simulator evidence, not biological constants. sustained_threshold must equal the record's escape_threshold.",

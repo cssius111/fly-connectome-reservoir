@@ -169,8 +169,12 @@ class TestScopeAndVersioning(unittest.TestCase):
         after['policy']['calibration_paths'] = ACCEPTED['policy']['calibration_paths']
         self.assertEqual(after, ACCEPTED)
         self.assertEqual(escape_decoder_spec(N4B5R_ROOM), escape_decoder_spec(ACCEPTED))
-        # The current ROOM keeps the accepted geometry and decoder.
-        self.assertEqual(ROOM['swatter']['directional'], N4B5R_ROOM['swatter']['directional'])
+        # The current ROOM keeps the accepted geometry and decoder; M1.7.2 adds only the
+        # paddle-axis keys (versioned in test_game_m1_7_2).
+        directional = copy.deepcopy(ROOM['swatter']['directional'])
+        for key in ('paddle_axis', '_paddle_axis_comment'):
+            directional.pop(key)
+        self.assertEqual(directional, N4B5R_ROOM['swatter']['directional'])
         self.assertEqual(escape_decoder_spec(ROOM), escape_decoder_spec(ACCEPTED))
 
 
