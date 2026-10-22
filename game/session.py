@@ -189,6 +189,8 @@ def resolve_escape_threshold(config: dict, root: Path = ROOT) -> ThresholdSource
                     command = "python tools/m1_8_b_stage_record.py STAGE"
                 if config["swatter"]["directional"].get("paddle_axis") == "line_symmetric_v1":
                     command = "python tools/m1_7_2_axis_record.py"
+                if config["encoder"].get("feature_model") == "ache2019_v1":
+                    command = "python tools/m3_2_record.py"
     expected = calibration_provenance(config)
     tried = []
     for rel in policy["calibration_paths"]:

@@ -26,7 +26,7 @@ after the scale was calibrated.
 | V5 spontaneous | 0 in 768 s | none | pass |
 | V6b no-player flight | 101 escapes against 10 in 240 minutes each | not larger than baseline | **fail** |
 | V6a threat matrix | not run | descriptive | see section 7 |
-| V7 tests | 522 of 522 pass | all pass | pass |
+| V7 tests | the full suite is running | all pass | pending |
 
 **The encoder change works as designed in the fixed-fly protocols:**
 - the escape now follows angular size and no longer depends on where the disk starts (V2);
@@ -124,7 +124,33 @@ not of the encoder.
 | baseline, v27 (`d67808f`) | 9601-9680 | 10 | 9 | 2.5 |
 | candidate, v28 | 9601-9680 | 101 | 50 | 25.2 |
 
-The N4B4 A-D classification of these escapes is still running and will be added here.
+Every escape was classified by the N4B4 counterfactual method (`tools/paired_free_flight_check.py`):
+- **A:** no LC4 or LPLC2 drive in the 120 ms before the escape;
+- **B:** stimulus-driven, but without the escape the fly would not have come within 310 units
+  of the paddle in 1.5 s;
+- **C:** a near pass whose expansion comes mostly from apparent-size change;
+- **D:** a near pass driven mostly by the fly's own approach.
+
+| Arm | A | B | C | D |
+|---|---|---|---|---|
+| baseline, v27 | 0 | 1 | 1 | 8 |
+| candidate, v28 | 0 | **65** | 5 | 31 |
+
+- **Rate bounds.** The candidate's rate is 0.42 per minute (95 % upper bound 0.50), against 0.04
+  (upper 0.07). The earlier stages' bound for category B, below 0.1 per minute at 95 %, is not
+  met.
+- **No change at rest.** Neither arm has a category-A escape: nothing changed at rest.
+- **What triggers the category-B escapes:**
+  - a median angular size of 17° (11-22°);
+  - a median expansion rate of only 2.4°/s (-1 to 6°/s at the escape tick);
+  - a median horizontal distance of 460 units.
+- **How they happen.** The fly drifts slowly towards the parked paddle, or the paddle's
+  apparent size changes slowly. While `theta_dot` is positive, the LPLC2 term drives
+  `0.69 V * G(17°)`, about 0.15 V, on every tick. The trace builds up until the FAST (36) or
+  SUSTAINED (27) path fires.
+- **Under the legacy encoder** the same situation drove LPLC2 with about `0.4 * theta_dot`,
+  0.02 V, far below the 0.26-0.3 V the chain needs.
+- **Category D.** Self-approach near passes also rose, from 8 to 31.
 
 ## 6. What the result means
 
