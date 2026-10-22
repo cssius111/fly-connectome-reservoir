@@ -2,7 +2,7 @@
 
 Diagnostic only. It reads recorded ROOM sessions, writes nothing, and changes neither the frozen
 M1.7.1 swatter nor any tilt geometry. It answers the open question of M1.8-N4B6
-(wip/m1-4-enclosure, game/M1_8_N4B6_CONTROLLED_SLOW_APPROACH.md section 4): how often real play
+(game/M1_8_N4B6_CONTROLLED_SLOW_APPROACH.md section 4): how often real play
 produces the stop-rotation transient, in which the hovering paddle swings its axis by about 90
 degrees while it corrects an overshoot and so grows in apparent size at constant range
 (0.35 rad/s of size-driven expansion in the orbit control, with an escape in 17 of 48 trials).
