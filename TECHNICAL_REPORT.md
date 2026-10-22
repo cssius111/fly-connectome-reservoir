@@ -715,7 +715,7 @@ Findings:
   with an implied threshold of 18.6° against 54°.
 - **Escape probability.** The model escapes in every trial (1.00 against 0.82).
 - **Escape direction.** For lateral threats the model jumps forward and away, as real flies do.
-  It cannot tell front from back, because the Retina passes on only the side of a stimulus, so
+  It cannot tell front from back, because the encoder uses only the side of a stimulus, so
   frontal and rear threats get the right-side response.
 - **Escape modes.** The short and long escape modes are not represented.
 - **Spontaneous saccades.** They are about four times too rare (0.34 against 1.37 per s) and too
@@ -723,10 +723,22 @@ Findings:
 - **Flight speed** (context): it is about 14 times slower in body lengths per second, which is
   the frozen gameplay scale.
 
-The next fidelity milestone is the user's choice among three groups:
+The gaps fall into three groups:
 - the escape decision, which is frozen;
-- the Retina and the escape pathways, which are structural;
+- the encoder's use of the bearing and the escape pathways, which are structural;
 - the flight generator, which is parametric.
+
+The user chose the escape decision first, starting with read-only research. M3.1
+([game/M3_1_ESCAPE_DECISION_RESEARCH.md](game/M3_1_ESCAPE_DECISION_RESEARCH.md)) traced it:
+- **The model's rule.** The fly escapes when the expansion rate reaches about 40°/s, because the
+  encoder drives LPLC2 by expansion velocity alone.
+- **The real fly.** Its giant fiber sums an angular-size component from LPLC2 and a velocity
+  component from LC4 (Ache et al. 2019; von Reyn et al. 2017).
+- **What the connectome has.** MaleCNS already has that circuit: LC4 and LPLC2 are DNp01's two
+  largest excitatory inputs.
+- **The candidate change.** It assigns the encoder's features as the literature does, and leaves
+  the connectome, DNp01 and the decoder rules unchanged.
+- **Not yet made.** It needs its own preregistration and the user's authorization.
 
 ### 9.7 Other open items
 
