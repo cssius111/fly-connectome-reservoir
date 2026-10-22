@@ -15,7 +15,7 @@ DT = 0.02
 DISTANCE = math.hypot(300.0, 320.0)
 
 
-def recording(folder, phases, half, orientation, mode='play'):
+def recording(folder, phases, half, orientation, mode='play', episodes=None):
     """Write a recording whose row t carries the Retina angle of row t-1's geometry."""
     folder.mkdir(parents=True)
     manifest = {'tick_seconds': DT, 'mode': mode, 'config_version': 26,
@@ -26,7 +26,8 @@ def recording(folder, phases, half, orientation, mode='play'):
         for t, phase in enumerate(phases):
             seen = half[max(t - 1, 0)]
             handle.write(json.dumps({
-                'episode': 1, 'fly': {'alive': True, 'x': 0.0, 'y': 0.0}, 'lifecycle': {'airborne': True},
+                'episode': episodes[t] if episodes else 1,
+                'fly': {'alive': True, 'x': 0.0, 'y': 0.0}, 'lifecycle': {'airborne': True},
                 'swatter': {'phase': phase, 'orientation': orientation[t], 'x': 300.0, 'y': 0.0, 'height': 320.0},
                 'retina': {'theta': 2*math.atan(seen/DISTANCE)}, 'event_flags': {'escape_onset': False}}) + '\n')
     with (folder/'inputs.jsonl').open('w', encoding='utf-8') as handle:
@@ -56,6 +57,18 @@ class TestStopRotationAudit(unittest.TestCase):
         self.assertTrue(episode['transient'])
         self.assertTrue(episode['reversal'])
         self.assertAlmostEqual(episode['net_axis_degrees'], 0.0, places=6)
+
+    def test_baseline_exclusion_stays_inside_the_episode(self):
+        # A size-driven episode right after a restart must not remove hover samples of the
+        # previous episode from the baseline.
+        half = [80.0]*61 + [82.0, 84.0, 86.0] + [86.0]*56
+        with tempfile.TemporaryDirectory() as d:
+            folder = Path(d)/'s'
+            result = audit(folder, recording(folder, ['approach']*120, half, [0.0]*120,
+                                             episodes=[1]*60 + [2]*60))
+        [episode] = result['episodes']
+        self.assertEqual((episode['episode'], episode['tick']), (2, 62))
+        self.assertEqual(sum(cell[0] for cell in result['groups']['baseline hover']), 2)
 
     def test_blind_test_recordings_are_refused(self):
         with self.assertRaises(SystemExit):

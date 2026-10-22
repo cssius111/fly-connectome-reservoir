@@ -180,7 +180,7 @@ def audit(folder, manifest):
     near_episode = [False]*n
     for e in episodes:
         for j in range(max(0, e['tick'] - clear), min(n, e['tick'] + e['ticks'] + clear)):
-            near_episode[j] = True
+            near_episode[j] = near_episode[j] or same(j, e['tick'])
     groups = {g: [[0, 0] for _ in range(len(DISTANCE_BINS) + 1)] for g in GROUPS}
 
     def tally(group, t, outcome):
@@ -235,8 +235,11 @@ def report(label, results):
         print('    %-22s %s | %s' % (g, ' | '.join('%13s' % fmt(c) for c in cells), fmt(total)))
     base = pooled['baseline hover']
     for g in ('transients', 'reversal spins'):
-        excess = sum(c[1] - c[0]*base[b][1]/base[b][0] for b, c in enumerate(pooled[g]) if base[b][0])
-        print('  escapes added by %s over the distance-matched baseline: %.1f (%.2f/min)' % (g, excess, per_min(excess)))
+        cells = [(c, base[b]) for b, c in enumerate(pooled[g]) if base[b][0]]
+        expected = sum(c[0]*b[1]/b[0] for c, b in cells)
+        observed = sum(c[1] for c, _ in cells)
+        print('  escapes added by %s over the distance-matched baseline: %.1f (%.2f/min; observed %d, expected %.3f)'
+              % (g, observed - expected, per_min(observed - expected), observed, expected))
 
 
 def main():

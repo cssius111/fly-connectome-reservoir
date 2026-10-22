@@ -758,7 +758,7 @@ with B2b-iii 440 of 440, and the learning branch 516 of 517 with one CUDA-only t
 skipped, after a line-ending fix to two provenance tests. On 2026-10-21 the B3a runtime passed
 451 of 451 on Linux and on the local Windows checkout, and on 2026-10-22 the session branch
 with the completion stages passed 491 of 491 on Linux and on the local Windows checkout, and
-495 of 495 on Linux with the stop-rotation audit tests.
+496 of 496 on Linux with the stop-rotation audit tests.
 
 ```text
 python first_run.py                                   # data integrity and replay smoke test
