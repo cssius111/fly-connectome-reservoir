@@ -7,6 +7,10 @@ Protocol E feeds a synthetic Retina, a constant-l/v looming disk, to a fixed fly
 projector's output is replaced once per tick; the encoder, MaleCNS, DNp01 and the runtime
 decoder run unchanged.
 
+Each output directory records the run's provenance (runtime source and configuration hash, the
+flybrain version and NUMBA_NUM_THREADS). A resume under a different provenance is refused, and
+the report refuses incomplete or unrecorded result sets.
+
     python tools/m3_0_scorecard.py escape      # protocol E
     python tools/m3_0_scorecard.py saccades    # protocol S
     python tools/m3_0_scorecard.py report      # metrics, bands and classes
@@ -14,6 +18,8 @@ decoder run unchanged.
 from __future__ import annotations
 
 import argparse
+import hashlib
+from importlib import metadata
 import json
 import math
 import os
@@ -50,6 +56,47 @@ def config():
     return c
 
 
+def provenance():
+    """What cached results depend on: runtime source, configuration, brain package and threads."""
+    h = hashlib.sha256()
+    for path in sorted((ROOT / 'game').glob('*.py')) + [ROOT / 'game_room_config.json']:
+        h.update(path.relative_to(ROOT).as_posix().encode('utf-8'))
+        h.update(path.read_bytes())
+    try:
+        flybrain = metadata.version('flybrain')
+    except metadata.PackageNotFoundError:
+        flybrain = None
+    return {'runtime_sha256': h.hexdigest(), 'flybrain': flybrain,
+            'numba_num_threads': os.environ.get('NUMBA_NUM_THREADS')}
+
+
+def check_provenance(out_dir, results_glob):
+    """Refuse to add results to a directory produced under a different provenance.
+
+    A new directory records the current provenance. A directory with results but no record is
+    refused too, because its conditions are unknown."""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    path, current = out_dir / 'provenance.json', provenance()
+    if not path.exists():
+        if any(out_dir.glob(results_glob)):
+            raise SystemExit('%s holds results without provenance.json; move them away to start '
+                             'a fresh run' % out_dir)
+        path.write_text(json.dumps(current, indent=1) + '\n', encoding='utf-8')
+        return
+    recorded = json.loads(path.read_text(encoding='utf-8'))
+    changed = {k: (recorded.get(k), v) for k, v in current.items() if recorded.get(k) != v}
+    if changed:
+        raise SystemExit('%s was produced under a different provenance %s; move it away to start '
+                         'a fresh run' % (out_dir, changed))
+
+
+def recorded_provenance(out_dir):
+    path = out_dir / 'provenance.json'
+    if not path.exists():
+        raise SystemExit('%s has no provenance.json; its results cannot be reported' % out_dir)
+    return json.loads(path.read_text(encoding='utf-8'))
+
+
 # ---------------------------------------------------------------------------- protocol E ---
 def stimulus(lv, azimuth, dt):
     """Per-tick synthetic Retinas, the onset index and the expansion time to collision."""
@@ -74,7 +121,7 @@ def escape():
     session = Session(cfg, root=ROOT, ecology_enabled=False)
     session.world.collisions_enabled = False
     session.world.fly_motion_enabled = False
-    (OUT / 'escape').mkdir(parents=True, exist_ok=True)
+    check_provenance(OUT / 'escape', '*.json')
     for lv_ms in LV_MS:
         lv = lv_ms / 1000.0
         for name, azimuth in AZIMUTHS.items():
@@ -120,7 +167,7 @@ def escape():
 # ---------------------------------------------------------------------------- protocol S ---
 def saccades():
     cfg = config()
-    (OUT / 'saccades').mkdir(parents=True, exist_ok=True)
+    check_provenance(OUT / 'saccades', 'seed*.npz')
     brain = None
     for seed in SACCADE_SEEDS:
         path = OUT / 'saccades' / ('seed%d.npz' % seed)
@@ -166,8 +213,12 @@ def angle_diff(a, b):
 
 def escape_report():
     data = {(d['lv_ms'], d['azimuth']): d for d in
-            (json.loads(p.read_text(encoding='utf-8')) for p in sorted((OUT / 'escape').glob('*.json')))}
-    out = {'per_condition': {}}
+            (json.loads(p.read_text(encoding='utf-8')) for p in sorted((OUT / 'escape').glob('lv*.json')))}
+    missing = [(lv, name) for lv in LV_MS for name in AZIMUTHS
+               if (lv, name) not in data or len(data[(lv, name)]['trials']) != len(P.SEEDS)]
+    if missing:
+        raise SystemExit('protocol E is incomplete; missing or short conditions: %s' % missing)
+    out = {'provenance': recorded_provenance(OUT / 'escape'), 'per_condition': {}}
     for (lv, name), d in sorted(data.items()):
         esc = [t for t in d['trials'] if t['escaped']]
         out['per_condition']['%d %s' % (lv, name)] = {
@@ -217,10 +268,17 @@ def escape_report():
 
 
 def saccade_report():
+    provenance_record = recorded_provenance(OUT / 'saccades')
+    paths = [OUT / 'saccades' / ('seed%d.npz' % seed) for seed in SACCADE_SEEDS]
+    missing = [p.name for p in paths if not p.exists()]
+    if missing:
+        raise SystemExit('protocol S is incomplete; missing seeds: %s' % missing)
     events, airborne_s, isis, speeds, excluded = [], 0.0, [], [], 0
-    for path in sorted((OUT / 'saccades').glob('seed*.npz')):
+    for path in paths:
         z = np.load(path)
         rows, kinds, dt = z['rows'], z['kinds'], float(z['dt'])
+        if len(rows) != SACCADE_TICKS:
+            raise SystemExit('%s has %d ticks, not %d' % (path.name, len(rows), SACCADE_TICKS))
         airborne, speed, yaw, esc = rows[:, 0] > 0, rows[:, 1], rows[:, 2], rows[:, 3] > 0
         post = np.zeros(len(rows), bool)
         for i in np.flatnonzero(esc):
@@ -250,7 +308,8 @@ def saccade_report():
     amp = float(np.median([e['amplitude_deg'] for e in events])) if events else None
     dur = float(np.median([e['duration_s'] for e in events])) if events else None
     s3 = sum([amp is not None and 60.0 <= amp <= 120.0, dur is not None and dur <= 0.100])
-    return {'S1': {'rate_per_s': rate, 'events': len(events), 'airborne_s': airborne_s, 'excluded_threat_events': excluded,
+    return {'provenance': provenance_record,
+            'S1': {'rate_per_s': rate, 'events': len(events), 'airborne_s': airborne_s, 'excluded_threat_events': excluded,
                    'comparator': 1.37, 'class': classify(rate, (1.03, 1.71), (0.685, 2.74))},
             'S2': {'isi_mean_s': isi_mean, 'isi_median_s': float(np.median(isis)) if isis else None, 'n': len(isis),
                    'comparator_s': 0.818, 'class': classify(isi_mean, (0.613, 1.022), (0.409, 1.636))},

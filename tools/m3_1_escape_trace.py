@@ -21,6 +21,9 @@ Two further read-only probes:
 
     python tools/m3_1_escape_trace.py run       # writes artifacts/m3_1/*.json
     python tools/m3_1_escape_trace.py report    # prints the summary tables
+
+The output directory records its provenance as in tools/m3_0_scorecard.py, and a resume under a
+different provenance is refused.
 """
 from __future__ import annotations
 
@@ -137,7 +140,7 @@ def run():
     encoder = loop.encoder
     dnp01 = {s: np.asarray(brain.groups['escape_' + s]) for s in 'LR'}
     driven = {(ch, s): encoder._fd.cells[ch][s] for ch in ('loom', 'threat') for s in 'LR'}
-    OUT.mkdir(parents=True, exist_ok=True)
+    M.check_provenance(OUT, '*.json')
     for variant in VARIANTS:
         path = OUT / ('trace_%s.json' % variant)
         if path.exists():
@@ -210,6 +213,7 @@ def fmt(value, spec='%.1f'):
 
 def report():
     dt = 0.02
+    print('provenance:', M.recorded_provenance(OUT))
     for variant in VARIANTS:
         data = json.loads((OUT / ('trace_%s.json' % variant)).read_text(encoding='utf-8'))
         print('\n== %s' % variant)

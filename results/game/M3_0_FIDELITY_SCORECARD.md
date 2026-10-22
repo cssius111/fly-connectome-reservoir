@@ -16,7 +16,7 @@ data are in `artifacts/m3_0/` (git-ignored). No runtime file changed.
 | E5 Short and long escape modes | one escape action, no wing raise | two modes; the short-mode share falls with l/v (X21-X22) | **not represented** | structural |
 | S1 Spontaneous saccade rate | 0.34 per s | 1.37 per s (E12) | **gap** | parametric: hand-written flight generator |
 | S2 Intersaccadic interval, mean | 2.65 s (median 1.90) | 0.82 s (E11) | **gap** | parametric, same generator |
-| E1 Escape probability | 1.00 (768 of 768) | 0.82 (X13) | partial | parametric: no trial-to-trial misses |
+| E1 Escape probability | 1.00 (384 of 384 lateral trials) | 0.82 (X13) | partial | parametric: no trial-to-trial misses |
 | S3 Saccade amplitude and duration | median 57° in 80 ms | about 90° in under 100 ms (E10) | partial | parametric |
 | E4 Direction, threat to the side | -66.7° right threat, +65.6° left threat | halfway between away and forward, ∓45° (X05) | match | |
 | C1 Flight speed (context, not scored) | 7.6 body lengths per s | about 107 (E02) | - | frozen gameplay scale, 14 times slower |
@@ -36,8 +36,8 @@ data are in `artifacts/m3_0/` (git-ignored). No runtime file changed.
 
 Lateral azimuths, left and right pooled.
 
-- **E1. Escape probability.** The model escapes in every trial: 1.00 against 0.82 (X13), which is
-  **partial**. Brain noise changes the escape tick, but never produces a miss.
+- **E1. Escape probability.** The model escapes in all 384 lateral trials that E1 counts (and in
+  the front and rear trials too): 1.00 against 0.82 (X13), which is **partial**. Brain noise changes the escape tick, but never produces a miss.
 - **E2. Timing.** The fit `t_before = alpha * (l/v) + delta` gives alpha = 6.1 and
   delta = +14.7 ms. The real fly gives alpha = 2.0 and delta = -6 ms (X16). The implied threshold
   is 18.6° against 54° (X15), a **gap**.
