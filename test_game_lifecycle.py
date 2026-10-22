@@ -410,8 +410,10 @@ class TestNeuralLifecycle(unittest.TestCase):
         before=json.loads(subprocess.check_output(['git','show','f8f440b:game_room_config.json'],cwd=ROOT,text=True))
         # The lifecycle must not change fixed-fly neural outputs. The M1.8-N4B5R tilt geometry
         # does change the Retina for this nearly overhead strike, so the lifecycle comparison
-        # uses the accepted bearing-only geometry.
+        # uses the accepted bearing-only geometry. The M1.7.2 line axis folds while the paddle
+        # settles, so the comparison also uses the accepted heading axis.
         room=copy.deepcopy(ROOM);room['swatter']['directional']['tilt_geometry']='bearing_only_v0'
+        room['swatter']['directional']['paddle_axis']='heading_v0'
         outputs=[]
         for config in (before,room):
             p=RecordingPolicy();s=Session(config,brain=shared_brain(),policy=p)

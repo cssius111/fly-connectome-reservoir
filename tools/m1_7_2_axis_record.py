@@ -73,8 +73,9 @@ def reuse_reason(evidence):
         return text + 'No calibration trial folds, so the measurement sees an identical Retina input.'
     return text + ('In the calibration protocol the line axis folds in %d of %d trials, always while the paddle '
                    'travels to its hover point, so the reuse is not exact. The measured windows of the no-loom '
-                   'trials carry no apparent expansion under either configuration, and the no-loom DNp01 '
-                   'statistics differ by about as much as v26 differs between reset seeds '
+                   'trials carry no encoder drive under either configuration; the single-sample no-loom '
+                   'statistics still differ, through the brain state the settle leaves, while the N4B1C '
+                   'decoder fires in none of these trials under either configuration '
                    '(results/game/M1_7_2_PADDLE_AXIS.md, section 3). As for M1.8-N4B5R, the decoder is '
                    'carried over unchanged.' % (evidence['folded_trials'], evidence['trials']))
 
