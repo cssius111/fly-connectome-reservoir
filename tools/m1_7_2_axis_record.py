@@ -64,6 +64,21 @@ def calibration_trial_evidence():
             'descriptive_not_rederived': data['descriptive']}
 
 
+def reuse_reason(evidence):
+    text = ('The threshold and decoder are not re-derived. Until its first folded sub-step the line axis '
+            'repeats the heading tracker exactly (check C2 of the design note). ')
+    if evidence is None:
+        return text + 'Check C2 has not been run yet.'
+    if evidence['exact_reuse']:
+        return text + 'No calibration trial folds, so the measurement sees an identical Retina input.'
+    return text + ('In the calibration protocol the line axis folds in %d of %d trials, always while the paddle '
+                   'travels to its hover point, so the reuse is not exact. The measured windows of the no-loom '
+                   'trials carry no apparent expansion under either configuration, and the no-loom DNp01 '
+                   'statistics differ by about as much as v26 differs between reset seeds '
+                   '(results/game/M1_7_2_PADDLE_AXIS.md, section 3). As for M1.8-N4B5R, the decoder is '
+                   'carried over unchanged.' % (evidence['folded_trials'], evidence['trials']))
+
+
 def build_record(config=None):
     config = load_config(CONFIG) if config is None else config
     baseline = baseline_config()
@@ -86,6 +101,7 @@ def build_record(config=None):
         raise SystemExit('the configured decoder differs from the v1.0 configuration')
     if {k: source['escape_decoder'].get(k) for k in decoder} != decoder:
         raise SystemExit('the configured decoder differs from the B4b record decoder block')
+    evidence = calibration_trial_evidence()
     geometry = copy.deepcopy(source['geometry'])
     geometry.update({
         'paddle_axis': PADDLE_AXIS_LINE,
@@ -130,10 +146,8 @@ def build_record(config=None):
             'original_measurement': ORIGINAL_MEASUREMENT,
             'original_measurement_sha256': content_sha256(ORIGINAL_MEASUREMENT),
             'baseline_commit': BASELINE_COMMIT,
-            'reason': ('The threshold and decoder are not re-derived. Until its first folded sub-step the '
-                       'line axis repeats the heading tracker exactly, so a measurement trial without a '
-                       'fold sees an identical Retina input (check C2 of the design note).'),
-            'calibration_trials_c2': calibration_trial_evidence(),
+            'reason': reuse_reason(evidence),
+            'calibration_trials_c2': evidence,
             'changed_config_paths': changed},
         'neurons': source['neurons'], 'connections': source['connections'],
         'input_populations': source['input_populations'], 'versions': source['versions'],

@@ -203,8 +203,34 @@
     "original_measurement": "results/game/calibration_room_m1_7_1.json",
     "original_measurement_sha256": "9275558aa05f05d285adc08b89682de19a26e4e72aeb1976165d59a0b8ec4afb",
     "baseline_commit": "57221665cfae656d5e3e367436ff32d2bbfc7473",
-    "reason": "The threshold and decoder are not re-derived. Until its first folded sub-step the line axis repeats the heading tracker exactly, so a measurement trial without a fold sees an identical Retina input (check C2 of the design note).",
-    "calibration_trials_c2": null,
+    "reason": "The threshold and decoder are not re-derived. Until its first folded sub-step the line axis repeats the heading tracker exactly (check C2 of the design note). In the calibration protocol the line axis folds in 56 of 56 trials, always while the paddle travels to its hover point, so the reuse is not exact. The measured windows of the no-loom trials carry no apparent expansion under either configuration, and the no-loom DNp01 statistics differ by about as much as v26 differs between reset seeds (results/game/M1_7_2_PADDLE_AXIS.md, section 3). As for M1.8-N4B5R, the decoder is carried over unchanged.",
+    "calibration_trials_c2": {
+      "trials": 56,
+      "folded_ticks": 2767,
+      "folded_trials": 56,
+      "first_fold_in_settle_trials": 56,
+      "bit_identical_trials": 2,
+      "invariant_holds": true,
+      "exact_reuse": false,
+      "descriptive_not_rederived": {
+        "v26": {
+          "null_peak_max": 1.375652015209198,
+          "null_ticks_at_or_above_1_45": 0,
+          "loom_detected_at_1_45": 28,
+          "loom_trials": 28,
+          "median_latency_at_1_45_seconds": 0.08,
+          "calibration_rule_threshold": 1.4
+        },
+        "v27": {
+          "null_peak_max": 2.0742827653884888,
+          "null_ticks_at_or_above_1_45": 2,
+          "loom_detected_at_1_45": 28,
+          "loom_trials": 28,
+          "median_latency_at_1_45_seconds": 0.08,
+          "calibration_rule_threshold": 2.1
+        }
+      }
+    },
     "changed_config_paths": [
       "config_version",
       "policy._comment",
