@@ -1,7 +1,8 @@
 # M3.2: escape feature roles after Ache et al. 2019 (preregistration)
 
 Status: **preregistered on 2026-10-22 (`4a43cfb`), before any implementation or run.**
-Result: the primary criterion failed (`results/game/M3_2_ESCAPE_FEATURE_ROLES.md`).
+Result: the primary criterion failed (`results/game/M3_2_ESCAPE_FEATURE_ROLES.md`). The user
+chose to keep the v27 ROOM configuration. The v28 candidate is commit `408fbc0`.
 
 **Authorization.** The change touches the accepted encoder (ROOM `config_version` 27) and the
 decoder's transfer record. On 2026-10-22, after reading this preregistration, the user

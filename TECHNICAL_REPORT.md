@@ -751,8 +751,8 @@ The user chose the escape decision first, starting with read-only research. M3.1
     on the rising side of the size term, and acts about 60 ms later.
   - No-player escapes rose from 10 to 101 in 240 minutes, 65 of them inappropriate
     (category B), because the expansion gate passes even very slow expansion.
-  - The v28 ROOM configuration exists only on the working branch; `main` runs v27. The next
-    step is the user's decision.
+  - The user chose to record the failure and to keep v27. The v28 candidate stays in git
+    history at `408fbc0`, and the gated encoder mode stays unused in the code.
 
 ### 9.7 Other open items
 

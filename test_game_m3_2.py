@@ -22,6 +22,7 @@ from game.session import load_config
 
 LAB = load_config(ROOT / "game_config.json")
 SCALE = 0.1
+CANDIDATE_COMMIT = "408fbc093c4e8f37c1371910756fb31f5f60ecbf"   # the M3.2 candidate, ROOM v28
 _SHARED: dict = {}
 
 
@@ -150,20 +151,34 @@ class TestAche2019Mode(unittest.TestCase):
 
 
 class TestRoomConfiguration(unittest.TestCase):
-    """The v28 ROOM configuration, its transfer record and its scope."""
+    """The M3.2 candidate (ROOM v28 at 408fbc0), its transfer record, and the revert to v27.
+
+    M3.2 failed its primary criterion and the user chose to restore the v27 ROOM configuration
+    (results/game/M3_2_ESCAPE_FEATURE_ROLES.md). The candidate stays in git history and its
+    record stays in results/ as the record of what was tested.
+    """
 
     @classmethod
     def setUpClass(cls):
+        import json
+        import subprocess
         from tools.m3_2_record import RECORD, SOURCE_RECORD
         cls.room = load_config(ROOT / "game_room_config.json")
+        cls.candidate = json.loads(subprocess.check_output(
+            ["git", "show", CANDIDATE_COMMIT + ":game_room_config.json"], cwd=ROOT, text=True))
         cls.record = load_config(ROOT / RECORD)
         cls.source = load_config(ROOT / SOURCE_RECORD)
         cls.record_path = RECORD
 
-    def test_room_uses_the_calibrated_ache2019_encoder(self):
-        self.assertEqual(self.room["config_version"], 28)
-        self.assertEqual(encoder_feature_model(self.room), FEATURE_MODEL_ACHE2019)
-        self.assertEqual(self.room["encoder"]["ache2019"], {"scale_volts_per_mv": 0.28})
+    def test_the_working_room_configuration_is_the_reverted_v27(self):
+        self.assertEqual(self.room["config_version"], 27)
+        self.assertEqual(encoder_feature_model(self.room), FEATURE_MODEL_LEGACY)
+        self.assertNotIn("ache2019", self.room["encoder"])
+
+    def test_the_candidate_used_the_calibrated_ache2019_encoder(self):
+        self.assertEqual(self.candidate["config_version"], 28)
+        self.assertEqual(encoder_feature_model(self.candidate), FEATURE_MODEL_ACHE2019)
+        self.assertEqual(self.candidate["encoder"]["ache2019"], {"scale_volts_per_mv": 0.28})
 
     def test_lab_and_game_keep_the_legacy_encoder(self):
         for name in ("game_config.json", "game_play_config.json"):
@@ -171,11 +186,11 @@ class TestRoomConfiguration(unittest.TestCase):
             self.assertNotIn("feature_model", config["encoder"], name)
             self.assertEqual(encoder_feature_model(config), FEATURE_MODEL_LEGACY)
 
-    def test_the_record_binds_the_configuration_and_carries_the_decoder(self):
+    def test_the_record_binds_the_candidate_and_carries_the_decoder(self):
         from game.session import calibration_provenance, resolve_escape_threshold
         self.assertEqual(self.record["record_kind"], "m3-2-encoder-feature-roles-transfer-provenance-v1")
-        self.assertEqual(self.record["provenance"], calibration_provenance(self.room))
-        resolved = resolve_escape_threshold(self.room)
+        self.assertEqual(self.record["provenance"], calibration_provenance(self.candidate))
+        resolved = resolve_escape_threshold(self.candidate)
         self.assertEqual(resolved.origin, self.record_path)
         self.assertEqual(resolved.threshold, 1.45)
         for key in ("escape_threshold", "escape_decoder", "parameter_basis", "geometry"):
@@ -186,7 +201,7 @@ class TestRoomConfiguration(unittest.TestCase):
 
     def test_the_writer_rejects_a_change_outside_the_encoder_keys(self):
         from tools.m3_2_record import build_record
-        config = copy.deepcopy(self.room)
+        config = copy.deepcopy(self.candidate)
         config["encoder"]["loom_gain"] += 1
         with self.assertRaises(SystemExit):
             build_record(config)

@@ -1,8 +1,7 @@
 """M1.7.2: the line-symmetric paddle axis (game/M1_7_2_PADDLE_AXIS_DESIGN.md).
 
 World-only tests of the gate, the line-axis rule and its invariant, and the transfer record.
-v26 is the ROOM configuration of tag v1.0. v27 is read from commit d67808f, because M3.2 moved
-the working file to v28 (versioned in test_game_m3_2).
+v26 is the ROOM configuration of tag v1.0; v27 is the working file.
 """
 import copy
 import json
@@ -22,9 +21,7 @@ from test_game import same_content
 from tools.m1_7_2_axis_record import BASELINE_COMMIT, RECORD, SOURCE_RECORD, build_record
 
 ROOT = Path(__file__).parent
-V27_COMMIT = 'd67808f62bef6a11205f65be6aad827b48f4d82a'
-ROOM = json.loads(subprocess.check_output(['git', 'show', V27_COMMIT + ':game_room_config.json'],
-                                          cwd=ROOT, text=True))
+ROOM = load_config(ROOT/'game_room_config.json')
 V26 = json.loads(subprocess.check_output(['git', 'show', BASELINE_COMMIT + ':game_room_config.json'],
                                          cwd=ROOT, text=True))
 DT = 0.02

@@ -11,7 +11,9 @@ M3.0 provenance guard, so an interrupted run resumes where it stopped.
 
 Calibration builds each grid configuration in memory from the ROOM configuration and runs it
 with the decoder built from that configuration's own transfer record; only the encoder's
-feature model and scale differ. Validation runs the ROOM configuration as the runtime loads it.
+feature model and scale differ. Validation runs the ROOM configuration as the runtime loads it,
+so it needs the v28 candidate (commit 408fbc0); the working configuration is v27 again since
+M3.2 failed its primary criterion.
 """
 from __future__ import annotations
 

@@ -4,14 +4,21 @@ Status: **measurement complete on 2026-10-22. The preregistered primary criterio
 the v28 configuration is not a playtest candidate under the decision rule.** Nothing was tuned
 after the scale was calibrated.
 
+**Decision.** On 2026-10-22 the user chose to record the failure and to restore the v27 ROOM
+configuration.
+- **The candidate.** The v28 configuration stays in git history at `408fbc0`. Its transfer
+  record `results/game/calibration_room_m3_2.json` stays as the record of what was tested.
+- **What is kept.** The gated `ache2019_v1` encoder mode, its tests and the M3.2 tools stay in
+  the code. No configuration uses the mode.
+
 - Preregistration: `game/M3_2_ESCAPE_FEATURE_ROLES_DESIGN.md` (`4a43cfb`, authorization `986c34e`,
   amendment 1 `2fe91d8`).
 - Tools:
   - `tools/m3_2_escape_roles.py`: calibration and V1-V5;
   - `tools/paired_free_flight_check.py`: V6b;
   - `tools/m3_2_ache_targets.py`: the calibration targets.
-- Configuration and record: `game_room_config.json` v28 and `results/game/calibration_room_m3_2.json`,
-  both on the working branch; `main` still runs v27.
+- Configuration and record: the v28 candidate `game_room_config.json` at `408fbc0` and
+  `results/game/calibration_room_m3_2.json`. The working configuration is v27 again.
 - Raw data: `artifacts/m3_2/` (git-ignored).
 
 ## 1. Summary
@@ -165,9 +172,7 @@ Every escape was classified by the N4B4 counterfactual method (`tools/paired_fre
 
 ## 7. Open decisions for the user
 
-- **Keep or revert.** The v28 configuration is committed on the working branch only; `main` runs
-  v27. The encoder mode is gated, so reverting means restoring the v27 ROOM configuration and
-  its record path. The code, tests and tools can stay.
+- **Keep or revert.** Decided: reverted to v27 (see Status).
 - **V6a.** The N4B6 threat matrix (about two hours for both arms) was not run, because the
   decision rule had already failed. It can be run on request.
 - **A follow-up.** Any follow-up is a new preregistered milestone. The two causes above point
@@ -176,6 +181,9 @@ Every escape was classified by the N4B4 counterfactual method (`tools/paired_fre
   - the decision delay (decoder and tick), which is frozen.
 
 ## 8. Reproduction
+
+`validate` and `tools/m3_2_record.py` need the v28 candidate configuration. Check out
+`game_room_config.json` from `408fbc0` first, and restore it afterwards.
 
 ```
 python tools/m3_2_ache_targets.py

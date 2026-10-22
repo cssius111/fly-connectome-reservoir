@@ -17,6 +17,9 @@ The tool refuses to write unless:
   (artifacts/m3_2/report.json, written by tools/m3_2_escape_roles.py report).
 
     python tools/m3_2_record.py
+
+M3.2 failed its primary criterion and the ROOM configuration was restored to v27. The record
+describes the v28 candidate at commit 408fbc0; run the tool with that configuration checked out.
 """
 from __future__ import annotations
 

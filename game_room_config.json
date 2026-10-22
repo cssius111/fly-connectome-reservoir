@@ -1,5 +1,5 @@
 {
-  "config_version": 28,
+  "config_version": 27,
   "_comment": "M1.6 horizontal ROOM slice. Logical units and state speeds are gameplay mappings, not universal biological constants.",
   "sim": {
     "tick_seconds": 0.02,
@@ -139,19 +139,14 @@
     "threat_max": 0.8,
     "threat_theta_reference": 0.5,
     "threat_theta_dot_reference": 2.0,
-    "virtual_distance": 100.0,
-    "feature_model": "ache2019_v1",
-    "_feature_model_comment": "M3.2 (game/M3_2_ESCAPE_FEATURE_ROLES_DESIGN.md): LPLC2 is driven by a Gaussian of log angular size and LC4 linearly by angular velocity, only while the stimulus expands, with the published constants of Ache et al. 2019 (STAR Methods eqs. 3, 4 and 7) held in game/perception.py. scale_volts_per_mv maps GF millivolts to encoder volts; it is the one calibrated constant (tools/m3_2_escape_roles.py, against the peak times of the paper's GF model, not behaviour). loom_gain, loom_size, threat_max and the threat references are used only by legacy_v0, the default when feature_model is absent.",
-    "ache2019": {
-      "scale_volts_per_mv": 0.28
-    }
+    "virtual_distance": 100.0
   },
   "policy": {
-    "_comment": "Exact provenance required. The M1.8-N4B1C lateral dual-path decoder (unchanged) under the M1.8-N4B5R elevation-aware geometry, the M1.8-B2b-iii to B4b kinematics and ecology the M1.7.2 paddle line axis and the M3.2 ache2019_v1 encoder loads the M3.2 transfer record, which carries the identical decoder block for this configuration: rebuild it with python tools/m3_2_record.py. Earlier records are preserved unchanged. tools/calibrate_escape.py measures the scalar single-sample criterion only and does not calibrate this decoder.",
+    "_comment": "Exact provenance required. The M1.8-N4B1C lateral dual-path decoder (unchanged) under the M1.8-N4B5R elevation-aware geometry, the M1.8-B2b-iii to B4b kinematics and ecology and the M1.7.2 paddle line axis loads the M1.7.2 transfer record, which carries the identical decoder block for this configuration: rebuild it with python tools/m1_7_2_axis_record.py. Earlier records are preserved unchanged. tools/calibrate_escape.py measures the scalar single-sample criterion only and does not calibrate this decoder.",
     "escape_threshold": null,
     "calibration_paths": [
-      "artifacts/game/calibration_room_m3_2.json",
-      "results/game/calibration_room_m3_2.json"
+      "artifacts/game/calibration_room_m1_7_2.json",
+      "results/game/calibration_room_m1_7_2.json"
     ],
     "escape_decoder": {
       "_comment": "M1.8-N4B1C combined DNp01 criterion. Escape when EITHER path qualifies outside the shared refractory period. LATERAL: the same DNp01 side produces lateral_required_spikes inferred spikes within lateral_same_side_window_ms (per-side spikes inferred from that side's own trace; a left spike followed by a right spike never qualifies). Summed N2b path: FAST when left + right >= summed_fast_threshold; SUSTAINED when the current summed sample is >= sustained_threshold AND at least sustained_required_samples of the most recent sustained_window_samples summed samples are >= sustained_threshold. All values are Class C engineering decoder parameters derived from simulator evidence, not biological constants. sustained_threshold must equal the record's escape_threshold.",
