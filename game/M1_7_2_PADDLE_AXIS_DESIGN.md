@@ -174,3 +174,23 @@ fixed-fly-v2 with ecology off, as in N4B6. The pass criteria are fixed here.
 - If v26 fails its sanity condition in C3, the control does not reproduce the defect. That is
   reported before any v27 result is read.
 - Nothing here retunes difficulty, the decoder, the Retina or the encoder.
+
+## 7. Amendment 1 (2026-10-22, before any neural measurement)
+
+A world-only geometry run of the scripted paths, made while the implementation was checked,
+showed that one preregistered criterion was misspecified. No brain had been simulated for any
+check.
+
+- **R1 line-axis criterion, failed as written.** The criterion "the line axis turns by at most
+  10 degrees from the reversal to the end" does not allow for the arc. On the return leg the
+  motion line itself turns by about 57 degrees (300 units/s on a 300-unit arc for 1.0 s), and
+  the line axis follows it. It turns by 75.2 degrees in total, against 197 degrees for the
+  heading tracker. The criterion is reported as failed as written.
+- **Replacement, descriptive only.** The deviation of the line axis from the motion line,
+  modulo 180 degrees, is reported for both configurations. It gets no threshold, because the
+  threshold would be set after seeing the rotation.
+- **Unchanged.** R1's functional criteria stay as preregistered: the size-driven expansion
+  after the reversal, and the N4B1C responses.
+- **T1 needs no amendment.** In that run the first folded sub-step came at the stop after the
+  turn, not at the turn. T1 as preregistered (a straight run that turns, with no stop) is
+  compared up to the end of the run.
