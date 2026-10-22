@@ -219,7 +219,7 @@ faster than real time; it was run once and is not a formal benchmark.
 | M1.6 | 2026-09-19 | `58ffd60` (local only) | ROOM ecology: analytic wind and odor, eight ecological states, perch objects | 194 tests |
 | M1.7 + edge | 2026-09-20 | `e0f08eb` (local only) | Physical inertial paddle, swept collision, recorder with exact replay, partially offscreen paddle | 232 tests; human session diagnosed |
 | M1.7.1 | 2026-09-21 | `cab1184` | Pointer-velocity approach controller; time at >= 95 % of the paddle speed cap fell from 46.9 % to 1.6 % | **Human-accepted**; frozen |
-| M1.7.2 | 2026-10-22 | `657e681` ... `b570269` | Line-symmetric paddle axis for the visual geometry, so a reversal no longer spins the paddle (ROOM `config_version` 27; section 9.6) | **Human-accepted 2026-10-22**; frozen |
+| M1.7.2 | 2026-10-22 | `657e681` ... `b570269` | Line-symmetric paddle axis for the visual geometry, so a reversal no longer spins the paddle (ROOM `config_version` 27; section 9.7) | **Human-accepted 2026-10-22**; frozen |
 | M1.8-R0 | 2026-09-21 | `f8f440b` | Evidence lock: 23 primary papers, 147 inventoried parameters, no parameter promoted to class A | Documentation |
 | M1.8-A | 2026-09-21 | `bfbef04` | Landing, perching, feeding overlay, voluntary and neural escape takeoff; recorder schema 4 | **Two human playtests**; frozen |
 | M1.8-B1 to B2b-ii | 2026-09-21 | `8a8064d` ... `0d8c254` | Kinematics refactor and first sampled speed distribution (section 4.5) | Bit-identical replay, then one attributed divergence |
@@ -414,7 +414,7 @@ freeze, and an N4B5 criterion ("every direct strike fires") that failed as writt
 
 Known open items: a stop-rotation transient of the frozen swatter controller produces
 0.35 rad/s of apparent expansion at constant range and an escape in 17/48 orbit trials
-(its frequency in real play was measured on 2026-10-22, section 9.6); a false-trigger rate below 0.01/min has never been
+(its frequency in real play was measured on 2026-10-22, section 9.7); a false-trigger rate below 0.01/min has never been
 demonstrated; LAB and GAME still use the legacy single-sample decoder; and the evidence
 base is one human tester.
 
@@ -593,8 +593,8 @@ As of 2026-10-22 the accepted runtime is ROOM `config_version` 27:
 - the M1.7.2 paddle line axis, accepted the same day. The slow-approach line is closed by the user's decision, and M1.8-B is
 complete and frozen. On 2026-10-22 the M2.4-B blind test was closed at 13 of 30 sessions and the
 stop-rotation audit was recorded. At the user's request, M1.7.2 then fixed the defect the audit had
-found. It is ROOM `config_version` 27 and was human-accepted the same day (section 9.6).
-The remaining open items are in section 9.6.
+found. It is ROOM `config_version` 27 and was human-accepted the same day (section 9.7).
+The fidelity scorecard is in section 9.6, and the remaining open items are in section 9.7.
 
 ### 9.1 A measurement made for this report: where flight time goes
 
