@@ -149,5 +149,48 @@ class TestAche2019Mode(unittest.TestCase):
         self.assertAlmostEqual(lc4, 1.62 * 0.0002567 * 1000, places=9)
 
 
+class TestRoomConfiguration(unittest.TestCase):
+    """The v28 ROOM configuration, its transfer record and its scope."""
+
+    @classmethod
+    def setUpClass(cls):
+        from tools.m3_2_record import RECORD, SOURCE_RECORD
+        cls.room = load_config(ROOT / "game_room_config.json")
+        cls.record = load_config(ROOT / RECORD)
+        cls.source = load_config(ROOT / SOURCE_RECORD)
+        cls.record_path = RECORD
+
+    def test_room_uses_the_calibrated_ache2019_encoder(self):
+        self.assertEqual(self.room["config_version"], 28)
+        self.assertEqual(encoder_feature_model(self.room), FEATURE_MODEL_ACHE2019)
+        self.assertEqual(self.room["encoder"]["ache2019"], {"scale_volts_per_mv": 0.28})
+
+    def test_lab_and_game_keep_the_legacy_encoder(self):
+        for name in ("game_config.json", "game_play_config.json"):
+            config = load_config(ROOT / name)
+            self.assertNotIn("feature_model", config["encoder"], name)
+            self.assertEqual(encoder_feature_model(config), FEATURE_MODEL_LEGACY)
+
+    def test_the_record_binds_the_configuration_and_carries_the_decoder(self):
+        from game.session import calibration_provenance, resolve_escape_threshold
+        self.assertEqual(self.record["record_kind"], "m3-2-encoder-feature-roles-transfer-provenance-v1")
+        self.assertEqual(self.record["provenance"], calibration_provenance(self.room))
+        resolved = resolve_escape_threshold(self.room)
+        self.assertEqual(resolved.origin, self.record_path)
+        self.assertEqual(resolved.threshold, 1.45)
+        for key in ("escape_threshold", "escape_decoder", "parameter_basis", "geometry"):
+            self.assertEqual(self.record[key], self.source[key], key)
+        self.assertTrue(self.record["decoder_unchanged"] and self.record["encoder_changed"])
+        self.assertEqual(self.record["encoder"]["published_constants"], ACHE2019)
+        self.assertEqual(self.record["encoder"]["scale_volts_per_mv"], 0.28)
+
+    def test_the_writer_rejects_a_change_outside_the_encoder_keys(self):
+        from tools.m3_2_record import build_record
+        config = copy.deepcopy(self.room)
+        config["encoder"]["loom_gain"] += 1
+        with self.assertRaises(SystemExit):
+            build_record(config)
+
+
 if __name__ == "__main__":
     unittest.main()

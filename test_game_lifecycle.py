@@ -244,6 +244,8 @@ class TestLocalLifecycle(unittest.TestCase):
                 node.pop(leaf,None)
         # M1.7.2 changes only the paddle axis (versioned in test_game_m1_7_2).
         for key in ('paddle_axis','_paddle_axis_comment'):after['swatter']['directional'].pop(key)
+        # M3.2 changes only the encoder's feature model (versioned in test_game_m3_2).
+        for key in ('feature_model','_feature_model_comment','ache2019'):after['encoder'].pop(key)
         self.assertEqual(after,before)
         # The active record chains M1.8-B2a -> M1.8-A -> the M1.7.1 measurement, and every
         # link must name the exact bytes it transfers from.
@@ -267,11 +269,15 @@ class TestLocalLifecycle(unittest.TestCase):
         self.assertTrue(same_content(b2bii,active['source_sha256']))
         self.assertEqual(active['original_measurement'],'results/game/calibration_room_m1_7_1.json')
         self.assertEqual(resolve_escape_threshold(ROOM).threshold,1.45)
-        # From M1.7.2 on, ROOM resolves the M1.7.2 record, which transfers the newest
+        # From M3.2 on, ROOM resolves the M3.2 record, which transfers the M1.7.2 record
+        # unchanged (tested in test_game_m3_2). The M1.7.2 record transfers the newest
         # completion-stage record (tested in test_game_m1_7_2); that stage's chain back to the
         # B3a record is tested in test_game_m1_8_b_stages.
         from tools.m1_8_b_stage_record import STAGES
-        self.assertEqual(resolve_escape_threshold(ROOM).origin,'results/game/calibration_room_m1_7_2.json')
+        self.assertEqual(resolve_escape_threshold(ROOM).origin,'results/game/calibration_room_m3_2.json')
+        m3_2=load_config(ROOT/'results/game/calibration_room_m3_2.json')['source_record']
+        self.assertEqual(m3_2['record'],'results/game/calibration_room_m1_7_2.json')
+        self.assertTrue(same_content(ROOT/m3_2['record'],m3_2['sha256']))
         self.assertEqual(load_config(ROOT/'results/game/calibration_room_m1_7_2.json')['source_record']['record'],
                          list(STAGES.values())[-1]['record'])
         self.assertEqual(list(STAGES.values())[0]['source_record'],
@@ -411,9 +417,11 @@ class TestNeuralLifecycle(unittest.TestCase):
         # The lifecycle must not change fixed-fly neural outputs. The M1.8-N4B5R tilt geometry
         # does change the Retina for this nearly overhead strike, so the lifecycle comparison
         # uses the accepted bearing-only geometry. The M1.7.2 line axis folds while the paddle
-        # settles, so the comparison also uses the accepted heading axis.
+        # settles, so the comparison also uses the accepted heading axis. M3.2 changes the
+        # encoder's feature model, so the comparison also uses the legacy encoder.
         room=copy.deepcopy(ROOM);room['swatter']['directional']['tilt_geometry']='bearing_only_v0'
         room['swatter']['directional']['paddle_axis']='heading_v0'
+        for key in ('feature_model','_feature_model_comment','ache2019'):room['encoder'].pop(key)
         outputs=[]
         for config in (before,room):
             p=RecordingPolicy();s=Session(config,brain=shared_brain(),policy=p)
