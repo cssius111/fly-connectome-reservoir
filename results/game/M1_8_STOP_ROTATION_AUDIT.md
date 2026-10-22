@@ -35,7 +35,8 @@ follow:
 
 ## 3. Method
 
-The tool is `tools/stop_rotation_audit.py`, as of `065810f`. The user ran it on the local
+The tool is `tools/stop_rotation_audit.py`, as of `065810f` (see the corrections in section 5 for
+two later changes). The user ran it on the local
 Windows checkout at `c6d854c` on 2026-10-22, where it is identical apart from its docstring.
 Its docstring gives the full definitions.
 
@@ -91,7 +92,7 @@ Validation:
 | Size-driven episodes without a swing, followed by an escape | 1 / 2 | 38 / 74 (51 %) |
 | Baseline hover samples followed by an escape | 7 / 559 (1.3 %) | 148 / 1339 (11 %) |
 | Escapes added by transients over the baseline | 3.4 (0.63/min; expected 0.60, P(>= 4) = 0.003) | 31.0 (1.64/min; expected 10.0, P(>= 41) < 1e-12) |
-| Escapes added by reversal spins | 1.9 (0.35/min; expected 0.10, P(>= 2) = 0.005) | 7.3 (0.39/min; expected 2.7, P(>= 10) = 0.0005) |
+| Escapes added by reversal spins | 1.9 (0.35/min; expected 0.14, P(>= 2) = 0.009) | 7.3 (0.39/min; expected 2.66, P(>= 10) = 0.0004) |
 
 By horizontal distance (escapes / evaluated):
 
@@ -108,8 +109,18 @@ Per session on the accepted runtime:
 - **Config 19:** 21 transients (11 reversal spins); 9 evaluated, 3 followed by an escape.
 - **Config 26:** 4 transients (1 reversal spin); 1 evaluated, followed by an escape.
 
-The probabilities are Poisson tails, with the baseline-expected count treated as known. They
-are not a preregistered test.
+The probabilities are Poisson tails of the observed count. The expected count is the sum over
+distance bins of the evaluated count times the unrounded baseline share, and it is treated as
+known. They are not a preregistered test.
+
+Corrections after review (2026-10-22):
+- **Reversal-spin probabilities.** They were first computed from expected counts backed out of
+  the rounded excess (0.10 and 2.7), which gave 0.005 and 0.0005. The values above use the
+  unrounded expectations, and the tool now prints each expected count.
+- **Baseline exclusion.** The tool now keeps the exclusion window inside each episode. The run
+  above used the earlier version. There, a size-driven episode within 1 s of a restart could
+  also exclude hover samples from the neighbouring episode: at most four baseline samples per
+  restart, against 559 and 1339 baseline samples.
 
 ## 6. Interpretation
 
