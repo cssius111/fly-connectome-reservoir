@@ -391,3 +391,78 @@ replay (schema 4, `config_version` 23); escape/cruise study and swatter fixtures
 resolves 1.45 through the B3c record.
 
 **B3c passes and is adopted.**
+
+
+## 6. B3d: fixed oscillators replaced by resampled-period oscillators
+
+Implementation (`c488c17`): `game/ecology.py` (the `search_half_period_seconds` casting
+oscillator and its stream, +64747), `game/world.py` (`fly.curvature.period_sampling` and the
+drift stream, +70001), `game_room_config.json` (`config_version` 24),
+`results/game/calibration_room_m1_8_b3d.json`.
+
+**Check 1.** Code alone: bit-identical; combined SHA256 `ef762a10...` before and `ef762a10...` after; new streams: casting, curvature. The casting and drift streams are untouched under `config_version` 23.
+
+**Check 2.** With `config_version` 24:
+
+| Scenario | Identical | First divergence | First ecology-driven EXPLORE / TRANSIT / ODOR_TRACK / ODOR_SEARCH / RECOVER tick |
+| --- | --- | --- | --- |
+| `room_quiet` | no | tick 0: vx | 0 |
+| `room_perched_threat` | no | tick 0: vx | 0 |
+| `room_approach_threat` | no | tick 0: vx | 0 |
+| `room_airborne_seed101` | no | tick 0: vx | 0 |
+| `room_no_ecology` | no | tick 0: vx | None |
+| `game_preset` | **yes** | none | None |
+| `lab_preset` | **yes** | none | None |
+
+Combined SHA256 `ef762a10...` -> `f73371d9...`.
+
+Every ROOM scenario diverges at tick 0, the first airborne tick, through the resampled drift.
+**Deviation from the common rule:** section 1 of the design expects `room_no_ecology` to stay
+bit-identical, but the drift oscillator is ordinary ROOM flight in `game/world.py`, not
+ecology, and section 7 places its first divergence at the first airborne tick; the no-ecology
+ROOM scenario therefore diverges too. This is an inconsistency in the preregistration, not a
+leak: GAME, which has its own fixed curvature, and LAB stay bit-identical. The casting change is
+masked by the earlier drift divergence and is checked by unit tests.
+
+**Check 3.** B3d tests: casting half-periods redrawn within 1.2-2.4 s with the phase restarting
+on ODOR_SEARCH entry; drift half-periods redrawn within 0.25-0.75 times each period with the
+drift bounded by the summed amplitudes; GAME and the B3c configuration unsampled. **483 tests
+pass.**
+
+**Checks 4 and 5.** Metrics, B3c -> B3d:
+
+| State | Driving share | Speed mean BL/s | Episode mean s | Episode median s |
+| --- | --- | --- | --- | --- |
+| ALERT | 0.0 % -> 0.0 % | - -> - | 0.06 -> 0.06 | 0.06 -> 0.06 |
+| ESCAPE | 0.0 % -> 0.0 % | 16.25 -> 21.51 | 0.42 -> 0.42 | 0.42 -> 0.42 |
+| EXPLORE | 47.2 % -> 45.4 % | 6.79 -> 6.84 | 3.61 -> 3.60 | 2.68 -> 2.58 |
+| ODOR_SEARCH | 14.5 % -> 15.8 % | 6.05 -> 5.87 | 4.60 -> 5.64 | 4.18 -> 4.36 |
+| ODOR_TRACK | 9.8 % -> 11.1 % | 10.44 -> 10.17 | 3.14 -> 2.98 | 1.86 -> 1.86 |
+| RECOVER | 1.2 % -> 0.8 % | 8.17 -> 8.51 | 0.29 -> 0.25 | 0.22 -> 0.22 |
+| TRANSIT | 27.3 % -> 26.9 % | 9.66 -> 9.61 | 2.04 -> 2.10 | 1.20 -> 1.34 |
+
+Lifecycle airborne / perched / feeding: 81.8 / 18.2 / 17.9 % -> 84.6 / 15.4 / 15.4 %; touchdowns food+other 15+1 -> 11+0; visited cells 48.4 % -> 51.2 %; upwind share while tracking 53.8 % -> 55.1 %; escape onsets 3 -> 1. Pathology screen: pass. The spontaneous-turn interval median moves from 1.70 s to 1.76 s and the mean absolute
+drift yaw rate from 0.236 to 0.257 rad/s.
+
+**Check 6.** Paired free flight, the B3c arm reused:
+
+| | Previous stage | B3d |
+| --- | --- | --- |
+| Alive minutes | 240.0 | 240.0 |
+| Escapes (rate, exact 95 % upper bound) | 8 (0.033/min, 0.060) | 11 (0.046/min, 0.076) |
+| A | 0 (upper 0.012) | 0 (upper 0.012) |
+| B | 2 (upper 0.026) | 2 (upper 0.026) |
+| C | 2 (upper 0.026) | 0 (upper 0.012) |
+| D | 4 (upper 0.038) | 9 (upper 0.065) |
+| Perched escapes | 0 | 0 |
+
+Seeds with identical escape ticks: 63. Category B criterion met: True.
+
+**Check 7.** Lifecycle scenarios replay exactly with their accepted event sets; recorder exact
+replay (schema 4, `config_version` 24); swatter fixtures identical; ROOM resolves 1.45 through
+the B3d record. The escape/cruise study's conclusions are unchanged (54 cases, no analytic-model
+mismatch, 18 cases that reduce speed, lowest reduced pre-escape speed 60 BL/s), but its per-case
+values differ in the fifth significant digit: the study's one-tick and 30-tick World runs include
+the ROOM drift turn, which B3d changes by design. The escape mechanics are unchanged.
+
+**B3d passes and is adopted.**
