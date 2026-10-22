@@ -760,12 +760,13 @@ B2c-B4b.
 
 | Branch | Content |
 |---|---|
-| `main` | The original reservoir experiment (Part I, up to `309abd9`), the current accepted runtime and the research records N0 to N4B8 (since 2026-10-22) |
+| `main` | **The current accepted runtime** (ROOM `config_version` 27 with M1.7.2), the original reservoir experiment (Part I, up to `309abd9`) and the research records N0 to N4B8 (since 2026-10-22) |
+| `feature/flyswatter-game` @ `85f987b` | The first game prototype, M1.0 to M1.3 (2026-09-18), whose commits Part II cites |
 | `feature/m1-8-n4b1c-runtime` @ `e3c55b3` | An earlier accepted runtime (the N4B1C decoder layer) |
 | `wip/m1-4-enclosure` @ `c953094` | The decoder research N4B2 to N4B8 and the 2026-10-08 handoff state, merged into `main` |
 | `archive/m1-8-n2b-rejected` @ `2c30617` | The rejected N2b runtime |
 | `feature/m2-0-learning-infra` | The learned-controller study (Part IV) |
-| `feature/m1-8-b-complete` | **The current accepted runtime**: N4B5R plus M1.8-B2b-iii, B3a and the completion stages B2c-B4b (accepted 2026-10-21 and 2026-10-22), the ALERT study and this report |
+| `feature/m1-8-b-complete` | The M1.8-B runtime (`config_version` 26): N4B5R plus M1.8-B2b-iii, B3a and the completion stages B2c-B4b (accepted 2026-10-21 and 2026-10-22), merged into `main` and tagged `v1.0` |
 | `feature/m1-8-b3a` @ `6b43c0f` | The previous accepted runtime (M1.8-B3a) |
 | `feature/m1-8-b2b-iii` @ `c4f9b8f` | The previous accepted runtime (M1.8-B2b-iii) |
 | `feature/m1-8-n4b5r-geometry` @ `363a1a9` | An earlier accepted runtime (N4B5R geometry) |
