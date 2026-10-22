@@ -121,7 +121,6 @@ class App:
         self.accumulator = 0.0
         self.tick_ms = 0.0
         self.escape_flash = 0.0
-        self.escape_vector = (0.0, 0.0)
         self.pointer_world = (self.world_w * 0.5, self.world_h * 0.2)
         self._prev = self._snapshot()
         self._disable_text_input()
@@ -240,7 +239,6 @@ class App:
         self.paused = False
         self.accumulator = 0.0
         self.escape_flash = 0.0
-        self.escape_vector = (0.0, 0.0)
         self._prev = self._snapshot()
 
     def _advance(self, frame_seconds: float, strike_requested: bool) -> None:
@@ -258,11 +256,9 @@ class App:
             pending_strike = False
             action = self.session.fly_loop.last_action
             if action.escape and action.strength > 0.0:
+                # The ring shows that an escape fired, not where it goes: a direction line drawn
+                # at the onset told the player the dash direction before the fly had moved.
                 self.escape_flash = 0.35
-                h = self._prev["heading"]
-                hx, hy = math.cos(h), math.sin(h)
-                self.escape_vector = (-hy * action.lateral + hx * action.forward,
-                                      hx * action.lateral + hy * action.forward)
         if pending_strike:
             # Click landed between ticks: don't drop it.
             self.session.request_strike()
@@ -417,9 +413,6 @@ class App:
         if self.escape_flash > 0.0:
             glow = int(r * (2.4 + 6.0 * self.escape_flash))
             pygame.draw.circle(c, ESCAPE_COLOR, (int(x), int(y)), glow, 1)
-            ex, ey = self.escape_vector
-            pygame.draw.line(c, ESCAPE_COLOR, (int(x), int(y)),
-                             (int(x + ex * 46), int(y + ey * 46)), 2)
         perched = w.lifecycle_active and w.lifecycle.stationary
         feeding = perched and w.lifecycle.feeding
         if perched:

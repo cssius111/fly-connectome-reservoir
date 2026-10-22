@@ -1,6 +1,6 @@
 # M1.7.2: line-symmetric paddle axis, validation
 
-Status: **automated checks complete on 2026-10-22; human acceptance (C7) pending.** The design,
+Status: **human-accepted on 2026-10-22 (section 5) and frozen in `AGENTS.md`.** The design,
 invariant and pass criteria were preregistered in `game/M1_7_2_PADDLE_AXIS_DESIGN.md` (`657e681`,
 amendment 1 in `9e32a5d`) before any code was written or any brain was simulated. The
 implementation is `b570269`, plus the check tooling in `6237129`.
@@ -199,9 +199,49 @@ either configuration. Pass.**
    - The N4B5R scope test (`test_game_n4b5r_geometry.py`) drops the two paddle-axis keys.
    - The keys are versioned in `test_game_m1_7_2.py`.
 
-## 5. Remaining: human acceptance (C7)
+## 5. C7, human acceptance (accepted 2026-10-22)
 
-- One ROOM playtest of at least 3 minutes under v27, recorded.
-- Then `tools/stop_rotation_audit.py` on that recording, which reads the recorded line axis.
-- The user judges the paddle's look and the fly's behaviour. The sprite now turns with the line
-  axis, so its handle stays on the same side through a reversal.
+The user played one recorded ROOM session under v27: `20261022T155418.491485Z-0da3f079`
+(commit `b10ba2c`, config 27, local Windows checkout).
+- The play was aggressive: 160.5 s, 12 episodes, 21 strikes, 12 hits.
+- The paddle was parked for only 8.9 s of the airborne time.
+- The checkout was dirty only through the two local files noted in earlier playtests.
+
+`tools/stop_rotation_audit.py` reads the recorded line axis.
+
+| | This session (line axis) | Accepted runtime before M1.7.2 |
+|---|---|---|
+| Hover | 1.5 min | 5.4 min |
+| Stop-rotation transients | 3 (2.01 per hover minute) | 25 (4.65 per hover minute) |
+| Reversal spins | 0 | 12 (2.23 per hover minute) |
+| Transients evaluated | 0: each fell within 1 s after an escape onset | 10 |
+| Escapes added by transients over the matched baseline | 0.0 | 3.4 (0.63 per hover minute) |
+
+`tools/playtest_flight_summary.py` labels the 59 escapes as follows. The one self-approach was a
+weak stimulus (0.016 rad over 120 ms at 214 units, the paddle in its approach phase), and a
+single case shows no pattern.
+
+| Label | Escapes |
+|---|---|
+| The paddle moved toward the fly | 49 |
+| Strike in progress | 8 |
+| Size-dominated | 1 |
+| Fly-driven self-approach | 1 |
+
+**The user's judgement.**
+- Moving the paddle sideways and reversing no longer turns it by half a circle, and the handle
+  stays on the same side.
+- The fly's reactions are reasonable.
+- The difficulty is about the same as before.
+
+The user accepted M1.7.2.
+
+**Two further observations from the same playtest, outside M1.7.2.**
+- **Escape direction line.** The green line drawn from the fly at an escape onset told the
+  player the dash direction before the fly had moved. The user chose to remove the line and keep
+  the ring that shows an escape fired (`game/app.py`). This is rendering only: no simulation
+  state, recording or replay changes.
+- **Swept strike corridor.** The lethal corridor is the paddle disc swept over the 0.1 s active
+  contact, from about 1.3 body lengths of drag for a slow click to about 13 at the speed cap.
+  It is the frozen M1.7.1 design, and the user chose to keep it frozen rather than change it for
+  difficulty.

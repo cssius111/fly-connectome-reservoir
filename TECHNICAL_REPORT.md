@@ -219,7 +219,7 @@ faster than real time; it was run once and is not a formal benchmark.
 | M1.6 | 2026-09-19 | `58ffd60` (local only) | ROOM ecology: analytic wind and odor, eight ecological states, perch objects | 194 tests |
 | M1.7 + edge | 2026-09-20 | `e0f08eb` (local only) | Physical inertial paddle, swept collision, recorder with exact replay, partially offscreen paddle | 232 tests; human session diagnosed |
 | M1.7.1 | 2026-09-21 | `cab1184` | Pointer-velocity approach controller; time at >= 95 % of the paddle speed cap fell from 46.9 % to 1.6 % | **Human-accepted**; frozen |
-| M1.7.2 | 2026-10-22 | `657e681` ... `b570269` | Line-symmetric paddle axis for the visual geometry, so a reversal no longer spins the paddle (ROOM `config_version` 27; section 9.6) | Automated checks pass; human acceptance pending |
+| M1.7.2 | 2026-10-22 | `657e681` ... `b570269` | Line-symmetric paddle axis for the visual geometry, so a reversal no longer spins the paddle (ROOM `config_version` 27; section 9.6) | **Human-accepted 2026-10-22**; frozen |
 | M1.8-R0 | 2026-09-21 | `f8f440b` | Evidence lock: 23 primary papers, 147 inventoried parameters, no parameter promoted to class A | Documentation |
 | M1.8-A | 2026-09-21 | `bfbef04` | Landing, perching, feeding overlay, voluntary and neural escape takeoff; recorder schema 4 | **Two human playtests**; frozen |
 | M1.8-B1 to B2b-ii | 2026-09-21 | `8a8064d` ... `0d8c254` | Kinematics refactor and first sampled speed distribution (section 4.5) | Bit-identical replay, then one attributed divergence |
@@ -585,13 +585,15 @@ The same rules were applied from the first experiment to the last study:
 
 ## 9. Current state and next steps
 
-As of 2026-10-22 the accepted runtime is the completed M1.8-B configuration (ROOM
-`config_version` 26): M1.8-B2b-iii and B3a on top of `363a1a9` (N4B1C decoder, N4B5R geometry),
-accepted on 2026-10-21, plus the completion stages B2c-B4b, accepted on 2026-10-22; it is on
-`main` since 2026-10-22. The slow-approach line is closed by the user's decision, and M1.8-B is
+As of 2026-10-22 the accepted runtime is ROOM `config_version` 27:
+- M1.8-B2b-iii and B3a on top of `363a1a9` (N4B1C decoder, N4B5R geometry), accepted on
+  2026-10-21;
+- the completion stages B2c-B4b, accepted on 2026-10-22 (`config_version` 26, on `main` since
+  that day, tag `v1.0`);
+- the M1.7.2 paddle line axis, accepted the same day. The slow-approach line is closed by the user's decision, and M1.8-B is
 complete and frozen. On 2026-10-22 the M2.4-B blind test was closed at 13 of 30 sessions and the
 stop-rotation audit was recorded. At the user's request, M1.7.2 then fixed the defect the audit had
-found. It is implemented as ROOM `config_version` 27 and awaits human acceptance (section 9.6).
+found. It is ROOM `config_version` 27 and was human-accepted the same day (section 9.6).
 The remaining open items are in section 9.6.
 
 ### 9.1 A measurement made for this report: where flight time goes
@@ -737,7 +739,14 @@ B2c-B4b.
     - In the N4B6 orbit-stop control, N4B1C responses fall from 14 to 0 of 48 brain-noise seeds.
       In a reversal on an arc they fall from 39 to 0 of 48.
     - The calibration measurement is not reused exactly, and the threshold is carried over.
-    - Human acceptance is pending.
+    - **Accepted 2026-10-22** after one playtest, in which the line axis showed no reversal spin
+      and 2.0 transients per hover minute (before: 4.65).
+  - **Same playtest, outside M1.7.2.**
+    - The user found the game easy for aggressive play.
+    - The green direction line drawn at an escape onset told the player where the fly would
+      dash. It was removed, keeping the ring; this is rendering only.
+    - The swept strike corridor of M1.7.1 (the paddle disc swept over the 0.1 s contact) stays
+      frozen by the user's decision.
 - **Stale documentation** was corrected on the session branch on 2026-10-21 (README,
   `game/ROOM.md`, `game/SESSIONS.md` now point to `policy.calibration_paths`); the immutable
   `calibration_room_m1_8_n4b5r.json` keeps its historical status "runtime candidate; not yet

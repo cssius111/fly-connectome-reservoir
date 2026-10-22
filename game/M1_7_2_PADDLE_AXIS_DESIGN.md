@@ -4,6 +4,9 @@ Status: **preregistered on 2026-10-22, before any implementation or measurement.
 one input of the paddle's visual geometry in ROOM. The checks and pass criteria below are fixed
 before any code is written.
 
+**Accepted on 2026-10-22** after the checks and one human playtest; see
+`results/game/M1_7_2_PADDLE_AXIS.md`.
+
 ## 1. Authorization and evidence
 
 - The user requested this fix on 2026-10-22, after the stop-rotation audit.
