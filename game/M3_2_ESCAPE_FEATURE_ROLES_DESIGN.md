@@ -1,11 +1,14 @@
 # M3.2: escape feature roles after Ache et al. 2019 (preregistration)
 
-Status: **preregistered on 2026-10-22, before any implementation or run.** Nothing is
-implemented yet.
+Status: **preregistered on 2026-10-22 (`4a43cfb`), before any implementation or run.**
 
-The user's explicit authorization is needed before implementation, because the change touches:
-- the accepted encoder (ROOM `config_version` 27);
-- the decoder's transfer record.
+**Authorization.** The change touches the accepted encoder (ROOM `config_version` 27) and the
+decoder's transfer record. On 2026-10-22, after reading this preregistration, the user
+authorized its implementation as written. They also authorized:
+- rebuilding the decoder's transfer record;
+- re-running the frozen systems' checks.
+
+Acceptance remains the user's, after a playtest.
 
 The parameter values come from the full text of Ache et al. 2019, which the user supplied on
 2026-10-22. The PDF is not committed.
