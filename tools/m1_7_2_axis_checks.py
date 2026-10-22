@@ -32,7 +32,7 @@ import numpy as np  # noqa: E402
 
 from game.action import MotorState, NO_ACTION  # noqa: E402
 from game.session import Session, build_policy, load_config  # noqa: E402
-from tools.calibrate_escape import RecordingPolicy, _trial  # noqa: E402
+from tools.calibrate_escape import GRID, RecordingPolicy, _trial  # noqa: E402
 import tools.n4b6_protocol as P  # noqa: E402
 
 OUT = ROOT / 'artifacts/m1_7_2'
@@ -78,10 +78,29 @@ def save(name, data):
 
 
 # --------------------------------------------------------------------- C2 calibration ---
+def calibration_summary(trials, threshold=1.45):
+    """Descriptive only: the statistics the calibration rule reads, per configuration. The
+    threshold is not re-derived from them (design note, check C2)."""
+    null = [t for t in trials if not t['loom']]
+    loom = [t for t in trials if t['loom']]
+    null_ticks = np.concatenate([t['total'] for t in null])
+    rule = next((float(g) for g in GRID if int((null_ticks >= g).sum()) == 0), None)
+    latencies = []
+    for t in loom:
+        hit = np.flatnonzero((np.asarray(t['total']) >= threshold) & np.asarray(t['committed']))
+        if hit.size:
+            latencies.append(float((hit[0] - 20)*DT))
+    return {'null_peak_max': float(null_ticks.max()),
+            'null_ticks_at_or_above_1_45': int((null_ticks >= threshold).sum()),
+            'loom_detected_at_1_45': len(latencies), 'loom_trials': len(loom),
+            'median_latency_at_1_45_seconds': float(np.median(latencies)) if latencies else None,
+            'calibration_rule_threshold': rule}
+
+
 def calibration():
     """The calibration protocol's 28 no-loom and 28 loom trials, exactly as
     tools/calibrate_escape.py runs them; DNp01 traces compared between configurations."""
-    traces, folds_by, brain = {}, {}, None
+    traces, folds_by, details, brain = {}, {}, {}, None
     for arm, config in configs().items():
         policy = RecordingPolicy()
         session = Session(config, policy=policy, root=ROOT, brain=brain)
@@ -97,7 +116,8 @@ def calibration():
             return out
         session.tick = counted
         rng = np.random.default_rng(int(config['encoder']['encoder_seed']))
-        rows, fold_rows = [], []
+        settle = max(40, round(config['swatter'].get('physical', {}).get('calibration_settle_seconds', 0.8)/DT))
+        rows, fold_rows, trials = [], [], []
         for i in range(28):
             angle, radius = float(rng.uniform(0, 2*np.pi)), float(rng.uniform(30.0, 170.0))
             plan = [(4000 + i, (np.cos(angle)*radius, np.sin(angle)*radius), None)]
@@ -108,15 +128,21 @@ def calibration():
                 t = _trial(session, policy, seed, offset, 90, click)
                 rows.append([tuple(float(v).hex() for v in t[k]) for k in ('total', 'left', 'right')])
                 fold_rows.append(int(sum(folds)))
-        traces[arm], folds_by[arm] = rows, fold_rows
+                first = next((k for k, f in enumerate(folds) if f), None)
+                trials.append({'seed': seed, 'loom': click is not None, 'folds': int(sum(folds)),
+                               'first_fold_tick': first, 'first_fold_in_settle': first is not None and first < settle,
+                               'total': t['total'].tolist(), 'committed': t['committed'].tolist()})
+        traces[arm], folds_by[arm], details[arm] = rows, fold_rows, trials
         session.close()
         print(arm, 'done', flush=True)
     identical = [a == b for a, b in zip(traces['v26'], traces['v27'])]
     data = {'check': 'C2 calibration trials', 'trials': len(identical),
             'bit_identical_trials': int(sum(identical)), 'folded_ticks': int(sum(folds_by['v27'])),
             'folded_trials': int(sum(1 for f in folds_by['v27'] if f)),
+            'first_fold_in_settle_trials': int(sum(t['first_fold_in_settle'] for t in details['v27'])),
             'v26_folds_must_be_zero': int(sum(folds_by['v26'])),
-            'invariant_holds': all(same or f for same, f in zip(identical, folds_by['v27']))}
+            'invariant_holds': all(same or f for same, f in zip(identical, folds_by['v27'])),
+            'descriptive': {arm: calibration_summary(details[arm]) for arm in details}}
     save('c2-calibration-trials.json', data)
     print(json.dumps(data))
 

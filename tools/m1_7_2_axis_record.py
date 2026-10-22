@@ -57,9 +57,11 @@ def calibration_trial_evidence():
     if not C2_EVIDENCE.exists():
         return None
     data = json.loads(C2_EVIDENCE.read_text(encoding='utf-8'))
-    return {'trials': data['trials'], 'folded_substep_ticks': data['folded_ticks'],
-            'bit_identical_trials': data['bit_identical_trials'],
-            'exact_reuse': data['folded_ticks'] == 0 and data['bit_identical_trials'] == data['trials']}
+    return {'trials': data['trials'], 'folded_ticks': data['folded_ticks'],
+            'folded_trials': data['folded_trials'], 'first_fold_in_settle_trials': data['first_fold_in_settle_trials'],
+            'bit_identical_trials': data['bit_identical_trials'], 'invariant_holds': data['invariant_holds'],
+            'exact_reuse': data['folded_ticks'] == 0 and data['bit_identical_trials'] == data['trials'],
+            'descriptive_not_rederived': data['descriptive']}
 
 
 def build_record(config=None):
