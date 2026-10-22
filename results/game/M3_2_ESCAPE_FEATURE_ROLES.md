@@ -26,7 +26,7 @@ after the scale was calibrated.
 | V5 spontaneous | 0 in 768 s | none | pass |
 | V6b no-player flight | 101 escapes against 10 in 240 minutes each | not larger than baseline | **fail** |
 | V6a threat matrix | not run | descriptive | see section 7 |
-| V7 tests | the full suite is running | all pass | pending |
+| V7 tests | 522 of 522 pass | all pass | pass |
 
 **The encoder change works as designed in the fixed-fly protocols:**
 - the escape now follows angular size and no longer depends on where the disk starts (V2);
