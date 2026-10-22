@@ -1,6 +1,8 @@
 # M1.8-B completion: preregistered design of stages B2c to B5
 
-Status: **preregistered.** Written on 2026-10-21 under the user's authorization recorded in
+Status: **preregistered, then implemented and validated** (2026-10-22; deviations are listed in
+the results report, section 9); awaiting the user's playtest and acceptance. Written on
+2026-10-21 under the user's authorization recorded in
 [M1_8_B_PLAN.md](M1_8_B_PLAN.md) section 14, before any of the stages below changed code.
 Results are reported in [results/game/M1_8_B_COMPLETION.md](../results/game/M1_8_B_COMPLETION.md).
 

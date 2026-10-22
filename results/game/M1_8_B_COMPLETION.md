@@ -1,6 +1,7 @@
 # M1.8-B completion: validation of stages B2c to B5
 
-Status: **in progress.** Design and acceptance checks were preregistered in
+Status: **implemented and validated; awaiting the user's playtest and acceptance.** Design and
+acceptance checks were preregistered in
 [game/M1_8_B_COMPLETION_DESIGN.md](../../game/M1_8_B_COMPLETION_DESIGN.md) before any stage
 changed code, under the authorization in [game/M1_8_B_PLAN.md](../../game/M1_8_B_PLAN.md)
 section 14. Baseline: the accepted runtime `feature/m1-8-b3a` @ `6b43c0f` (ROOM
@@ -32,7 +33,6 @@ the accepted B3a configuration, six seeds x 180 s, no player, one Numba thread
 | Flight bout / perch bout, median (complete bouts) | 38.8 s (9) / 9.6 s (14) |
 | Visited share of the 10 BL grid / time near a wall | 52.3 % / 18.4 % of airborne time |
 | Policy escape onsets | 0 |
-
 
 ## 2. B2d: ODOR_SEARCH and RECOVER speed sampling
 
@@ -107,7 +107,6 @@ identical; ROOM resolves 1.45 through the B2d record.
 
 **B2d passes and is adopted.**
 
-
 ## 3. B2e: sampled speed-transition time constant
 
 Implementation (`72eb8e7`): `game/kinematics.py` (the sampler draws one damping rate per new
@@ -177,7 +176,6 @@ replay (1,200 ticks, schema 4, `config_version` 21); escape/cruise study and swa
 identical; ROOM resolves 1.45 through the B2e record.
 
 **B2e passes and is adopted.**
-
 
 ## 4. B3b: odor timers replaced by encounter history
 
@@ -275,47 +273,6 @@ resolves 1.45 through the B3b record.
 
 **B3b passes and is adopted.**
 
-
-## 8. B4b: wind reliability and a still-air search
-
-Implementation (`4fb5ef5`): `game/ecology.py` (the `wind_reliability` block),
-`game_room_config.json` (`config_version` 26), `results/game/calibration_room_m1_8_b4b.json`.
-Section 5 to 7 (B3c, B3d, B4a) follow when their paired checks finish.
-
-**Checks 1 and 2.** With the new code and `config_version` 25 all seven trace scenarios are
-bit-identical to the B4a capture (combined SHA256 `679fd494...`), and with `config_version` 26
-they are bit-identical as well: ROOM wind never falls below 38.25 units/s, so the reliability
-is 1 throughout and multiplying the upwind steering by it is exact. As preregistered, the
-paired check is therefore not re-run for B4b.
-
-**Check 3.** B4b tests: the reliability ramp (0 at or below 5 units/s, 0.5 at 12.5, 1 from
-20), ROOM's minimum wind above the reliable threshold, a still-air ODOR_SEARCH that still
-casts both ways without an upwind reference, and exact reproduction of B4a's commands in
-reliable wind. **491 tests pass.**
-
-**Low-wind control** (diagnostic only, not a runtime configuration: ROOM with wind speed 3
-units/s, three seeds, 180 s each, the same code):
-
-| Measure | B4a configuration | B4b configuration |
-| --- | --- | --- |
-| Reliability | not modelled (ideal wind) | 0 (still air) |
-| ODOR_TRACK / ODOR_SEARCH share of ecology-driven ticks | 12.9 % / 14.9 % | 17.3 % / 14.3 % |
-| Upwind heading share while tracking | 53.9 % | 16.1 % |
-| Odor detected | 36.5 % of alive time | 24.7 % |
-| Food touchdowns / perched share | 8 / 22.5 % | 3 / 5.3 % |
-| Visited cells | 50.2 % | 66.9 % |
-
-Under the ideal estimate the fly still steers upwind in a 3 units/s breeze it could not
-reliably sense; with the reliability term it casts around its course, keeps tracking by the
-bilateral cue only, and finds the food less often. This is the intended difference; the ROOM
-runtime is unaffected.
-
-**Check 7.** The ROOM traces are bit-identical to B4a, so the lifecycle, recorder, swatter and
-escape/cruise results of B4a carry over; ROOM resolves 1.45 through the B4b record.
-
-**B4b passes and is adopted.**
-
-
 ## 5. B3c: EXPLORE and TRANSIT dwell timers replaced by evidence-gated hazards
 
 Implementation (`ddd702d`): `game/ecology.py` (the `intent_hazards` block and its stream,
@@ -392,7 +349,6 @@ resolves 1.45 through the B3c record.
 
 **B3c passes and is adopted.**
 
-
 ## 6. B3d: fixed oscillators replaced by resampled-period oscillators
 
 Implementation (`c488c17`): `game/ecology.py` (the `search_half_period_seconds` casting
@@ -466,3 +422,220 @@ values differ in the fifth significant digit: the study's one-tick and 30-tick W
 the ROOM drift turn, which B3d changes by design. The escape mechanics are unchanged.
 
 **B3d passes and is adopted.**
+
+## 7. B4a: the odor derivative and the bilateral difference
+
+Implementation (`f00ca74`): `game/ecology.py` (the `odor_cues` block; no new random stream),
+`game_room_config.json` (`config_version` 25), `results/game/calibration_room_m1_8_b4a.json`.
+
+**Check 1.** Code alone: bit-identical; combined SHA256 `f73371d9...` before and `f73371d9...` after; new streams: none.
+
+**Check 2.** With `config_version` 25:
+
+| Scenario | Identical | First divergence | First ecology-driven ODOR_TRACK tick |
+| --- | --- | --- | --- |
+| `room_quiet` | no | tick 908: vx | 952 |
+| `room_perched_threat` | **yes** | none | None |
+| `room_approach_threat` | **yes** | none | None |
+| `room_airborne_seed101` | no | tick 100: vx | 87 |
+| `room_no_ecology` | **yes** | none | None |
+| `game_preset` | **yes** | none | None |
+| `lab_preset` | **yes** | none | None |
+
+Combined SHA256 `f73371d9...` -> `679fd494...`.
+
+- Seed 101 diverges at tick 100: its first ecology-driven ODOR_TRACK tick is 87, and as in B3b
+  the upwind target exceeds the steering cap in both configurations until the turn has closed
+  enough of the error.
+- Seed 255 (`room_quiet`) diverges at tick 908, its first ecology-driven tick after takeoff,
+  in TRANSIT. A direct run shows the smoothed ecological steering first differing at tick 246,
+  in ODOR_TRACK while the fly is perched, where the command is not executed; the smoothed
+  value carries into flight. The other seed-255 scenarios end before takeoff and stay identical.
+
+**Check 3.** B4a tests: a bilateral difference turns toward the stronger side symmetrically;
+rising odor strengthens and falling odor weakens an upwind turn below the cap; zero gains
+reproduce B3d's commands exactly; steering stays within the cap under extreme cues. **487 tests
+pass.**
+
+**Checks 4 and 5.** Metrics, B3d -> B4a:
+
+| State | Driving share | Speed mean BL/s | Episode mean s | Episode median s |
+| --- | --- | --- | --- | --- |
+| ALERT | 0.0 % -> 0.0 % | - -> - | 0.06 -> 0.06 | 0.06 -> 0.06 |
+| ESCAPE | 0.0 % -> 0.0 % | 21.51 -> - | 0.42 -> - | 0.42 -> - |
+| EXPLORE | 45.4 % -> 46.0 % | 6.84 -> 6.71 | 3.60 -> 4.05 | 2.58 -> 2.88 |
+| ODOR_SEARCH | 15.8 % -> 12.6 % | 5.87 -> 5.96 | 5.64 -> 4.64 | 4.36 -> 3.40 |
+| ODOR_TRACK | 11.1 % -> 15.5 % | 10.17 -> 9.54 | 2.98 -> 3.00 | 1.86 -> 2.46 |
+| RECOVER | 0.8 % -> 0.6 % | 8.51 -> 8.22 | 0.25 -> 0.22 | 0.22 -> 0.22 |
+| TRANSIT | 26.9 % -> 25.3 % | 9.61 -> 9.55 | 2.10 -> 1.90 | 1.34 -> 1.16 |
+
+Lifecycle airborne / perched / feeding: 84.6 / 15.4 / 15.4 % -> 85.0 / 15.0 / 11.9 %; touchdowns food+other 11+0 -> 10+4; visited cells 51.2 % -> 53.4 %; upwind share while tracking 55.1 % -> 66.1 %; escape onsets 1 -> 0. Pathology screen: pass.
+
+Sensitivity (seeds 101 / 4242 / 1729; the stage value is bilateral gain 0.3, rate gain 0.25):
+
+| Variant | ODOR_TRACK mean / median s | Upwind share | Odor detected | Perched | Food touchdowns |
+| --- | --- | --- | --- | --- | --- |
+| stage | 3.26 / 2.56 | 68.1 % | 30.9 % | 11.8 % | 6 |
+| `bilateral_gain` 0 (ablation) | 3.29 / 2.04 | 53.4 % | 38.3 % | 22.3 % | 10 |
+| `bilateral_gain` 0.6 | 3.49 / 2.16 | 56.1 % | 39.4 % | 18.9 % | 9 |
+| `rate_gain` 0 (ablation) | 3.27 / 1.86 | 54.4 % | 35.7 % | 21.2 % | 8 |
+| `rate_gain` 0.5 | 3.06 / 2.30 | 53.8 % | 32.2 % | 16.2 % | 8 |
+
+With three chaotic 180 s runs per variant these differences are within run-to-run variation
+and are not read as effects of either gain.
+
+**Check 6.** Paired free flight, the B3d arm reused:
+
+| | Previous stage | B4a |
+| --- | --- | --- |
+| Alive minutes | 240.0 | 240.0 |
+| Escapes (rate, exact 95 % upper bound) | 11 (0.046/min, 0.076) | 12 (0.050/min, 0.081) |
+| A | 0 (upper 0.012) | 0 (upper 0.012) |
+| B | 2 (upper 0.026) | 3 (upper 0.032) |
+| C | 0 (upper 0.012) | 2 (upper 0.026) |
+| D | 9 (upper 0.065) | 7 (upper 0.055) |
+| Perched escapes | 0 | 0 |
+
+Seeds with identical escape ticks: 60. Category B criterion met: True.
+
+**Check 7.** Lifecycle scenarios replay exactly with their accepted event sets; recorder exact
+replay (schema 4, `config_version` 25); escape/cruise study and swatter fixtures identical; ROOM
+resolves 1.45 through the B4a record.
+
+**B4a passes and is adopted.**
+
+## 8. B4b: wind reliability and a still-air search
+
+Implementation (`4fb5ef5`): `game/ecology.py` (the `wind_reliability` block),
+`game_room_config.json` (`config_version` 26), `results/game/calibration_room_m1_8_b4b.json`.
+
+**Checks 1 and 2.** With the new code and `config_version` 25 all seven trace scenarios are
+bit-identical to the B4a capture (combined SHA256 `679fd494...`), and with `config_version` 26
+they are bit-identical as well: ROOM wind never falls below 38.25 units/s, so the reliability
+is 1 throughout and multiplying the upwind steering by it is exact. As preregistered, the
+paired check is therefore not re-run for B4b.
+
+**Check 3.** B4b tests: the reliability ramp (0 at or below 5 units/s, 0.5 at 12.5, 1 from
+20), ROOM's minimum wind above the reliable threshold, a still-air ODOR_SEARCH that still
+casts both ways without an upwind reference, and exact reproduction of B4a's commands in
+reliable wind. **491 tests pass.**
+
+**Low-wind control** (diagnostic only, not a runtime configuration: ROOM with wind speed 3
+units/s, three seeds, 180 s each, the same code):
+
+| Measure | B4a configuration | B4b configuration |
+| --- | --- | --- |
+| Reliability | not modelled (ideal wind) | 0 (still air) |
+| ODOR_TRACK / ODOR_SEARCH share of ecology-driven ticks | 12.9 % / 14.9 % | 17.3 % / 14.3 % |
+| Upwind heading share while tracking | 53.9 % | 16.1 % |
+| Odor detected | 36.5 % of alive time | 24.7 % |
+| Food touchdowns / perched share | 8 / 22.5 % | 3 / 5.3 % |
+| Visited cells | 50.2 % | 66.9 % |
+
+Under the ideal estimate the fly still steers upwind in a 3 units/s breeze it could not
+reliably sense; with the reliability term it casts around its course, keeps tracking by the
+bilateral cue only, and finds the food less often. This is the intended difference; the ROOM
+runtime is unaffected.
+
+**Check 7.** The ROOM traces are bit-identical to B4a, so the lifecycle, recorder, swatter and
+escape/cruise results of B4a carry over; ROOM resolves 1.45 through the B4b record.
+
+**B4b passes and is adopted.**
+
+## 9. B5: combined validation of the completed chain
+
+**Final paired check on fresh seeds 9301-9380** (absent from every earlier check): the accepted
+B3a configuration (`6b43c0f`) against the final configuration (`config_version` 26), both run
+with the final code (`4fb5ef5`), 80 x 180 s per arm, no player, the pointer parked, one Numba
+thread; every escape classified with the N4B4 counterfactual.
+
+| | B3a configuration | Final configuration |
+| --- | --- | --- |
+| Alive minutes | 240.0 | 240.0 |
+| Escapes (rate, exact 95 % upper bound) | 7 (0.029/min, 0.055) | 8 (0.033/min, 0.060) |
+| A: no LC4/LPLC2 drive in the 120 ms before | 0 | 0 |
+| B: never within 310 units in 1.5 s without the escape | 1 (upper 0.020) | 2 (upper **0.026**) |
+| C: near pass, mostly apparent-size expansion | 1 | 0 |
+| D: near pass, mostly range expansion (self-approach) | 5 | 6 |
+| Perched escapes | 0 | 0 |
+
+The criterion holds for the whole chain: category B under the final configuration is 2 in
+240 minutes, upper bound 0.026/min, below 0.1/min. Self-approach escapes, which rose from 2 to 8
+when B3a was introduced (seeds 9201-9280), stay at 5 against 6 across the completion stages;
+the per-stage counts on seeds 9201-9280 (8, 9, 11, 5, 4, 9, 7) vary within Poisson noise.
+
+**Metrics, B3a -> final** (six seeds x 180 s; the B4a run, which the final configuration
+reproduces bit for bit in ROOM):
+
+| Measure | B3a | Final |
+| --- | --- | --- |
+| Share of ecology-driven ticks: EXPLORE / TRANSIT / ODOR_TRACK / ODOR_SEARCH | 42.4 / 23.8 / 16.6 / 16.7 % | 46.0 / 25.3 / 15.5 / 12.6 % |
+| Episode median, s: EXPLORE / TRANSIT / ODOR_TRACK / ODOR_SEARCH | 4.44 / 3.32 / 4.92 / 6.02 | 2.88 / 1.16 / 2.46 / 3.40 |
+| Episode mean, s: EXPLORE / TRANSIT / ODOR_TRACK / ODOR_SEARCH | 4.05 / 3.19 / 4.78 / 5.37 | 4.05 / 1.90 / 3.00 / 4.64 |
+| ODOR_TRACK / ODOR_SEARCH episodes ending at a fixed timer | 17 of 58 / 23 of 27 | none by a timer |
+| Speed mean (sd), BL/s: EXPLORE | 6.79 (0.89) | 6.71 (1.06) |
+| TRANSIT | 9.69 (1.69) | 9.55 (2.15) |
+| ODOR_TRACK | 10.41 (0.95) | 9.54 (2.99) |
+| ODOR_SEARCH | 6.37 (1.61) | 5.96 (1.04) |
+| RECOVER | 8.84 (1.47) | 8.22 (1.12) |
+| Airborne / perched / feeding | 85.7 / 14.3 / 12.8 % | 85.0 / 15.0 / 11.9 % |
+| Touchdowns: food / elsewhere | 12 / 2 | 10 / 4 |
+| Upwind heading while tracking | 60.6 % | 66.1 % |
+| Odor detected / encounters | 31.5 % / 2.00 per min | 30.6 % / 1.89 per min |
+| Visited cells / near a wall | 52.3 % / 18.4 % | 53.4 % / 16.5 % |
+| Spontaneous-turn interval median / drift mean absolute | 1.68 s / 0.26 rad/s | 1.88 s / 0.24 rad/s |
+| Flight bout / perch bout median (complete bouts) | 38.8 s (9) / 9.6 s (14) | 59.2 s (8) / 11.0 s (12) |
+| Policy escape onsets | 0 | 0 |
+
+**Frozen systems on the final configuration.** 491 tests pass. The M1.8-A lifecycle scenarios
+replay exactly with their accepted event sets, the recorder replays exactly at schema 4, the
+M1.7.1 swatter fixtures are identical, and ROOM resolves 1.45 through the B4b record. The
+escape/cruise study's conclusions are unchanged at every stage (its per-case values move only
+with B3d's drift, section 6).
+
+**Findings and deviations, collected**
+
+1. *TRANSIT speed.* Its envelope, sinusoid and lag are unchanged, as the user required. Its
+   realized speeds are slightly lower and more variable (mean 9.69 -> 9.55 BL/s, sd 1.69 ->
+   2.15) because TRANSIT episodes are shorter (median 3.32 -> 1.16 s) and start from other
+   states' speeds. ODOR_TRACK shows the same effect more strongly (mean 10.41 -> 9.54, sd 0.95
+   -> 2.99) because its episodes are shorter too.
+2. *B3b.* A habituated fly that stays in the plume alternates short ODOR_TRACK and 1 s
+   TRANSIT episodes (section 4), a consequence the design did not anticipate.
+3. *B3c.* The visual-structure gate is nearly inert in ROOM at the preregistered reference
+   (section 5); the seven trace scenarios do not reach a dwell end, so sequential runs located
+   the first divergence instead.
+4. *B3d.* The no-ecology ROOM scenario diverges, against the common preregistered
+   expectation, because the drift is ordinary ROOM flight (section 6).
+5. *Method.* Each stage reused the previous stage's paired arm, justified by its code-only bit
+   identity; B5 ran both arms on fresh seeds. Sensitivity variants have no calibration record
+   of their own, so the metrics tool built the stage's fixed policy explicitly (verified
+   identical to the session-built policy); three-seed sensitivity runs are dominated by
+   run-to-run variation and are not read as effects. A first version of the sequential
+   divergence tool shared one brain between two interleaved sessions and was discarded before
+   its output was used.
+6. *Tests changed rather than behaviour.* The M1.6 timer tests now pin the accepted mechanism
+   on the ecology parameters without the completion blocks; the perched HUD test keeps its B3a
+   scenario beside a new current-intent test; the B3a and B2b-iii tests bind to their frozen
+   configurations. One pre-written B4a test whose inputs saturated the steering cap was
+   corrected before the stage commit.
+
+Not done, deliberately: TRANSIT speed, flight-bout termination (owned by the frozen M1.8-A
+lifecycle), crosswind casting, any recorder schema change, any learning.
+
+## 10. Status and acceptance procedure
+
+All preregistered automated checks pass for every stage, with the deviations above, and the
+stages are adopted on the session branch `claude/gracious-galileo-mxnbs9`. The accepted runtime
+remains `feature/m1-8-b3a` until the user's local checks, playtest and acceptance.
+
+1. **Local checks** in a fresh LF worktree of the session branch (safe removal of an old
+   worktree: `results/game/M1_8_B2B_III.md` section 11): protected files 20 of 20,
+   `verify_results.py`, the suite (491 tests), and `tools/approach_sanity.py` on the M1.7.1
+   acceptance recording (old == new).
+2. **Playtest.** `python -m game.app --arena room --seed 255 --record --windowed`. Leave the
+   mouse still for a few minutes and watch for irregular rather than timed EXPLORE/TRANSIT
+   switching, tracking in bursts with departures and returns, landings on the food, irregular
+   search zigzags and no chattering or getting stuck; then play as usual. Summarize the
+   recording with `tools/playtest_flight_summary.py`.
+3. **Acceptance** is the user's decision.

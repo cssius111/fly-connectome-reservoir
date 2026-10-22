@@ -1,6 +1,6 @@
 # A frozen fly connectome in a real-time escape game
 
-**Technical report, 2026-10-21.** Covers all work from 2026-09-17 to 2026-10-21:
+**Technical report, 2026-10-22.** Covers all work from 2026-09-17 to 2026-10-22:
 the original reservoir experiment, the interactive fly-swatter runtime, the escape-decoder
 research and the learned-controller study. Every number below is copied from a committed
 report or record, named where it appears. Only the test suites in section 10 and the
@@ -285,12 +285,13 @@ and never tunes kinematics for difficulty.
 | B2b-ii | `0d8c254` | EXPLORE speed: one symmetric triangular draw on the accepted 5-8 BL/s support per EXPLORE episode, replacing a deterministic 8 s sinusoid with a U-shaped time density; mean kept at 6.5 BL/s, sd 1.06 to 0.61. First intended divergence at tick 0; LAB, GAME and no-ecology runs stay bit-identical |
 | B2b-iii | `7b9fa05` | ODOR_TRACK speed by the same method on its accepted 9-13 BL/s support, from its own random stream; mean 11.0, sd 1.41 to 0.82. Code alone is bit-identical; the first divergences are exactly the first airborne ODOR_TRACK ticks. Paired 240-minute free-flight check passes (section 9.2). **Accepted 2026-10-21** |
 | B3a | `0e463bc` | The ecology receives CALM when the policy reports ALERT but no saccade is requested or executing; the lifecycle keeps the accepted threat. ALERT entries fall from about 45 to about 2 per minute and TRANSIT rises to about 23 % of alive time. Paired check passes; self-approach escapes rise 2 -> 8 (section 9.4). **Accepted 2026-10-21** |
+| B2c-B4b | `9e8686f` ... `4fb5ef5` | The remaining stages, preregistered together: an evaluation-metrics tool; ODOR_SEARCH and RECOVER speed sampling; a sampled speed-transition rate; the odor timers replaced by an encounter history; the EXPLORE/TRANSIT dwell timers replaced by hazards; resampled casting and drift periods; the odor derivative and bilateral difference used; a wind reliability term. Every stage passes its automated checks (section 9.5) | Awaiting the user's playtest |
 
 On 2026-10-20 the user answered the plan's remaining questions: the arena stays
 160 x 90 BL, the recorder moves to schema 5 only when a stage needs new fields, and
 M1.8-B stays phenomenological at `room_kinematic_scale` = 1.0. At that scale no ceiling
 binds, so the escape/cruise questions are deferred. Section 9 describes B2b-iii, the
-ALERT finding and B3a, which follows from it.
+ALERT finding, B3a, which follows from it, and the completion of M1.8-B.
 
 ## 5. Part III: escape decoding and visual geometry (M1.8-N0 to N4B8)
 
@@ -653,22 +654,51 @@ a fly-driven self-approach (2.2 parked minutes, 0.07 expected); the player found
 but not very fast, which is the configured 9-13 BL/s band. The user accepted B3a on
 2026-10-21 and left TRANSIT speed unchanged for now.
 
-### 9.5 Other open items
+### 9.5 Completing M1.8-B
+
+After accepting B3a the user asked to complete every remaining M1.8-B stage in one run, with
+TRANSIT speed locked and one combined playtest at the end ([game/M1_8_B_PLAN.md](game/M1_8_B_PLAN.md)
+section 14). Eight stages were preregistered together in
+[game/M1_8_B_COMPLETION_DESIGN.md](game/M1_8_B_COMPLETION_DESIGN.md) before any code changed and
+validated one by one in [results/game/M1_8_B_COMPLETION.md](results/game/M1_8_B_COMPLETION.md):
+
+- **B2c** fixes the evaluation metrics (`tools/kinematics_sanity.py`) and measures the B3a baseline,
+  in which 17 of 58 ODOR_TRACK episodes end at the 8 s timer and 23 of 27 searches at 6 s.
+- **B2d, B2e** sample ODOR_SEARCH and RECOVER speed per episode and the speed-transition rate
+  (mean held at 3.0 /s).
+- **B3b** replaces the three odor timers by an encounter history (E17) with an abandonment and a
+  give-up hazard; **B3c** replaces the EXPLORE/TRANSIT dwell timers by a minimum dwell and
+  hazards gated by local visual structure; **B3d** resamples the casting and drift periods.
+- **B4a** uses the odor derivative and bilateral difference (E16, E18); **B4b** adds a wind
+  reliability term and a still-air search (E19), which never engages in ROOM's steady wind.
+
+Every new parameter holds the accepted mean where it replaces a mechanism, and every change is
+gated by configuration, so code alone stays bit-identical at each step. Each stage passes its
+pathology screen and its paired check on seeds 9201-9280 (category B 2 or 3 in 240 minutes at
+every stage, upper bounds 0.026-0.032/min). The final check on fresh seeds 9301-9380 gives, for B3a against
+the final configuration, 7 against 8 escapes, category B 1 against 2 (upper bound 0.026/min) and
+self-approach 5 against 6. 491 tests pass. The report lists the deviations: the no-ecology ROOM
+scenario diverges under B3d's drift, contrary to a common preregistered expectation; B3c's
+structure gate is nearly inert in ROOM; a habituated fly alternates short tracking and transit
+episodes in the plume; and TRANSIT's realized speed shifts slightly (mean 9.69 -> 9.55 BL/s)
+because its episodes are shorter, although its speed profile is unchanged. The user's local
+checks, playtest and acceptance remain.
+
+### 9.6 Other open items
 
 - **TRANSIT speed** still follows the legacy shared 8 s sinusoid over 9-13 BL/s. A sampling
   stage that holds the envelope (as B2b-ii and B2b-iii did) would not make transit faster;
   a faster TRANSIT would change the magnitude and reopen the `room_kinematic_scale` = 1.0
   decision, against the frozen 1000 units/s ceilings and swatter. The user left it unchanged
-  on 2026-10-21.
+  on 2026-10-21, and the completion stages keep its profile.
 - **M2.4-B** can be reopened only by finishing sessions 13-30 under the unchanged
   protocol or by a pre-unblinding amendment for an exploratory six-block analysis; the
   sealed data are on the original local machine.
 - **Stop-rotation transient** of the frozen swatter controller (Part III): frequency in
   real play unknown; any change needs recorded evidence and approval.
-- **Stale documentation on the runtime branch:** its README still names
-  `calibration_room_m1_8_b2a.json` as active and says M1.8-B is not implemented;
-  `game/ROOM.md` and `game/SESSIONS.md` still name the M1.7.1 record; and the immutable
-  `calibration_room_m1_8_n4b5r.json` carries the status "runtime candidate; not yet
+- **Stale documentation** was corrected on the session branch on 2026-10-21 (README,
+  `game/ROOM.md`, `game/SESSIONS.md` now point to `policy.calibration_paths`); the immutable
+  `calibration_room_m1_8_n4b5r.json` keeps its historical status "runtime candidate; not yet
   human-accepted" although the candidate was accepted on 2026-09-25.
 - **No branch is merged into `main`**, and pull request 1 (`wip/m1-4-enclosure` into
   `main`) stays open by the user's choice.
@@ -683,6 +713,7 @@ but not very fast, which is the configured 9-13 BL/s band. The user accepted B3a
 | `archive/m1-8-n2b-rejected` @ `2c30617` | The rejected N2b runtime |
 | `feature/m2-0-learning-infra` | The learned-controller study (Part IV) |
 | `feature/m1-8-b3a` | **The current accepted runtime**: N4B5R plus M1.8-B2b-iii and M1.8-B3a (both accepted 2026-10-21), the ALERT study and this report |
+| `claude/gracious-galileo-mxnbs9` | `feature/m1-8-b3a` plus the M1.8-B completion stages B2c-B4b (validated, awaiting the playtest and acceptance) and this report |
 | `feature/m1-8-b2b-iii` @ `c4f9b8f` | The previous accepted runtime (M1.8-B2b-iii) |
 | `feature/m1-8-n4b5r-geometry` @ `363a1a9` | An earlier accepted runtime (N4B5R geometry) |
 
@@ -693,7 +724,8 @@ values (`brain.npz` `cc9bd1ec...`, `weights.npz` `c29919aa...`). On 2026-10-20 t
 accepted runtime's suite passed 427 of 427 tests on a Linux checkout, the session branch
 with B2b-iii 440 of 440, and the learning branch 516 of 517 with one CUDA-only test
 skipped, after a line-ending fix to two provenance tests. On 2026-10-21 the B3a runtime passed
-451 of 451 on Linux and on the local Windows checkout.
+451 of 451 on Linux and on the local Windows checkout, and on 2026-10-22 the session branch
+with the completion stages passed 491 of 491 on Linux.
 
 ```text
 python first_run.py                                   # data integrity and replay smoke test
