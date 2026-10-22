@@ -738,7 +738,11 @@ The user chose the escape decision first, starting with read-only research. M3.1
   largest excitatory inputs.
 - **The candidate change.** It assigns the encoder's features as the literature does, and leaves
   the connectome, DNp01 and the decoder rules unchanged.
-- **Not yet made.** It needs its own preregistration and the user's authorization.
+- **Preregistered, not yet made.** The user supplied the full text of Ache et al. 2019.
+  M3.2 ([game/M3_2_ESCAPE_FEATURE_ROLES_DESIGN.md](game/M3_2_ESCAPE_FEATURE_ROLES_DESIGN.md))
+  fixes the paper's constants and one scale. The scale is calibrated to the paper's
+  giant-fiber model, and behaviour is the test. Implementation waits for the user's
+  authorization.
 
 ### 9.7 Other open items
 
