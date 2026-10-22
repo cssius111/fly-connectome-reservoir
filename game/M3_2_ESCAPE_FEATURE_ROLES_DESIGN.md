@@ -176,3 +176,29 @@ collision, as in M3.0's `t_before`. The window ends at the target plus 0.3 s.
   amendment before the data it affects are read.
 - **What stays fixed.** `s` is the only calibrated constant. The Ache constants, the cap and the
   decoder are never adjusted.
+
+## Amendment 1 (2026-10-22, during calibration, before any validation run)
+
+Section 5 left two details of check V6 to "their tools". This fixes them before any V6 data
+exist. Calibration is unaffected.
+
+**The N4B6 threat matrix.** `tools/n4b6_controlled_approach.py` is bound to the N4B5R worktree
+(`363a1a9`, config v17), so it cannot load either arm. A wrapper,
+`tools/m3_2_threat_matrix.py`, reuses its preregistered trajectories and placement unchanged:
+- **Matrix and seeds.** `tools/n4b6_protocol.py`, 15 trajectories × seeds 500001-500048.
+- **Conditions.** Fixed fly and no ecology, as in N4B6.
+- **Arms and decoder.** Both arms run the runtime decoder live:
+  - the baseline is the v27 ROOM configuration at `d67808f`;
+  - the candidate is the v28 configuration.
+- **Reported, per trajectory and arm:** the escape fraction, the median time from motion onset
+  to the first escape, and the median angular size at that escape.
+- **Not a pass criterion.** Threat-evoked escapes are meant to change; the result is
+  descriptive.
+
+**The paired free-flight check.** `tools/paired_free_flight_check.py` runs unchanged:
+- `--baseline-commit d67808f62bef6a11205f65be6aad827b48f4d82a`;
+- fresh seeds 9601-9680, which appear in no earlier tool or report;
+- output to `artifacts/m3_2/free_flight`.
+
+The criterion stays as section 5 states it: the candidate's total number of no-player escapes
+is not larger than the baseline's.
