@@ -4,7 +4,8 @@
 > session from it. The current state and open items are in
 > [TECHNICAL_REPORT.md](../TECHNICAL_REPORT.md), section 9. Since this snapshot:
 > - M1.8-B was completed and frozen (ROOM `config_version` 26, `AGENTS.md`), and the runtime was merged into `main`;
-> - the M2.4-B blind test was reopened ([M2_4_B_REOPENING.md](M2_4_B_REOPENING.md)).
+> - the M2.4-B blind test was reopened ([M2_4_B_REOPENING.md](M2_4_B_REOPENING.md)) and then
+>   closed at 13 of 30 sessions without unblinding ([M2_4_B_CLOSURE.md](M2_4_B_CLOSURE.md)).
 
 This file is an operational handoff for future sessions. It is not a scientific result or
 a runtime artifact. Evidence lives in the milestone reports listed below. Update it at the

@@ -35,7 +35,8 @@ found:
 4. **Learned control (Part IV).** After two failed attempts, a 2,315-parameter controller
    trained with strike-centric constrained PPO was hit less often than the hand-designed
    decoder on a fresh preregistered test set (0.552 vs 0.640, paired p = 0.00026). Its
-   blind human test stopped at 12 of 30 sessions, so no human-level conclusion exists.
+   blind human test was closed at 13 of 30 sessions without unblinding, so no human-level
+   conclusion exists.
 
 The work was run with preregistered protocols, frozen holdouts, single-use test sets and
 disclosed deviations (section 7).
@@ -411,8 +412,8 @@ freeze, and an N4B5 criterion ("every direct strike fires") that failed as writt
 38/39.
 
 Known open items: a stop-rotation transient of the frozen swatter controller produces
-0.35 rad/s of apparent expansion at constant range and an escape in 17/48 orbit trials,
-with unknown frequency in real play; a false-trigger rate below 0.01/min has never been
+0.35 rad/s of apparent expansion at constant range and an escape in 17/48 orbit trials
+(its frequency in real play was measured on 2026-10-22, section 9.6); a false-trigger rate below 0.01/min has never been
 demonstrated; LAB and GAME still use the legacy single-sample decoder; and the evidence
 base is one human tester.
 
@@ -474,7 +475,7 @@ escapes per minute.
 | M2.3 | PyTorch behaviour cloning of N4B1C (522,651 samples), then KL-anchored constrained PPO with dual warm-up and adaptive entropy, 5 seeds x 60 iterations | Hit **0.592** vs 0.617; paired -0.025 [-0.090, +0.040], McNemar p = 0.53; unnecessary escapes 3.02 vs 5.15 per min | NO-GO: no significant difference |
 | M2.4-R0 | Decision-rate and credit analysis, no training | About one effective independent advantage sample per strike at every cadence | Keep 50 Hz |
 | M2.4-A | Threat-dense sampling (98 strikes per iteration), strike-balanced actor loss, two-stage checkpoint selection, fresh EVAL v3 frozen before training | Hit **0.552** [0.507, 0.596] vs 0.640; paired -0.0875 [-0.133, -0.042], McNemar p = 0.00026; unnecessary escapes 3.48 vs 4.97 per min; also below behaviour cloning and M2.3 (both p < 0.001) | GO for human testing, with a documented procedural deviation |
-| M2.4-B | Blind human A/B test: 30 sessions in 15 blocks, order sealed by HMAC | 12 of 30 sessions played, then stopped by the participant; not unblinded, not analysed | No conclusion |
+| M2.4-B | Blind human A/B test: 30 sessions in 15 blocks, order sealed by HMAC | 12 of 30 sessions played, then stopped by the participant; reopened on 2026-10-22 and closed after session 13; not unblinded, not analysed | No conclusion |
 
 Per attacker level, M2.4-A is hit 0.294 / 0.475 / 0.887 (easy / nominal / hard) against
 N4B1C's 0.375 / 0.569 / 0.975. Note that N4B1C's own hit rate differs across sets
@@ -519,7 +520,8 @@ cannot be separated; an equal-budget reference was never run officially.
   (N4B1C, never-escape and fixed maneuver, plus the behaviour-cloned and M2.3 policies),
   and they ran in the one-shot evaluation after the candidate froze.
 - **M2.4-B:** stopped at 12 of 30 sessions against a preregistered "no early stopping"
-  rule; recorded as an amendment, and the data stay sealed.
+  rule, reopened, then closed at 13 of 30. Each step is recorded as an amendment (2 to 4),
+  and the data stay sealed.
 
 ### 6.6 Status
 
@@ -528,8 +530,10 @@ the accepted runtime still uses N4B1C, and the learning branch is not merged. Tw
 reopen M2.4-B. The first is to finish sessions 13-30 under the unchanged protocol. The second
 is to amend the protocol before unblinding to define an exploratory six-block analysis, which
 also needs a code change because the tools refuse a partial set. On 2026-10-22 the participant
-took the first route (section 9.6). Further training needs a new preregistration and a fresh
-evaluation set, because EVAL v3 has been used.
+took the first route, played session 13 and then closed the test at 13 of 30 sessions
+([game/M2_4_B_CLOSURE.md](game/M2_4_B_CLOSURE.md)). Nothing was unblinded, and the data stay
+sealed. Further training needs a new preregistration and a fresh evaluation set, because EVAL v3
+has been used.
 
 ## 7. Research practice
 
@@ -584,8 +588,8 @@ As of 2026-10-22 the accepted runtime is the completed M1.8-B configuration (ROO
 `config_version` 26): M1.8-B2b-iii and B3a on top of `363a1a9` (N4B1C decoder, N4B5R geometry),
 accepted on 2026-10-21, plus the completion stages B2c-B4b, accepted on 2026-10-22; it is on
 `main` since 2026-10-22. The slow-approach line is closed by the user's decision, and M1.8-B is
-complete and frozen. The open work is the reopened M2.4-B blind test and the stop-rotation
-audit (section 9.6).
+complete and frozen. On 2026-10-22 the M2.4-B blind test was closed at 13 of 30 sessions and the
+stop-rotation audit was recorded. No line is active; the remaining open items are in section 9.6.
 
 ### 9.1 A measurement made for this report: where flight time goes
 
@@ -697,16 +701,31 @@ B2c-B4b.
   a faster TRANSIT would change the magnitude and reopen the `room_kinematic_scale` = 1.0
   decision, against the frozen 1000 units/s ceilings and swatter. The user left it unchanged
   on 2026-10-21, and the completion stages keep its profile.
-- **M2.4-B** was reopened by the participant on 2026-10-22 to finish sessions 13-30 under the
-  unchanged protocol ([game/M2_4_B_REOPENING.md](game/M2_4_B_REOPENING.md), recorded before
-  session 13, with the pause and the intervening practice declared as deviations); the sealed
-  data stay on the original local machine and unopened until all 30 ratings are locked.
-- **Stop-rotation transient** of the frozen swatter controller (Part III): its frequency in
-  real play is being measured with `tools/stop_rotation_audit.py`. The tool is read-only. It
-  counts the transients in recorded human play, labels heading-reversal spins (the approach
-  controller steers the paddle towards the 360-degree heading of its velocity, so reversing the
-  motion spins it although its axis line ends where it was), and compares the escapes that
-  follow with distance-matched hover samples. Any change needs recorded evidence and approval.
+- **M2.4-B**, the blind human test:
+  - On 2026-10-22 the participant reopened it to finish sessions 13-30 under the unchanged
+    protocol ([game/M2_4_B_REOPENING.md](game/M2_4_B_REOPENING.md)). That note was recorded
+    before session 13 and declares the pause and the intervening practice as deviations.
+  - After session 13 the participant closed the test at 13 of 30 sessions
+    ([game/M2_4_B_CLOSURE.md](game/M2_4_B_CLOSURE.md)). Block 7 holds one session of its pair.
+  - It is not revealed and not analysed, and it gives no conclusion. The sealed data stay
+    unopened on the original local machine.
+- **Stop-rotation transient** of the frozen swatter controller (Part III). It was measured in
+  recorded human play on 2026-10-22 with the read-only `tools/stop_rotation_audit.py`
+  ([results/game/M1_8_STOP_ROTATION_AUDIT.md](results/game/M1_8_STOP_ROTATION_AUDIT.md)).
+  - **Rate.** On the accepted runtime (2 sessions, 5.4 min of hover) it occurs 4.65 times per
+    hover minute.
+  - **Reversal spins.** Half of the transients (2.23/min) are reversal spins. The approach
+    controller steers the paddle towards the 360-degree heading of its velocity, so reversing the
+    motion spins the paddle by up to 180 degrees, although its visually symmetric axis ends where
+    it was.
+  - **Escapes.** 4 of 10 evaluated transients are followed by an escape within 0.06-0.8 s,
+    against 1.3 % of hover samples at matched distance. That is about 0.63 added escapes per
+    hover minute, 0.35 of them from reversal spins; the earlier runtimes give 1.64 and 0.39.
+  - **Classification.** The responses are category C, with a real Retina drive. The reversal
+    spin is a modelling defect of the controller.
+  - **Decision.** The user chose to record the result and keep the M1.7.1 swatter frozen. The
+    candidate fix, steering to the nearer of the heading and its opposite, is not implemented and
+    needs an explicit request and a human acceptance playtest.
 - **Stale documentation** was corrected on the session branch on 2026-10-21 (README,
   `game/ROOM.md`, `game/SESSIONS.md` now point to `policy.calibration_paths`); the immutable
   `calibration_room_m1_8_n4b5r.json` keeps its historical status "runtime candidate; not yet
@@ -714,7 +733,7 @@ B2c-B4b.
 - **`main`** received the accepted runtime on 2026-10-22 (pull request 2, merge commit
   `79f5518`, joining the unrelated histories). It then received the N4B2-N4B8 research records
   of `wip/m1-4-enclosure` (pull request 1) through the session branch. The learned-controller
-  study stays on its branch until M2.4-B is finished.
+  study stays on `feature/m2-0-learning-infra`.
 
 ## 10. Reproducibility
 
