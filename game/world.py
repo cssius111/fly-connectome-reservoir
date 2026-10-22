@@ -36,6 +36,10 @@ from .kinematics import (KinematicCaps, KinematicExecutor, KinematicResolver,
 TILT_BEARING_ONLY = "bearing_only_v0"          # accepted M1.5/M1.7 formula; the default
 TILT_ELEVATION_AWARE = "elevation_aware_tilt_v1"  # M1.8-N4B5R candidate: tilt x cos(elevation)
 TILT_GEOMETRIES = frozenset({TILT_BEARING_ONLY, TILT_ELEVATION_AWARE})
+# Paddle axis seen by the fly and drawn on screen (swatter.directional.paddle_axis).
+PADDLE_AXIS_HEADING = "heading_v0"        # accepted M1.7.1: the 360-degree heading tracker; the default
+PADDLE_AXIS_LINE = "line_symmetric_v1"    # M1.7.2: a line axis that never spins on a reversal
+PADDLE_AXES = frozenset({PADDLE_AXIS_HEADING, PADDLE_AXIS_LINE})
 
 
 class StrikePhase(enum.Enum):
@@ -128,6 +132,10 @@ class World:
         if self.tilt_geometry not in TILT_GEOMETRIES:
             raise ValueError(f"unknown swatter.directional.tilt_geometry {self.tilt_geometry!r}; "
                              f"expected one of {sorted(TILT_GEOMETRIES)}")
+        self.paddle_axis_mode = (self.directional or {}).get("paddle_axis", PADDLE_AXIS_HEADING)
+        if self.paddle_axis_mode not in PADDLE_AXES:
+            raise ValueError(f"unknown swatter.directional.paddle_axis {self.paddle_axis_mode!r}; "
+                             f"expected one of {sorted(PADDLE_AXES)}")
         self.curvature = f.get("curvature")
         # M1.8-B3d: optional resampled half-periods for the drift oscillators (ROOM only).
         self.curvature_sampling = (self.curvature or {}).get("period_sampling")
@@ -203,7 +211,10 @@ class World:
         # This flag persists across reset(), like collisions_enabled.
         self.fly_motion_enabled = True
         physical = s.get("physical", {})
-        self.physical_swatter = PhysicalSwatter(physical,self.width,self.height,float(physical.get("center_inset",self.paddle_radius+self.hover_height*.3))) if physical.get("enabled") else None
+        self.physical_swatter = PhysicalSwatter(physical,self.width,self.height,float(physical.get("center_inset",self.paddle_radius+self.hover_height*.3)),
+                                                line_axis=self.paddle_axis_mode == PADDLE_AXIS_LINE) if physical.get("enabled") else None
+        if self.paddle_axis_mode == PADDLE_AXIS_LINE and self.physical_swatter is None:
+            raise ValueError("swatter.directional.paddle_axis line_symmetric_v1 needs swatter.physical.enabled")
         self.reset(seed)
 
     # ---- lifecycle --------------------------------------------------------
@@ -344,6 +355,15 @@ class World:
 
     # ---- derived swatter geometry (what perception reads) -----------------
     @property
+    def paddle_axis(self) -> float:
+        """Axis of the paddle that the tilt term and the sprite use. M1.7.2 keeps a line axis
+        that does not spin on a reversal; otherwise it is the heading tracker."""
+        ps = self.physical_swatter
+        if ps is not None and ps.line_axis is not None:
+            return ps.line_axis
+        return self.swatter.orientation
+
+    @property
     def visual_half_size(self) -> float:
         """Half-width of the paddle as presented to the fly. The paddle is
         edge-on while hovering and face-on while striking, so this grows during
@@ -361,9 +381,9 @@ class World:
                 dh = math.hypot(self.fly.x-self.swatter.x, self.fly.y-self.swatter.y)
                 rng = math.sqrt(dh*dh + self.swatter.height*self.swatter.height)
                 cos_elevation = dh / rng if rng > 0.0 else 0.0
-                f *= 1.0 - self.directional["tilt_anisotropy"]*cos_elevation*(1-self.swatter.face)*abs(math.sin(bearing-self.swatter.orientation))
+                f *= 1.0 - self.directional["tilt_anisotropy"]*cos_elevation*(1-self.swatter.face)*abs(math.sin(bearing-self.paddle_axis))
             else:
-                f *= 1.0 - self.directional["tilt_anisotropy"]*(1-self.swatter.face)*abs(math.sin(bearing-self.swatter.orientation))
+                f *= 1.0 - self.directional["tilt_anisotropy"]*(1-self.swatter.face)*abs(math.sin(bearing-self.paddle_axis))
         return self.paddle_radius * f
 
     @property

@@ -6,7 +6,7 @@
 M1.7 preserves this ecology and adds the [session recorder and physical paddle](SESSIONS.md).
 At M1.7.1 the ROOM config was version 9, calibrated separately in
 `results/game/calibration_room_m1_7_1.json` (threshold 1.45). The active ROOM record is now
-the record named by `policy.calibration_paths` in `game_room_config.json` (`results/game/calibration_room_m1_8_b4b.json` as of the M1.8-B completion stages), a transfer record that reuses the M1.7.1 measurement; later M1.8 stages
+the record named by `policy.calibration_paths` in `game_room_config.json` (`results/game/calibration_room_m1_7_2.json` as of M1.7.2), a transfer record that reuses the M1.7.1 measurement; later M1.8 stages
 are summarized in [TECHNICAL_REPORT.md](../TECHNICAL_REPORT.md) section 9. The M1.6
 calibration and result files remain historical evidence; they do not match the new config.
 

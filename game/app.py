@@ -353,7 +353,7 @@ class App:
         rect = pygame.Rect(0, 0, int(2 * r), max(4, int(2 * r * thin)))
         rect.center = (int(pos[0]), int(pos[1] - lift))
         if w.directional:
-            angle=w.swatter.orientation
+            angle=w.paddle_axis
             hx,hy=math.cos(angle),math.sin(angle)
             pts=[(rect.centerx+r*math.cos(t)*hx-r*thin*math.sin(t)*hy,
                   rect.centery+r*math.cos(t)*hy+r*thin*math.sin(t)*hx)

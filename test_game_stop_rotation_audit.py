@@ -15,7 +15,7 @@ DT = 0.02
 DISTANCE = math.hypot(300.0, 320.0)
 
 
-def recording(folder, phases, half, orientation, mode='play', episodes=None):
+def recording(folder, phases, half, orientation, mode='play', episodes=None, line_axis=None):
     """Write a recording whose row t carries the Retina angle of row t-1's geometry."""
     folder.mkdir(parents=True)
     manifest = {'tick_seconds': DT, 'mode': mode, 'config_version': 26,
@@ -29,7 +29,8 @@ def recording(folder, phases, half, orientation, mode='play', episodes=None):
                 'episode': episodes[t] if episodes else 1,
                 'fly': {'alive': True, 'x': 0.0, 'y': 0.0}, 'lifecycle': {'airborne': True},
                 'swatter': {'phase': phase, 'orientation': orientation[t], 'x': 300.0, 'y': 0.0, 'height': 320.0},
-                'retina': {'theta': 2*math.atan(seen/DISTANCE)}, 'event_flags': {'escape_onset': False}}) + '\n')
+                'retina': {'theta': 2*math.atan(seen/DISTANCE)}, 'event_flags': {'escape_onset': False},
+                'swatter_control': {} if line_axis is None else {'paddle_line_axis': line_axis[t]}}) + '\n')
     with (folder/'inputs.jsonl').open('w', encoding='utf-8') as handle:
         for t in range(len(phases)):
             handle.write(json.dumps({'kind': 'tick', 'pointer': [300.0, 0.0], 'wall_seconds': t*DT}) + '\n')
@@ -69,6 +70,17 @@ class TestStopRotationAudit(unittest.TestCase):
         [episode] = result['episodes']
         self.assertEqual((episode['episode'], episode['tick']), (2, 62))
         self.assertEqual(sum(cell[0] for cell in result['groups']['baseline hover']), 2)
+
+    def test_a_recorded_line_axis_replaces_the_heading_tracker(self):
+        # M1.7.2: the tilt term reads the line axis, so a tracker spin alone is no transient.
+        phases = ['approach']*55 + ['commit']*5
+        half = [80.0]*52 + [82.0, 84.0, 86.0] + [86.0]*5
+        orientation = [0.0]*45 + [math.pi*k/9 for k in range(1, 10)] + [math.pi]*6
+        with tempfile.TemporaryDirectory() as d:
+            folder = Path(d)/'s'
+            result = audit(folder, recording(folder, phases, half, orientation, line_axis=[0.0]*60))
+        [episode] = result['episodes']
+        self.assertFalse(episode['transient'])
 
     def test_blind_test_recordings_are_refused(self):
         with self.assertRaises(SystemExit):

@@ -13,7 +13,9 @@ configuration (read from the stage's baseline commit) only in `config_version`,
 unless the configured decoder equals the previous record's decoder block.
 
 The stages and their preregistered paths are listed in STAGES and described in
-game/M1_8_B_COMPLETION_DESIGN.md.
+game/M1_8_B_COMPLETION_DESIGN.md. The stages are complete and frozen: the newest one, B4b, is
+the ROOM configuration of tag v1.0 (FROZEN_AT). Later ROOM changes write their own records, for
+example tools/m1_7_2_axis_record.py, so this tool no longer writes.
 
     python tools/m1_8_b_stage_record.py B2d
 """
@@ -38,6 +40,8 @@ CONFIG = ROOT / 'game_room_config.json'
 ORIGINAL_MEASUREMENT = 'results/game/calibration_room_m1_7_1.json'
 DESIGN_NOTE = 'game/M1_8_B_COMPLETION_DESIGN.md'
 ALWAYS_ALLOWED = ('config_version', 'policy._comment', 'policy.calibration_paths')
+# Tag v1.0: the final B4b configuration (config_version 26), before M1.7.2.
+FROZEN_AT = '57221665cfae656d5e3e367436ff32d2bbfc7473'
 
 # One entry per stage, in order. `baseline_commit` holds the previous stage's final
 # configuration; `paths` are the configuration paths the stage may change (a path also
@@ -92,13 +96,13 @@ STAGES = {
 
 
 def stage_config(stage):
-    """The stage's own configuration: the working file for the newest stage, otherwise the
-    next stage's baseline commit."""
+    """The stage's own configuration: the next stage's baseline commit, or tag v1.0 for the
+    newest stage."""
     names = list(STAGES)
     index = names.index(stage)
     if index + 1 < len(names):
         return read_commit(STAGES[names[index + 1]]['baseline_commit'])
-    return load_config(CONFIG)
+    return read_commit(FROZEN_AT)
 
 
 def read_commit(commit):
@@ -186,20 +190,9 @@ def lookup(config, path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument('stage', choices=list(STAGES))
-    args = parser.parse_args()
-    if args.stage != list(STAGES)[-1]:
-        raise SystemExit('only the newest stage can be written; earlier records are frozen')
-    record = build_record(args.stage)
-    rel = STAGES[args.stage]['record']
-    if rel == STAGES[args.stage]['source_record']:
-        raise SystemExit('refusing to overwrite the source record')
-    text = json.dumps(record, indent=2) + '\n'
-    path = ROOT / rel
-    if path.exists() and path.read_text(encoding='utf-8') != text:
-        print('replacing', rel)
-    path.write_bytes(text.encode('utf-8'))
-    print('written', rel, hashlib.sha256(path.read_bytes()).hexdigest())
-    print('changed config paths:', record['measurement_reuse']['changed_config_paths'])
+    parser.parse_args()
+    raise SystemExit('the M1.8-B completion stages are frozen at v1.0 (' + FROZEN_AT[:7] + '); their '
+                     'records are committed unchanged, and later ROOM changes have their own writers')
 
 
 if __name__ == '__main__':

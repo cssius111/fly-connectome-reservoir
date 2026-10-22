@@ -17,7 +17,7 @@ os.environ.setdefault('SDL_VIDEODRIVER', 'dummy')
 from game.kinematics import KinematicSampler
 from game.session import calibration_provenance, load_config, resolve_escape_threshold
 from test_game import same_content
-from tools.m1_8_b_stage_record import STAGES, allowed, build_record, lookup, read_commit, stage_config
+from tools.m1_8_b_stage_record import FROZEN_AT, STAGES, allowed, build_record, lookup, read_commit, stage_config
 from tools.n2_decoder_record import changed_paths
 
 ROOT = Path(__file__).parent
@@ -46,15 +46,18 @@ class TestStageScope(unittest.TestCase):
             self.assertEqual(STAGES[stage]['source_record'], STAGES[previous]['record'])
             self.assertEqual(STAGES[stage]['config_version'], STAGES[previous]['config_version'] + 1)
 
-    def test_the_working_configuration_is_the_newest_stage(self):
+    def test_the_newest_stage_is_frozen_at_v1_0(self):
+        # B4b is the ROOM configuration of tag v1.0; M1.7.2 follows with its own record writer.
         newest = list(STAGES)[-1]
-        room = load_config(ROOT/'game_room_config.json')
+        room = stage_config(newest)
+        self.assertEqual(room, read_commit(FROZEN_AT))
         self.assertEqual(room['config_version'], STAGES[newest]['config_version'])
         self.assertEqual(resolve_escape_threshold(room).origin, STAGES[newest]['record'])
+        self.assertGreater(load_config(ROOT/'game_room_config.json')['config_version'], room['config_version'])
 
     def test_the_builder_rejects_a_change_outside_the_stage(self):
         newest = list(STAGES)[-1]
-        config = copy.deepcopy(load_config(ROOT/'game_room_config.json'))
+        config = copy.deepcopy(stage_config(newest))
         config['ecology']['speed_tau_seconds'] = 0.4
         with self.assertRaises(SystemExit):
             build_record(newest, config)

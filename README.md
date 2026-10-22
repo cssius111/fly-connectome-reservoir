@@ -72,7 +72,7 @@ See [recording, replay, physics and playtest guide](game/SESSIONS.md),
 M1.6 evidence remains unchanged in [its historical report](results/game/M1_6.md).
 The edge repair allows partially offscreen paddle heads without changing fly bounds
 or motor limits. See the [edge audit and validation](results/game/M1_7_EDGE.md).
-M1.7.1 measured ROOM threshold **1.45**. The active ROOM record is the record named by `policy.calibration_paths` in `game_room_config.json` (`results/game/calibration_room_m1_8_b4b.json` as of the M1.8-B completion stages). It
+M1.7.1 measured ROOM threshold **1.45**. The active ROOM record is the record named by `policy.calibration_paths` in `game_room_config.json` (`results/game/calibration_room_m1_7_2.json` as of M1.7.2). It
 reuses that one unchanged fixed-fly measurement with exact current provenance, via a
 recorded transfer chain of later records. No threshold has been re-measured since M1.7.1.
 See the [pre-tuning human diagnosis](results/game/HUMAN_M1_7_DIAGNOSIS.md) and
