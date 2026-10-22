@@ -15,12 +15,14 @@ Protocols:
 - loom: the M3.0 constant-l/v disk from 10 deg to collision, right azimuth, l/v 10-160 ms, seeds
   700001-700024 (fresh);
 - rest: a static 10 deg disk, 48 seeds x 20 s (no encoder drive under any variant);
+- startsize: the loom protocol at l/v 40, 80 and 160 ms from 5, 10 and 20 deg;
 - flight: Retina sequences recorded in no-player v27 ROOM flight (seeds 9701-9720, 180 s each),
   replayed open-loop through each encoder variant. This approximates what the variant would
   have seen, since the fly's path would change after its first different action.
 
     python tools/m3_3_research.py loom
     python tools/m3_3_research.py rest
+    python tools/m3_3_research.py startsize
     python tools/m3_3_research.py flight-record
     python tools/m3_3_research.py flight-replay
     python tools/m3_3_research.py analyze
@@ -59,7 +61,10 @@ REST_TICKS = 1000
 FLIGHT_SEEDS = tuple(range(9701, 9721))
 FLIGHT_TICKS = 9000
 LOOM_VARIANTS = ('legacy', 'ache_s0.20', 'ache_s0.24', 'ache_s0.28', 'ache_s0.36', 'ache_s0.28_gate10')
-FLIGHT_VARIANTS = ('legacy', 'ache_s0.28', 'ache_s0.28_gate5', 'ache_s0.28_gate10', 'ache_s0.28_gate20')
+FLIGHT_VARIANTS = ('legacy', 'ache_s0.28', 'ache_s0.28_gate10')
+START_VARIANTS = ('legacy', 'ache_s0.28', 'ache_s0.28_gate10')
+START_LV_MS = (40, 80, 160)
+START_DEG = (5.0, 10.0, 20.0)
 REFRACTORY_TICKS = 20
 SPIKE_RULES = {'2in3': (2, 3), '2in2': (2, 2), '3in4': (3, 4), '3in5': (3, 5), '4in6': (4, 6)}
 
@@ -153,6 +158,32 @@ def loom():
             data['lv%d_theta' % lv_ms] = np.array(thetas)
         np.savez_compressed(path, **data)
         print('loom', name, 'done', flush=True)
+
+
+def startsize():
+    out = OUT / 'startsize'
+    M.check_provenance(out, '*.npz')
+    brain = build_brain(M.config(), ROOT)
+    for name in START_VARIANTS:
+        path = out / ('%s.npz' % name)
+        if path.exists():
+            continue
+        session, recorder = variant_session(name, brain)
+        data = {}
+        for lv_ms in START_LV_MS:
+            for start in START_DEG:
+                key = 'lv%d_start%g' % (lv_ms, start)
+                retinas, pre, t0, thetas, last = R.looming(lv_ms / 1000.0, DT, start, None, M.WINDOW_AFTER_S)
+                spk, rd = [], []
+                for seed in LOOM_SEEDS:
+                    s, r = run_feed(session, recorder, retinas, seed)
+                    spk.append(s); rd.append(r)
+                data[key + '_spikes'] = np.array(spk)
+                data[key + '_readout'] = np.array(rd)
+                data[key + '_meta'] = np.array([pre, t0, last])
+                data[key + '_theta'] = np.array(thetas)
+        np.savez_compressed(path, **data)
+        print('startsize', name, 'done', flush=True)
 
 
 def rest():
@@ -282,6 +313,30 @@ def analyze():
                 per[lv_ms] = {'fraction': round(len(sizes) / len(LOOM_SEEDS), 2),
                               'median_size_deg': None if not sizes else round(statistics.median(sizes), 1)}
             report['loom'].setdefault(name, {})[rule] = {'per_lv': per, 'fit': fit_threshold(points)}
+    report['startsize'] = {}
+    for name in START_VARIANTS:
+        path = OUT / 'startsize' / ('%s.npz' % name)
+        if not path.exists():
+            continue
+        z = np.load(path)
+        for rule, fn in rules.items():
+            rows = {}
+            for lv_ms in START_LV_MS:
+                medians = {}
+                for start in START_DEG:
+                    key = 'lv%d_start%g' % (lv_ms, start)
+                    pre, t0, last = (int(v) if i != 1 else v for i, v in enumerate(z[key + '_meta']))
+                    thetas = z[key + '_theta']
+                    sizes = []
+                    for s, r in zip(z[key + '_spikes'], z[key + '_readout']):
+                        first = next((t for t in fn(s, r) if pre <= t <= last), None)
+                        if first is not None:
+                            sizes.append(math.degrees(thetas[first]))
+                    medians[start] = None if not sizes else round(statistics.median(sizes), 1)
+                values = [v for v in medians.values() if v is not None]
+                rows[lv_ms] = {'medians': medians,
+                               'spread': round(max(values) - min(values), 1) if len(values) == len(START_DEG) else None}
+            report['startsize'].setdefault(name, {})[rule] = rows
     path = OUT / 'rest' / 'legacy.npz'
     if path.exists():
         z = np.load(path)
@@ -304,6 +359,11 @@ def analyze():
         for rule, r in by_rule.items():
             per = ' '.join('%d:%.2f/%s' % (lv, p['fraction'], p['median_size_deg']) for lv, p in r['per_lv'].items())
             print('  %-12s %s | fit %s' % (rule, per, r['fit']))
+    for name, by_rule in report['startsize'].items():
+        print('\nstartsize', name)
+        for rule, rows in by_rule.items():
+            print('  %-12s %s' % (rule, ' | '.join('%d: %s spread %s' % (lv, r['medians'], r['spread'])
+                                                   for lv, r in rows.items())))
     print('\nrest', report['rest'])
     for name, by_rule in report['flight'].items():
         print('flight', name, {k: v['per_min'] for k, v in by_rule.items()})
@@ -311,10 +371,11 @@ def analyze():
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument('mode', choices=('loom', 'rest', 'flight-record', 'flight-replay', 'analyze'))
+    parser.add_argument('mode', choices=('loom', 'rest', 'startsize', 'flight-record', 'flight-replay',
+                                         'analyze'))
     mode = parser.parse_args().mode
-    {'loom': loom, 'rest': rest, 'flight-record': flight_record, 'flight-replay': flight_replay,
-     'analyze': analyze}[mode]()
+    {'loom': loom, 'rest': rest, 'startsize': startsize, 'flight-record': flight_record,
+     'flight-replay': flight_replay, 'analyze': analyze}[mode]()
 
 
 if __name__ == '__main__':
