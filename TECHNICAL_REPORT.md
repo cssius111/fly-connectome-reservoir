@@ -738,7 +738,21 @@ The user chose the escape decision first, starting with read-only research. M3.1
   largest excitatory inputs.
 - **The candidate change.** It assigns the encoder's features as the literature does, and leaves
   the connectome, DNp01 and the decoder rules unchanged.
-- **Not yet made.** It needs its own preregistration and the user's authorization.
+- **M3.2, tested and failed its primary criterion.**
+  - The user supplied the full text of Ache et al. 2019.
+  - M3.2 ([game/M3_2_ESCAPE_FEATURE_ROLES_DESIGN.md](game/M3_2_ESCAPE_FEATURE_ROLES_DESIGN.md))
+    fixed the paper's constants and calibrated one scale, 0.28 V/mV, to the paper's giant-fiber
+    model.
+  - The results are in
+    [results/game/M3_2_ESCAPE_FEATURE_ROLES.md](results/game/M3_2_ESCAPE_FEATURE_ROLES.md).
+  - The escape now follows angular size, independent of the start size, and static or receding
+    disks drive nothing.
+  - The implied E2 threshold rose from 18.6° to 30.0°, still a gap. The frozen decoder decides
+    on the rising side of the size term, and acts about 60 ms later.
+  - No-player escapes rose from 10 to 101 in 240 minutes, 65 of them inappropriate
+    (category B), because the expansion gate passes even very slow expansion.
+  - The user chose to record the failure and to keep v27. The v28 candidate stays in git
+    history at `408fbc0`, and the gated encoder mode stays unused in the code.
 
 ### 9.7 Other open items
 

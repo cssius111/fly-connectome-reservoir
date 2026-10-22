@@ -41,9 +41,39 @@ data: `artifacts/m3_1/` (git-ignored). The comparators are in `game/M3_0_ESCAPE_
 | Y5 | LPLC2 is selective for looming: no response to receding looms, motion-free darkening or wide-field motion | Klapoetke et al. 2017, *Nature* 551:237, doi:10.1038/nature24626 (PMC7457385) | "LPLC2 neurons did not respond to dark receding looming or to luminance-matched motion-free darkening stimulus"; "60° as the upper bound for an individual LPLC2's receptive field size" |
 | Y6 | Behaviour follows an angular-size threshold that does not change with r/v | von Reyn et al. 2014, *Nat Neurosci* 17:962, doi:10.1038/nn.3741 | "behavior is initiated at a fixed neural delay after a looming stimulus crosses an angular size threshold"; "an invariant angular threshold across r/v" |
 
-The parameter values of the Y1 model (the Gaussian's centre and width, and the two weights) are
-in the full text of Ache et al. 2019. No open copy was found: neither PMC nor Europe PMC holds
-one, and no preprint was found.
+The parameter values of the Y1 model are in the full text of Ache et al. 2019. No open copy was
+found: neither PMC nor Europe PMC holds one, and no preprint was found. The user supplied the
+full text on 2026-10-22 (not committed). The values are in section 2.1.
+
+### 2.1 Ache et al. 2019: the model and anatomy values
+
+| Row | Value | Location | Quote |
+|---|---|---|---|
+| Y7 | LC4 term `V_LC4 = C1 * theta_dot(t - d1)`, C1 = 0.0002567 mV per deg/s, d1 = 0.019 s | STAR Methods, GF Model, eq. 3 | "resulting in C1 = 0.0002567 and d1 = 0.019 s" |
+| Y8 | LPLC2 term, a Gaussian of log size: C2 = 1.7 mV, C3 = 42°, C4 = 0.52, d2 = 0.019 s | eq. 4 | "C2 = 1.7, C3 = 42, C4 = 0.52 and d2 = 0.019 s"; "predicting peak response when the looming stimulus reaches an angular size of 42°" |
+| Y9 | Inhibition: a tonic sigmoid (C5 = -0.53, C6 = 0.59, C7 = 66, C8 = -11, d3 = 0.0375 s) and an LC4-dependent Gaussian (C9 = -0.52, C10 = 26, C11 = 7.8, d4 = 0.011 s) | eqs. 5-6 | "This component was unaffected by LC4 or LPLC2 silencing, indicating it derived from an independent input source" |
+| Y10 | Weights W_LPLC2 = 1.45, W_LC4 = 1.62, W_i1 = 2.27, W_i2 = 1 | eq. 7 | "Weights for LPLC and LC4 were determined by least-squares optimization" |
+| Y11 | The GF peak sets the escape time | Results | "their summation determines the GF peak response time, when a spike driving the fly's escape jump is most likely to occur" |
+| Y12 | FAFB EM: 55 LC4 and 108 LPLC2 neurons synapse onto the GF, with 2,442 and 1,366 synapses, together 99.4 % of its direct optic-lobe input | Results | "LPLC2 and LC4 contribute 99.4% of the GF's direct-input synapses from the optic lobe" |
+| Y13 | Short-mode share of takeoffs, pooled over r/v 10-80 ms: 26 % (47/178) and 17 % (18/105) in the two control lines | Results, Fig. 1D | "TNT: 26% [47/178] short-mode in control" |
+
+**Comparison with the model's connectome.**
+- **The paper (FAFB).** LC4 has 1.8 times as many synapses onto the GF as LPLC2.
+- **MaleCNS.** LC4 has 1.4 times the LPLC2 input weight onto left DNp01, and 1.2 times onto
+  right DNp01 (section 3).
+
+**The paper's model, evaluated** (`tools/m3_2_ache_targets.py`). On the paper's 10-90° stimulus,
+the GF model peaks at:
+
+| l/v | Peak, ms before collision |
+|---|---|
+| 10 ms | 2 |
+| 20 ms | 30 |
+| 40 ms | 81 |
+| 80 ms | 184 |
+
+The M3.0 E2 fit applied to these peak times gives alpha = 2.58 and an implied threshold of 42°.
+That is close to, but below, the behavioural 54° of X15.
 
 ## 3. The model as built
 
@@ -200,7 +230,8 @@ proportional to l/v.
   - the decoder's rules and constants.
 - **Gating.** The change sits behind a new encoder mode, set only in ROOM. Configurations without
   it keep the current encoder bit for bit, as earlier gated stages did.
-- **Free parameters.** `g_v`, `g_s`, `mu` and `sigma`. Two ways to fix them, in order of
+- **Free parameters.** `g_v`, `g_s`, `mu` and `sigma`. The user chose way 1 below, and M3.2
+  preregisters it (`game/M3_2_ESCAPE_FEATURE_ROLES_DESIGN.md`). The two ways, in order of
   preference:
   1. **From Ache et al. 2019's fitted model**, which needs its full text. With these values the
      scorecard's E2 stays an independent test: the encoder comes from electrophysiology and the

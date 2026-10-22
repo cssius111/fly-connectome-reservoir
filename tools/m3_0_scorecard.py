@@ -24,6 +24,7 @@ import json
 import math
 import os
 from pathlib import Path
+import subprocess
 import sys
 
 os.environ.setdefault('NUMBA_NUM_THREADS', '4')
@@ -50,8 +51,19 @@ SACCADE_THRESHOLD = math.radians(450.0)      # rad/s, the E11 detector
 POST_ESCAPE_S = 0.5
 
 
+MODEL_COMMIT = '032e7cc21b3b3c292e3a4ab4e506bcef4e33f2a6'      # the model M3.0 measured
+
+
 def config():
+    """The measured model's ROOM configuration (config_version 27).
+
+    Read from the working tree while it is still version 27, and from MODEL_COMMIT once a later
+    milestone (M3.2, version 28) has moved on. The current code's legacy encoder mode runs it
+    unchanged."""
     c = load_config(ROOT / 'game_room_config.json')
+    if c['config_version'] != 27:
+        c = json.loads(subprocess.check_output(
+            ['git', 'show', MODEL_COMMIT + ':game_room_config.json'], cwd=ROOT, text=True))
     assert c['config_version'] == 27
     return c
 
