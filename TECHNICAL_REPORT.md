@@ -298,8 +298,9 @@ ALERT finding, B3a, which follows from it, and the completion of M1.8-B.
 Between 2026-09-21 and 2026-09-25 a research line replaced the single-sample escape
 threshold with a decoder that is both fast and quiet, fixed a visual-geometry artifact,
 and finally established a limit of the current sensory representation. Reports are in
-`game/M1_8_*.md` on `feature/m1-8-n4b5r-geometry` (N0 to N4B1C and N4B5R) and on
-`wip/m1-4-enclosure` (N4B2 to N4B8 and the handoff state `game/CURRENT_PROJECT_STATE.md`).
+`game/M1_8_*.md` on `main`. N0 to N4B1C and N4B5R came with the runtime history. N4B2 to N4B8
+and the handoff state `game/CURRENT_PROJECT_STATE.md` (a snapshot of 2026-10-08) came from
+`wip/m1-4-enclosure`.
 
 ### 5.1 The starting defect
 
@@ -523,11 +524,12 @@ cannot be separated; an equal-budget reference was never run officially.
 ### 6.6 Status
 
 The user closed the learning line on 2026-10-08. The learned policy is not integrated,
-the accepted runtime still uses N4B1C, and nothing is merged. Reopening M2.4-B means
-either finishing sessions 13-30 under the unchanged protocol, or amending the protocol
-before unblinding to define an exploratory six-block analysis, which also needs a code
-change because the tools refuse a partial set. Further training needs a new
-preregistration and a fresh evaluation set, because EVAL v3 has been used.
+the accepted runtime still uses N4B1C, and the learning branch is not merged. Two routes could
+reopen M2.4-B. The first is to finish sessions 13-30 under the unchanged protocol. The second
+is to amend the protocol before unblinding to define an exploratory six-block analysis, which
+also needs a code change because the tools refuse a partial set. On 2026-10-22 the participant
+took the first route (section 9.6). Further training needs a new preregistration and a fresh
+evaluation set, because EVAL v3 has been used.
 
 ## 7. Research practice
 
@@ -580,8 +582,10 @@ The same rules were applied from the first experiment to the last study:
 
 As of 2026-10-22 the accepted runtime is the completed M1.8-B configuration (ROOM
 `config_version` 26): M1.8-B2b-iii and B3a on top of `363a1a9` (N4B1C decoder, N4B5R geometry),
-accepted on 2026-10-21, plus the completion stages B2c-B4b, accepted on 2026-10-22. The slow-approach line and the learning line are closed by the user's
-decisions, and M1.8-B flight kinematics is the only active line.
+accepted on 2026-10-21, plus the completion stages B2c-B4b, accepted on 2026-10-22; it is on
+`main` since 2026-10-22. The slow-approach line is closed by the user's decision, and M1.8-B is
+complete and frozen. The open work is the reopened M2.4-B blind test and the stop-rotation
+audit (section 9.6).
 
 ### 9.1 A measurement made for this report: where flight time goes
 
@@ -697,22 +701,28 @@ B2c-B4b.
   unchanged protocol ([game/M2_4_B_REOPENING.md](game/M2_4_B_REOPENING.md), recorded before
   session 13, with the pause and the intervening practice declared as deviations); the sealed
   data stay on the original local machine and unopened until all 30 ratings are locked.
-- **Stop-rotation transient** of the frozen swatter controller (Part III): frequency in
-  real play unknown; any change needs recorded evidence and approval.
+- **Stop-rotation transient** of the frozen swatter controller (Part III): its frequency in
+  real play is being measured with `tools/stop_rotation_audit.py`. The tool is read-only. It
+  counts the transients in recorded human play, labels heading-reversal spins (the approach
+  controller steers the paddle towards the 360-degree heading of its velocity, so reversing the
+  motion spins it although its axis line ends where it was), and compares the escapes that
+  follow with distance-matched hover samples. Any change needs recorded evidence and approval.
 - **Stale documentation** was corrected on the session branch on 2026-10-21 (README,
   `game/ROOM.md`, `game/SESSIONS.md` now point to `policy.calibration_paths`); the immutable
   `calibration_room_m1_8_n4b5r.json` keeps its historical status "runtime candidate; not yet
   human-accepted" although the candidate was accepted on 2026-09-25.
-- **No branch is merged into `main`**, and pull request 1 (`wip/m1-4-enclosure` into
-  `main`) stays open by the user's choice.
+- **`main`** received the accepted runtime on 2026-10-22 (pull request 2, merge commit
+  `79f5518`, joining the unrelated histories). It then received the N4B2-N4B8 research records
+  of `wip/m1-4-enclosure` (pull request 1) through the session branch. The learned-controller
+  study stays on its branch until M2.4-B is finished.
 
 ## 10. Reproducibility
 
 | Branch | Content |
 |---|---|
-| `main` @ `309abd9` | The original reservoir experiment (Part I) |
+| `main` | The original reservoir experiment (Part I, up to `309abd9`), the current accepted runtime and the research records N0 to N4B8 (since 2026-10-22) |
 | `feature/m1-8-n4b1c-runtime` @ `e3c55b3` | An earlier accepted runtime (the N4B1C decoder layer) |
-| `wip/m1-4-enclosure` | The decoder research N4B2 to N4B8 and the operational handoff state |
+| `wip/m1-4-enclosure` @ `c953094` | The decoder research N4B2 to N4B8 and the 2026-10-08 handoff state, merged into `main` |
 | `archive/m1-8-n2b-rejected` @ `2c30617` | The rejected N2b runtime |
 | `feature/m2-0-learning-infra` | The learned-controller study (Part IV) |
 | `feature/m1-8-b-complete` | **The current accepted runtime**: N4B5R plus M1.8-B2b-iii, B3a and the completion stages B2c-B4b (accepted 2026-10-21 and 2026-10-22), the ALERT study and this report |
@@ -728,7 +738,8 @@ accepted runtime's suite passed 427 of 427 tests on a Linux checkout, the sessio
 with B2b-iii 440 of 440, and the learning branch 516 of 517 with one CUDA-only test
 skipped, after a line-ending fix to two provenance tests. On 2026-10-21 the B3a runtime passed
 451 of 451 on Linux and on the local Windows checkout, and on 2026-10-22 the session branch
-with the completion stages passed 491 of 491 on Linux and on the local Windows checkout.
+with the completion stages passed 491 of 491 on Linux and on the local Windows checkout, and
+495 of 495 on Linux with the stop-rotation audit tests.
 
 ```text
 python first_run.py                                   # data integrity and replay smoke test
