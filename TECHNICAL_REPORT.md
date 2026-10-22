@@ -219,7 +219,7 @@ faster than real time; it was run once and is not a formal benchmark.
 | M1.6 | 2026-09-19 | `58ffd60` (local only) | ROOM ecology: analytic wind and odor, eight ecological states, perch objects | 194 tests |
 | M1.7 + edge | 2026-09-20 | `e0f08eb` (local only) | Physical inertial paddle, swept collision, recorder with exact replay, partially offscreen paddle | 232 tests; human session diagnosed |
 | M1.7.1 | 2026-09-21 | `cab1184` | Pointer-velocity approach controller; time at >= 95 % of the paddle speed cap fell from 46.9 % to 1.6 % | **Human-accepted**; frozen |
-| M1.7.2 | 2026-10-22 | `657e681` ... `b570269` | Line-symmetric paddle axis for the visual geometry, so a reversal no longer spins the paddle (ROOM `config_version` 27; section 9.6) | **Human-accepted 2026-10-22**; frozen |
+| M1.7.2 | 2026-10-22 | `657e681` ... `b570269` | Line-symmetric paddle axis for the visual geometry, so a reversal no longer spins the paddle (ROOM `config_version` 27; section 9.7) | **Human-accepted 2026-10-22**; frozen |
 | M1.8-R0 | 2026-09-21 | `f8f440b` | Evidence lock: 23 primary papers, 147 inventoried parameters, no parameter promoted to class A | Documentation |
 | M1.8-A | 2026-09-21 | `bfbef04` | Landing, perching, feeding overlay, voluntary and neural escape takeoff; recorder schema 4 | **Two human playtests**; frozen |
 | M1.8-B1 to B2b-ii | 2026-09-21 | `8a8064d` ... `0d8c254` | Kinematics refactor and first sampled speed distribution (section 4.5) | Bit-identical replay, then one attributed divergence |
@@ -414,7 +414,7 @@ freeze, and an N4B5 criterion ("every direct strike fires") that failed as writt
 
 Known open items: a stop-rotation transient of the frozen swatter controller produces
 0.35 rad/s of apparent expansion at constant range and an escape in 17/48 orbit trials
-(its frequency in real play was measured on 2026-10-22, section 9.6); a false-trigger rate below 0.01/min has never been
+(its frequency in real play was measured on 2026-10-22, section 9.7); a false-trigger rate below 0.01/min has never been
 demonstrated; LAB and GAME still use the legacy single-sample decoder; and the evidence
 base is one human tester.
 
@@ -593,8 +593,8 @@ As of 2026-10-22 the accepted runtime is ROOM `config_version` 27:
 - the M1.7.2 paddle line axis, accepted the same day. The slow-approach line is closed by the user's decision, and M1.8-B is
 complete and frozen. On 2026-10-22 the M2.4-B blind test was closed at 13 of 30 sessions and the
 stop-rotation audit was recorded. At the user's request, M1.7.2 then fixed the defect the audit had
-found. It is ROOM `config_version` 27 and was human-accepted the same day (section 9.6).
-The remaining open items are in section 9.6.
+found. It is ROOM `config_version` 27 and was human-accepted the same day (section 9.7).
+The fidelity scorecard is in section 9.6, and the remaining open items are in section 9.7.
 
 ### 9.1 A measurement made for this report: where flight time goes
 
@@ -699,7 +699,48 @@ local Windows checks passed (491 tests), a 192 s playtest showed no self-approac
 ecology ALERT without an executed response and unchanged TRANSIT speed, and the user accepted
 B2c-B4b.
 
-### 9.6 Other open items
+### 9.6 Toward a realistic fly: the M3.0 fidelity scorecard
+
+On 2026-10-22 the user set the project's goal: the model fly should behave more like a real fly,
+and difficulty follows from that.
+
+M3.0 was preregistered in [game/M3_0_FIDELITY_SCORECARD_DESIGN.md](game/M3_0_FIDELITY_SCORECARD_DESIGN.md)
+and measured in [results/game/M3_0_FIDELITY_SCORECARD.md](results/game/M3_0_FIDELITY_SCORECARD.md).
+It compares the accepted runtime with published *Drosophila* data:
+- escape comparators, from open full texts: [game/M3_0_ESCAPE_EVIDENCE.md](game/M3_0_ESCAPE_EVIDENCE.md);
+- saccade comparators, from the M1.8-R0 evidence lock.
+
+Findings:
+- **Escape timing.** The model escapes far too early. The angular size at escape is 14-32°,
+  with an implied threshold of 18.6° against 54°.
+- **Escape probability.** The model escapes in every trial (1.00 against 0.82).
+- **Escape direction.** For lateral threats the model jumps forward and away, as real flies do.
+  It cannot tell front from back, because the encoder uses only the side of a stimulus, so
+  frontal and rear threats get the right-side response.
+- **Escape modes.** The short and long escape modes are not represented.
+- **Spontaneous saccades.** They are about four times too rare (0.34 against 1.37 per s) and too
+  small (57° against about 90°).
+- **Flight speed** (context): it is about 14 times slower in body lengths per second, which is
+  the frozen gameplay scale.
+
+The gaps fall into three groups:
+- the escape decision, which is frozen;
+- the encoder's use of the bearing and the escape pathways, which are structural;
+- the flight generator, which is parametric.
+
+The user chose the escape decision first, starting with read-only research. M3.1
+([game/M3_1_ESCAPE_DECISION_RESEARCH.md](game/M3_1_ESCAPE_DECISION_RESEARCH.md)) traced it:
+- **The model's rule.** The fly escapes when the expansion rate reaches about 40°/s, because the
+  encoder drives LPLC2 by expansion velocity alone.
+- **The real fly.** Its giant fiber sums an angular-size component from LPLC2 and a velocity
+  component from LC4 (Ache et al. 2019; von Reyn et al. 2017).
+- **What the connectome has.** MaleCNS already has that circuit: LC4 and LPLC2 are DNp01's two
+  largest excitatory inputs.
+- **The candidate change.** It assigns the encoder's features as the literature does, and leaves
+  the connectome, DNp01 and the decoder rules unchanged.
+- **Not yet made.** It needs its own preregistration and the user's authorization.
+
+### 9.7 Other open items
 
 - **TRANSIT speed** still follows the legacy shared 8 s sinusoid over 9-13 BL/s. A sampling
   stage that holds the envelope (as B2b-ii and B2b-iii did) would not make transit faster;
@@ -760,12 +801,13 @@ B2c-B4b.
 
 | Branch | Content |
 |---|---|
-| `main` | The original reservoir experiment (Part I, up to `309abd9`), the current accepted runtime and the research records N0 to N4B8 (since 2026-10-22) |
+| `main` | **The current accepted runtime** (ROOM `config_version` 27 with M1.7.2), the original reservoir experiment (Part I, up to `309abd9`) and the research records N0 to N4B8 (since 2026-10-22) |
+| `feature/flyswatter-game` @ `85f987b` | The first game prototype, M1.0 to M1.3 (2026-09-18), whose commits Part II cites |
 | `feature/m1-8-n4b1c-runtime` @ `e3c55b3` | An earlier accepted runtime (the N4B1C decoder layer) |
 | `wip/m1-4-enclosure` @ `c953094` | The decoder research N4B2 to N4B8 and the 2026-10-08 handoff state, merged into `main` |
 | `archive/m1-8-n2b-rejected` @ `2c30617` | The rejected N2b runtime |
 | `feature/m2-0-learning-infra` | The learned-controller study (Part IV) |
-| `feature/m1-8-b-complete` | **The current accepted runtime**: N4B5R plus M1.8-B2b-iii, B3a and the completion stages B2c-B4b (accepted 2026-10-21 and 2026-10-22), the ALERT study and this report |
+| `feature/m1-8-b-complete` | The M1.8-B runtime (`config_version` 26): N4B5R plus M1.8-B2b-iii, B3a and the completion stages B2c-B4b (accepted 2026-10-21 and 2026-10-22), merged into `main` and tagged `v1.0` |
 | `feature/m1-8-b3a` @ `6b43c0f` | The previous accepted runtime (M1.8-B3a) |
 | `feature/m1-8-b2b-iii` @ `c4f9b8f` | The previous accepted runtime (M1.8-B2b-iii) |
 | `feature/m1-8-n4b5r-geometry` @ `363a1a9` | An earlier accepted runtime (N4B5R geometry) |
