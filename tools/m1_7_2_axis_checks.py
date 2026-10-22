@@ -351,8 +351,13 @@ def turn():
 
 # ------------------------------------------------------------------------------ C5 ---
 def freeflight():
-    results, brain = [], None
+    # Each seed is saved as it finishes, so an interrupted run resumes where it stopped.
+    partial = OUT / 'c5-freeflight.partial.json'
+    results = json.loads(partial.read_text(encoding='utf-8')) if partial.exists() else []
+    done, brain = {r['seed'] for r in results}, None
     for seed in range(9201, 9211):
+        if seed in done:
+            continue
         rows, folds, onsets = {}, [], {}
         for arm, config in configs().items():
             policy = build_policy(config, ROOT)[0]
@@ -373,8 +378,10 @@ def freeflight():
         result = {'seed': seed, **invariant(rows['v26'], rows['v27'], folds),
                   'escape_ticks_v26': onsets['v26'], 'escape_ticks_v27': onsets['v27']}
         results.append(result)
+        save(partial.name, results)
         print(json.dumps({k: v for k, v in result.items() if not k.startswith('escape_ticks')}),
               'escapes', len(onsets['v26']), len(onsets['v27']), flush=True)
+    results.sort(key=lambda r: r['seed'])
     save('c5-freeflight.json', {'check': 'C5 free flight', 'seeds': results,
                                 'invariant_holds': all(r['invariant_holds'] for r in results)})
 
