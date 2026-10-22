@@ -44,7 +44,7 @@ RESEARCH_NOTE = 'game/M3_1_ESCAPE_DECISION_RESEARCH.md'
 CALIBRATION_REPORT = ROOT / 'artifacts/m3_2/report.json'
 ALLOWED_CHANGES = {'config_version', 'policy._comment', 'policy.calibration_paths',
                    'encoder.feature_model', 'encoder._feature_model_comment',
-                   'encoder.ache2019.scale_volts_per_mv'}
+                   'encoder.ache2019'}
 
 
 def baseline_config():
