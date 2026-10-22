@@ -411,8 +411,8 @@ freeze, and an N4B5 criterion ("every direct strike fires") that failed as writt
 38/39.
 
 Known open items: a stop-rotation transient of the frozen swatter controller produces
-0.35 rad/s of apparent expansion at constant range and an escape in 17/48 orbit trials,
-with unknown frequency in real play; a false-trigger rate below 0.01/min has never been
+0.35 rad/s of apparent expansion at constant range and an escape in 17/48 orbit trials
+(its frequency in real play was measured on 2026-10-22, section 9.6); a false-trigger rate below 0.01/min has never been
 demonstrated; LAB and GAME still use the legacy single-sample decoder; and the evidence
 base is one human tester.
 
@@ -701,12 +701,23 @@ B2c-B4b.
   unchanged protocol ([game/M2_4_B_REOPENING.md](game/M2_4_B_REOPENING.md), recorded before
   session 13, with the pause and the intervening practice declared as deviations); the sealed
   data stay on the original local machine and unopened until all 30 ratings are locked.
-- **Stop-rotation transient** of the frozen swatter controller (Part III): its frequency in
-  real play is being measured with `tools/stop_rotation_audit.py`. The tool is read-only. It
-  counts the transients in recorded human play, labels heading-reversal spins (the approach
-  controller steers the paddle towards the 360-degree heading of its velocity, so reversing the
-  motion spins it although its axis line ends where it was), and compares the escapes that
-  follow with distance-matched hover samples. Any change needs recorded evidence and approval.
+- **Stop-rotation transient** of the frozen swatter controller (Part III). It was measured in
+  recorded human play on 2026-10-22 with the read-only `tools/stop_rotation_audit.py`
+  ([results/game/M1_8_STOP_ROTATION_AUDIT.md](results/game/M1_8_STOP_ROTATION_AUDIT.md)).
+  - **Rate.** On the accepted runtime (2 sessions, 5.4 min of hover) it occurs 4.65 times per
+    hover minute.
+  - **Reversal spins.** Half of the transients (2.23/min) are reversal spins. The approach
+    controller steers the paddle towards the 360-degree heading of its velocity, so reversing the
+    motion spins the paddle by up to 180 degrees, although its visually symmetric axis ends where
+    it was.
+  - **Escapes.** 4 of 10 evaluated transients are followed by an escape within 0.06-0.8 s,
+    against 1.3 % of hover samples at matched distance. That is about 0.63 added escapes per
+    hover minute, 0.35 of them from reversal spins; the earlier runtimes give 1.64 and 0.39.
+  - **Classification.** The responses are category C, with a real Retina drive. The reversal
+    spin is a modelling defect of the controller.
+  - **Decision.** The user chose to record the result and keep the M1.7.1 swatter frozen. The
+    candidate fix, steering to the nearer of the heading and its opposite, is not implemented and
+    needs an explicit request and a human acceptance playtest.
 - **Stale documentation** was corrected on the session branch on 2026-10-21 (README,
   `game/ROOM.md`, `game/SESSIONS.md` now point to `policy.calibration_paths`); the immutable
   `calibration_room_m1_8_n4b5r.json` keeps its historical status "runtime candidate; not yet
