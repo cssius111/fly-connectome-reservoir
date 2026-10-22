@@ -10,8 +10,7 @@ state alone from interrupting the ecology (see
 accepted on 2026-10-21; TRANSIT speed stays unchanged by the user's decision. Every later stage
 still requires its own
 explicit user approval before implementation. The remaining stages B2c-B4b were authorized
-together on 2026-10-21 (section 14), implemented and validated; the combined playtest and
-acceptance remain.
+together on 2026-10-21 (section 14), implemented, validated and accepted on 2026-10-22.
 
 Baseline: M1.8-A accepted and committed (`bfbef04`). Biological authority remains the
 accepted [M1.8-R0 evidence lock](M1_8_EVIDENCE.md) and
@@ -331,9 +330,9 @@ Each stage is preregistered in [M1_8_B_COMPLETION_DESIGN.md](M1_8_B_COMPLETION_D
 before its code changes and reported in
 [results/game/M1_8_B_COMPLETION.md](../results/game/M1_8_B_COMPLETION.md).
 
-Status 2026-10-22: every stage passed its automated checks and is adopted on the session
-branch (results in `results/game/M1_8_B_COMPLETION.md`); the local checks, the playtest and the
-user's acceptance remain.
+Status 2026-10-22: every stage passed its automated checks (results in
+`results/game/M1_8_B_COMPLETION.md`), and after the local checks and the combined playtest the
+user accepted all of them on 2026-10-22.
 
 Section 5's flight-bout termination is not in this list: in ROOM the frozen M1.8-A
 lifecycle decides when a flight bout ends (landing), so changing it would break that

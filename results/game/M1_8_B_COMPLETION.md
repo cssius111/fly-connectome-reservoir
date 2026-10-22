@@ -1,6 +1,7 @@
 # M1.8-B completion: validation of stages B2c to B5
 
-Status: **implemented and validated; awaiting the user's playtest and acceptance.** Design and
+Status: **accepted by the user on 2026-10-22** after the local checks and the playtest in
+section 11. Design and
 acceptance checks were preregistered in
 [game/M1_8_B_COMPLETION_DESIGN.md](../../game/M1_8_B_COMPLETION_DESIGN.md) before any stage
 changed code, under the authorization in [game/M1_8_B_PLAN.md](../../game/M1_8_B_PLAN.md)
@@ -625,9 +626,10 @@ lifecycle), crosswind casting, any recorder schema change, any learning.
 
 ## 10. Status and acceptance procedure
 
-All preregistered automated checks pass for every stage, with the deviations above, and the
-stages are adopted on the session branch `claude/gracious-galileo-mxnbs9`. The accepted runtime
-remains `feature/m1-8-b3a` until the user's local checks, playtest and acceptance.
+All preregistered automated checks pass for every stage, with the deviations above. **The user
+accepted B2c-B4b on 2026-10-22** after the local checks and the playtest (section 11). The
+accepted runtime branch is `feature/m1-8-b-complete`; `feature/m1-8-b3a` @ `6b43c0f` stays as the
+previous accepted runtime. The acceptance procedure was:
 
 1. **Local checks** in a fresh LF worktree of the session branch (safe removal of an old
    worktree: `results/game/M1_8_B2B_III.md` section 11): protected files 20 of 20,
@@ -639,3 +641,31 @@ remains `feature/m1-8-b3a` until the user's local checks, playtest and acceptanc
    search zigzags and no chattering or getting stuck; then play as usual. Summarize the
    recording with `tools/playtest_flight_summary.py`.
 3. **Acceptance** is the user's decision.
+
+## 11. Local checks and the human playtest
+
+**Local Windows checks** (2026-10-22, the LF worktree of the session branch at `6fab5bb`):
+protected files 20 of 20 byte-exact; `verify_results.py`: 36 prediction records, source hashes
+match, 2 exact held-out replays, frozen weights; **491 tests OK** on Windows;
+`tools/approach_sanity.py` reproduces all 6,911 paddle ticks of the M1.7.1 acceptance recording
+with identical old and new statistics.
+
+**Playtest** (`20261022T010423.651486Z-bbe82503`, seed 255, `config_version` 26, 8 Numba
+threads; private and git-ignored; the dirty flag again comes from `requirements-lock.txt` and
+`results/verification.json`, which the game does not read), summarized read-only with
+`tools/playtest_flight_summary.py`:
+
+| Measure | B3a playtest (2026-10-21) | Completion playtest |
+| --- | --- | --- |
+| Recorded / alive / airborne time | 219.1 / 213.8 / 180.2 s | 191.8 / 183.3 / 151.6 s |
+| Lifecycle: airborne / perched / landing approach | 78.5 / 15.7 / 5.8 % | 80.1 / 17.3 / 2.6 % |
+| Airborne ecology share: EXPLORE / TRANSIT / ODOR_TRACK / ODOR_SEARCH | 36.1 / 17.9 / 15.3 / 10.0 % | 42.2 / 21.1 / 12.7 / 14.5 % |
+| Mean bout, s: EXPLORE / TRANSIT / ODOR_TRACK / ODOR_SEARCH | 2.33 / 3.23 / 2.29 / 3.01 | 3.05 / 2.29 / 2.41 / 5.50 |
+| TRANSIT speed after 1 s in the bout, mean (p90) | 9.6 (12.2) BL/s | 10.0 (11.9) BL/s |
+| Policy alert onsets / ecology ALERT entries / entries without an executed alert response | 226 / 32 / 0 | 158 / 13 / 0 |
+| Escape onsets: paddle approaching / during a strike / size-dominated / fly-driven self-approach | 19 / 2 / 8 / 0 | 7 / 4 / 1 / 0 |
+| Near passes within 310 units without a strike (fly-driven) | 15 (5) | 3 (0) |
+
+The B3a property holds, no escape is a fly-driven self-approach, TRANSIT speed is unchanged and
+no state chatters or locks. One three-minute session is evidence against gross defects only,
+not a behavioural dataset. The user accepted the stages after it.

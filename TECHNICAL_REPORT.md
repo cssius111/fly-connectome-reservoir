@@ -285,7 +285,7 @@ and never tunes kinematics for difficulty.
 | B2b-ii | `0d8c254` | EXPLORE speed: one symmetric triangular draw on the accepted 5-8 BL/s support per EXPLORE episode, replacing a deterministic 8 s sinusoid with a U-shaped time density; mean kept at 6.5 BL/s, sd 1.06 to 0.61. First intended divergence at tick 0; LAB, GAME and no-ecology runs stay bit-identical |
 | B2b-iii | `7b9fa05` | ODOR_TRACK speed by the same method on its accepted 9-13 BL/s support, from its own random stream; mean 11.0, sd 1.41 to 0.82. Code alone is bit-identical; the first divergences are exactly the first airborne ODOR_TRACK ticks. Paired 240-minute free-flight check passes (section 9.2). **Accepted 2026-10-21** |
 | B3a | `0e463bc` | The ecology receives CALM when the policy reports ALERT but no saccade is requested or executing; the lifecycle keeps the accepted threat. ALERT entries fall from about 45 to about 2 per minute and TRANSIT rises to about 23 % of alive time. Paired check passes; self-approach escapes rise 2 -> 8 (section 9.4). **Accepted 2026-10-21** |
-| B2c-B4b | `9e8686f` ... `4fb5ef5` | The remaining stages, preregistered together: an evaluation-metrics tool; ODOR_SEARCH and RECOVER speed sampling; a sampled speed-transition rate; the odor timers replaced by an encounter history; the EXPLORE/TRANSIT dwell timers replaced by hazards; resampled casting and drift periods; the odor derivative and bilateral difference used; a wind reliability term. Every stage passes its automated checks (section 9.5) | Awaiting the user's playtest |
+| B2c-B4b | `9e8686f` ... `4fb5ef5` | The remaining stages, preregistered together: an evaluation-metrics tool; ODOR_SEARCH and RECOVER speed sampling; a sampled speed-transition rate; the odor timers replaced by an encounter history; the EXPLORE/TRANSIT dwell timers replaced by hazards; resampled casting and drift periods; the odor derivative and bilateral difference used; a wind reliability term. Every stage passes its automated checks (section 9.5) | **Accepted 2026-10-22** |
 
 On 2026-10-20 the user answered the plan's remaining questions: the arena stays
 160 x 90 BL, the recorder moves to schema 5 only when a stage needs new fields, and
@@ -578,9 +578,9 @@ The same rules were applied from the first experiment to the last study:
 
 ## 9. Current state and next steps
 
-As of 2026-10-21 the accepted runtime is the M1.8-B3a configuration (ROOM
-`config_version` 19): M1.8-B2b-iii on top of `363a1a9` (N4B1C decoder, N4B5R geometry) with
-the ecology's executed-response threat input, both accepted by the user on 2026-10-21. The slow-approach line and the learning line are closed by the user's
+As of 2026-10-22 the accepted runtime is the completed M1.8-B configuration (ROOM
+`config_version` 26): M1.8-B2b-iii and B3a on top of `363a1a9` (N4B1C decoder, N4B5R geometry),
+accepted on 2026-10-21, plus the completion stages B2c-B4b, accepted on 2026-10-22. The slow-approach line and the learning line are closed by the user's
 decisions, and M1.8-B flight kinematics is the only active line.
 
 ### 9.1 A measurement made for this report: where flight time goes
@@ -681,8 +681,10 @@ self-approach 5 against 6. 491 tests pass. The report lists the deviations: the 
 scenario diverges under B3d's drift, contrary to a common preregistered expectation; B3c's
 structure gate is nearly inert in ROOM; a habituated fly alternates short tracking and transit
 episodes in the plume; and TRANSIT's realized speed shifts slightly (mean 9.69 -> 9.55 BL/s)
-because its episodes are shorter, although its speed profile is unchanged. The user's local
-checks, playtest and acceptance remain.
+because its episodes are shorter, although its speed profile is unchanged. On 2026-10-22 the
+local Windows checks passed (491 tests), a 192 s playtest showed no self-approach escape, no
+ecology ALERT without an executed response and unchanged TRANSIT speed, and the user accepted
+B2c-B4b.
 
 ### 9.6 Other open items
 
@@ -712,8 +714,8 @@ checks, playtest and acceptance remain.
 | `wip/m1-4-enclosure` | The decoder research N4B2 to N4B8 and the operational handoff state |
 | `archive/m1-8-n2b-rejected` @ `2c30617` | The rejected N2b runtime |
 | `feature/m2-0-learning-infra` | The learned-controller study (Part IV) |
-| `feature/m1-8-b3a` | **The current accepted runtime**: N4B5R plus M1.8-B2b-iii and M1.8-B3a (both accepted 2026-10-21), the ALERT study and this report |
-| `claude/gracious-galileo-mxnbs9` | `feature/m1-8-b3a` plus the M1.8-B completion stages B2c-B4b (validated, awaiting the playtest and acceptance) and this report |
+| `feature/m1-8-b-complete` | **The current accepted runtime**: N4B5R plus M1.8-B2b-iii, B3a and the completion stages B2c-B4b (accepted 2026-10-21 and 2026-10-22), the ALERT study and this report |
+| `feature/m1-8-b3a` @ `6b43c0f` | The previous accepted runtime (M1.8-B3a) |
 | `feature/m1-8-b2b-iii` @ `c4f9b8f` | The previous accepted runtime (M1.8-B2b-iii) |
 | `feature/m1-8-n4b5r-geometry` @ `363a1a9` | An earlier accepted runtime (N4B5R geometry) |
 
@@ -725,7 +727,7 @@ accepted runtime's suite passed 427 of 427 tests on a Linux checkout, the sessio
 with B2b-iii 440 of 440, and the learning branch 516 of 517 with one CUDA-only test
 skipped, after a line-ending fix to two provenance tests. On 2026-10-21 the B3a runtime passed
 451 of 451 on Linux and on the local Windows checkout, and on 2026-10-22 the session branch
-with the completion stages passed 491 of 491 on Linux.
+with the completion stages passed 491 of 491 on Linux and on the local Windows checkout.
 
 ```text
 python first_run.py                                   # data integrity and replay smoke test
