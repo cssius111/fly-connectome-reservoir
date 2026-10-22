@@ -153,6 +153,8 @@ projector would produce from the world with a synthetic Retina, once per tick.
 - **Azimuth.** The Retina passes on only the side of a stimulus, as the sign of the azimuth.
   Front, side and rear on the same side may therefore give identical inputs. This is measured,
   not assumed.
+  - *Correction after measurement (2026-10-22, M3.1):* the Retina carries the full bearing; it is
+    the encoder that uses only its sign. The protocol and its outcome are unaffected.
 - **Saccade filter.** E12 kept only flight above 5 cm/s. ROOM's speeds lie below that, so no
   speed filter is applied.
 

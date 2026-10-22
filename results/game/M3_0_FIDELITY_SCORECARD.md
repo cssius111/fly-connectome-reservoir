@@ -11,7 +11,7 @@ data are in `artifacts/m3_0/` (git-ignored). No runtime file changed.
 | Metric | Model | Real fly | Class | Kind of gap |
 |---|---|---|---|---|
 | E2 Angular size at escape (timing law) | threshold 18.6° from the fit; 14-32° per l/v | 54° (SD 5°), X15/X16 | **gap** | the decision follows expansion onset, not an angular-size threshold |
-| E4 Direction, threat in front | -66.7° (forward-left) | backward, 180° (X04) | **gap** | structural: the Retina carries only the side |
+| E4 Direction, threat in front | -66.7° (forward-left) | backward, 180° (X04) | **gap** | structural: the encoder uses only the side |
 | E4 Direction, threat behind | -66.7° (forward-left) | forward, 0° (X04) | **gap** | structural, same cause |
 | E5 Short and long escape modes | one escape action, no wing raise | two modes; the short-mode share falls with l/v (X21-X22) | **not represented** | structural |
 | S1 Spontaneous saccade rate | 0.34 per s | 1.37 per s (E12) | **gap** | parametric: hand-written flight generator |
@@ -53,8 +53,8 @@ Lateral azimuths, left and right pooled.
     matches X05.
   - Front and rear threats: the model jumps exactly as for a right-side threat, a **gap** for
     both. The front, right and rear runs are identical in every trial, tick and direction (all
-    four l/v values). The Retina passes on only the sign of the azimuth, and azimuth 0 counts as
-    right.
+    four l/v values). The Retina carries the full bearing, but the encoder uses only the sign
+    of its azimuth, and azimuth 0 counts as right.
 - **E5. Modes.** **Not represented.** The model has one escape action, with no wing-raise phase
   and no slower, prepared escape.
 
@@ -102,10 +102,11 @@ The gaps fall into three groups by where the fix would have to go.
      giant fiber's integration of LC4 and LPLC2 inputs does in the literature.
    - Every element involved is frozen: the encoder mapping and the accepted N4B1C decoder.
 2. **What the fly can see and do (E4, E5).** These gaps are structural.
-   - Front and back cannot be told apart, because the Retina carries only the side.
+   - Front and back cannot be told apart, because the encoder uses only the side of the
+     stimulus.
    - There is no prepared (long-mode) escape.
-   - Either fix means a richer Retina or more descending-neuron pathways, which is a large change
-     to the input bottleneck.
+   - The fixes are a retinotopic encoder, which can use the bearing the Retina already
+     carries, and more descending-neuron pathways. Both are large changes.
 3. **Spontaneous flight (S1, S2, S3, C1).** These gaps are parametric, in the hand-written flight
    generator.
    - The saccade rate and amplitude could be set from E10-E12 without touching the connectome.
