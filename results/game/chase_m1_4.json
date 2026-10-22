@@ -1,0 +1,83 @@
+{
+  "provenance": {
+    "schema_version": 2,
+    "measurement_protocol": "fixed-fly-v2",
+    "config_hash_format": "canonical-json-sort-keys-ascii-compact",
+    "game_config_sha256": "3371686a01c42d14d55a6bcf4d558fdeb4050ffe936dca58399a186a4987f4ab",
+    "flybrain_version": "0.1.0",
+    "encoder_population_rule": "min-per-type-per-side-v1",
+    "encoder_seed": 20260917,
+    "encoder_types": {
+      "loom": [
+        "LPLC2"
+      ],
+      "threat": [
+        "LC4"
+      ]
+    },
+    "sensory_input": false,
+    "tick_seconds": 0.02,
+    "brain_dt_seconds": 0.02
+  },
+  "scenario": "track far, approach at 1.00s, click at 1.90s; fixed seeds, no fitting",
+  "limitation": "Scripted regression only; human playtest is the acceptance criterion. Outcomes are not a gameplay quality score.",
+  "wall_seconds": 3.722387299996626,
+  "trials": [
+    {
+      "seed": 101,
+      "click_seconds": 1.9000000000000001,
+      "first_lethal_seconds": 2.04,
+      "first_pre_click_evasion_seconds": 1.1,
+      "pre_click_evasion": true,
+      "lead_before_lethal_seconds": 0.94,
+      "pre_click_peak_dnp01": 2.2191317677497864,
+      "path_before_click": 496.82275551649735,
+      "max_step_distance": 13.409777240872161,
+      "max_actual_yaw_rad_s": 23.48590633126028,
+      "constraint_ticks": 3,
+      "hit": true
+    },
+    {
+      "seed": 102,
+      "click_seconds": 1.9000000000000001,
+      "first_lethal_seconds": 2.04,
+      "first_pre_click_evasion_seconds": 1.1,
+      "pre_click_evasion": true,
+      "lead_before_lethal_seconds": 0.94,
+      "pre_click_peak_dnp01": 2.144199050962925,
+      "path_before_click": 647.3201550105983,
+      "max_step_distance": 16.846413763514807,
+      "max_actual_yaw_rad_s": 23.654232584215105,
+      "constraint_ticks": 19,
+      "hit": false
+    },
+    {
+      "seed": 103,
+      "click_seconds": 1.9000000000000001,
+      "first_lethal_seconds": 2.04,
+      "first_pre_click_evasion_seconds": 1.1,
+      "pre_click_evasion": true,
+      "lead_before_lethal_seconds": 0.94,
+      "pre_click_peak_dnp01": 2.6885929703712463,
+      "path_before_click": 403.90556211943306,
+      "max_step_distance": 13.379140221315739,
+      "max_actual_yaw_rad_s": 22.907904456420365,
+      "constraint_ticks": 20,
+      "hit": false
+    },
+    {
+      "seed": 104,
+      "click_seconds": 1.9000000000000001,
+      "first_lethal_seconds": 2.04,
+      "first_pre_click_evasion_seconds": 1.0,
+      "pre_click_evasion": true,
+      "lead_before_lethal_seconds": 1.04,
+      "pre_click_peak_dnp01": 2.8631303310394287,
+      "path_before_click": 411.54748927234107,
+      "max_step_distance": 13.29004313294826,
+      "max_actual_yaw_rad_s": 23.26153712354838,
+      "constraint_ticks": 35,
+      "hit": false
+    }
+  ]
+}

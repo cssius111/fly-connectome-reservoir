@@ -1,0 +1,75 @@
+{
+  "provenance": {
+    "schema_version": 2,
+    "measurement_protocol": "fixed-fly-v2",
+    "config_hash_format": "canonical-json-sort-keys-ascii-compact",
+    "game_config_sha256": "220c989ea8441f38e0c29ee57bb78933428f07ade21bee8859dde733319b5738",
+    "flybrain_version": "0.1.0",
+    "encoder_population_rule": "min-per-type-per-side-v1",
+    "encoder_seed": 20260917,
+    "encoder_types": {
+      "loom": [
+        "LPLC2"
+      ],
+      "threat": [
+        "LC4"
+      ]
+    },
+    "sensory_input": false,
+    "tick_seconds": 0.02,
+    "brain_dt_seconds": 0.02
+  },
+  "scenario": "track far, approach at 1.00s, click at 1.90s; fixed seeds, no fitting",
+  "limitation": "Scripted regression only; human playtest is the acceptance criterion. Outcomes are not a gameplay quality score.",
+  "wall_seconds": 4.3852883000035945,
+  "trials": [
+    {
+      "seed": 101,
+      "click_seconds": 1.9000000000000001,
+      "first_lethal_seconds": 2.04,
+      "first_pre_click_evasion_seconds": 1.1,
+      "pre_click_evasion": true,
+      "lead_before_lethal_seconds": 0.94,
+      "pre_click_peak_dnp01": 2.4049191884696484,
+      "path_before_click": 285.731458628124,
+      "max_step_distance": 11.720506571126561,
+      "hit": true
+    },
+    {
+      "seed": 102,
+      "click_seconds": 1.9000000000000001,
+      "first_lethal_seconds": 2.04,
+      "first_pre_click_evasion_seconds": 1.1,
+      "pre_click_evasion": true,
+      "lead_before_lethal_seconds": 0.94,
+      "pre_click_peak_dnp01": 2.3309908947558142,
+      "path_before_click": 401.4350743245225,
+      "max_step_distance": 12.704105388249038,
+      "hit": false
+    },
+    {
+      "seed": 103,
+      "click_seconds": 1.9000000000000001,
+      "first_lethal_seconds": 2.04,
+      "first_pre_click_evasion_seconds": 1.1,
+      "pre_click_evasion": true,
+      "lead_before_lethal_seconds": 0.94,
+      "pre_click_peak_dnp01": 2.2942166328430176,
+      "path_before_click": 328.1884965532078,
+      "max_step_distance": 11.885886440613898,
+      "hit": true
+    },
+    {
+      "seed": 104,
+      "click_seconds": 1.9000000000000001,
+      "first_lethal_seconds": 2.04,
+      "first_pre_click_evasion_seconds": 1.0,
+      "pre_click_evasion": true,
+      "lead_before_lethal_seconds": 1.04,
+      "pre_click_peak_dnp01": 2.1438822746276855,
+      "path_before_click": 258.06544086157453,
+      "max_step_distance": 12.35141300169349,
+      "hit": false
+    }
+  ]
+}

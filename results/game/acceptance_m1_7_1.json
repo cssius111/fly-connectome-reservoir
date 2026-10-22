@@ -1,0 +1,709 @@
+{
+  "previous_head": "e0f08ebe55ecefcab69cc7927668c0f2cef7f69c",
+  "branch": "wip/m1-4-enclosure",
+  "human_acceptance": "approved by owner; no further tuning",
+  "tests": {
+    "count": 247,
+    "seconds": 49.48,
+    "passed": true,
+    "log": "artifacts/m1-7-1/tests-acceptance.txt"
+  },
+  "human": {
+    "session_id": "20260921T013555.126134Z-cb64aa1a",
+    "summary": {
+      "schema_version": 3,
+      "session_id": "20260921T013555.126134Z-cb64aa1a",
+      "duration_simulation_seconds": 138.22,
+      "duration_wall_seconds": 145.037968800003,
+      "episodes": 10,
+      "ticks": 6911,
+      "strikes": 14,
+      "hits": 10,
+      "misses": 4,
+      "escapes": 3,
+      "hit_rate": 0.7142857142857143,
+      "first_strike_hit_rate": 0.7,
+      "incomplete_strikes": 0,
+      "edge_outcomes": {
+        "hit_near_wall": 2,
+        "miss_near_wall": 1
+      },
+      "alert_count": 176,
+      "escape_count": 54,
+      "dnp01_threshold_crossings": 107,
+      "escape_latency_seconds": {
+        "n": 4,
+        "mean": 0.08499999999999999,
+        "median": 0.06,
+        "definition": "first new ESCAPE within 2 s after strike start minus neural threat onset in the indexed window (1 s before to 2 s after); unavailable/preexisting escapes excluded"
+      },
+      "tick_populations": {
+        "all": 6911,
+        "alive_post_step": 5425,
+        "definition": "alive means post-step fly.alive; fatal ticks excluded from alive-only statistics"
+      },
+      "threat_state_fraction_all": {
+        "ALERT": 0.18390970915931124,
+        "CALM": 0.4296049775719867,
+        "ESCAPE": 0.38648531326870206
+      },
+      "threat_state_fraction_alive": {
+        "ALERT": 0.2342857142857143,
+        "CALM": 0.5472811059907834,
+        "ESCAPE": 0.2184331797235023
+      },
+      "ecological_state_fraction_all": {
+        "ALERT": 0.1841991028794675,
+        "ESCAPE": 0.38648531326870206,
+        "EXPLORE": 0.06279843727391116,
+        "ODOR_TRACK": 0.015482564028360584,
+        "RECOVER": 0.35103458254955866
+      },
+      "ecological_state_fraction_alive": {
+        "ALERT": 0.23465437788018434,
+        "ESCAPE": 0.2184331797235023,
+        "EXPLORE": 0.08,
+        "ODOR_TRACK": 0.019723502304147465,
+        "RECOVER": 0.4471889400921659
+      },
+      "speed_bl_s_all": {
+        "n": 6911,
+        "mean": 8.397713513194367,
+        "p50": 8.044283170690212,
+        "p75": 11.223035838927789,
+        "p90": 16.3114164985181,
+        "p95": 19.71411407464518,
+        "max": 41.666666666666664
+      },
+      "speed_bl_s_alive": {
+        "n": 5425,
+        "mean": 10.697990431278575,
+        "p50": 8.735679134836555,
+        "p75": 12.945713443928925,
+        "p90": 17.53893908010934,
+        "p95": 20.67493621895465,
+        "max": 41.666666666666664
+      },
+      "alive_approach": {
+        "physical_speed": {
+          "n": 5166,
+          "mean": 348.08084396495565,
+          "p50": 180.22965136204454,
+          "p75": 433.8636223438571,
+          "p90": 927.4566778474009,
+          "p95": 1310.9127763298375,
+          "max": 1796.1849438924748
+        },
+        "pointer_speed": {
+          "n": 5156,
+          "mean": 320.40603438464126,
+          "p50": 141.4213562373095,
+          "p75": 316.22776601683796,
+          "p90": 707.1067811865476,
+          "p95": 1240.9478679175154,
+          "max": 85205.2815264406
+        },
+        "target_error": {
+          "n": 5156,
+          "mean": 109.72664040424186,
+          "p50": 8.148351769323853,
+          "p75": 26.943204142677633,
+          "p90": 409.99014742458894,
+          "p95": 783.0809135238785,
+          "max": 1704.1056305288175
+        },
+        "speed_cap": 1800.0,
+        "fraction_at_95pct_cap": 0.016066589237320943
+      },
+      "speed_bl_s": {
+        "mean": 10.678306916225624,
+        "peak": 41.666666666666664
+      },
+      "threat_state_fraction": {
+        "CALM": 0.4296049775719867,
+        "ALERT": 0.18390970915931124,
+        "ESCAPE": 0.38648531326870206
+      },
+      "ecological_state_fraction": {
+        "EXPLORE": 0.06279843727391116,
+        "ODOR_TRACK": 0.015482564028360584,
+        "ALERT": 0.1841991028794675,
+        "RECOVER": 0.35103458254955866,
+        "ESCAPE": 0.38648531326870206
+      },
+      "wall_time_seconds": 38.36,
+      "perimeter_time_seconds": 44.4,
+      "contact_time_seconds": 2.6,
+      "odor_encounters": 9,
+      "landing_attempts": 0,
+      "attack_direction_bins_degrees": {
+        "45": 2,
+        "90": 2,
+        "135": 1,
+        "180": 2,
+        "225": 1,
+        "270": 2,
+        "315": 4
+      },
+      "full_brain_recorded": false,
+      "learning_updates": 0
+    },
+    "source_files_sha256": {
+      "episodes.jsonl": "7f194e5568069283ad04d45f2bc1a2fb5921de13e7a3f373fe768c30beb071f9",
+      "events.jsonl": "7052f3bc82f75a621ce7d05ce930e66e1a750d4bf7246fee9fc0bafc06583737",
+      "inputs.jsonl": "a0d89d4d39df79f3c37211eb0e1fb1382b9835f56321dcdd155c8536d82a511c",
+      "manifest.json": "63c8b53785e04fe5716673e5b43b93cb6a50e6668e9a81443f999ea2faa3d11c",
+      "policy_observations.jsonl": "dd8af4bee4690c864ab3200f0fcce01f46aad385e076e1a3f856abb4f5b23deb",
+      "REPORT.md": "8b01db7de4697c7ca108878d19d51adb82437a482364d19b56213508ad58323f",
+      "source_snapshot.zip": "7b2b43097f4f6bbd376b4a7b3be655157c49e2d1576bc3c0d75575c04a90905c",
+      "strikes.json": "c8ef3bedaa7a64ea1a31e54bf385e68494b0aa87876f34ca97fbe0dc3e4d4bd6",
+      "summary.json": "4525de2bb6e19fbc8a92eb271ff3ecea602b7515e2a9af1b3d0d8cc7049fe00a",
+      "ticks.jsonl": "763935d0d459ddd43e3361cbd05dec5bebe391f1b749cf2ac7261ca945407728"
+    },
+    "independent_summary_checks": "all/alive counts, threat/ecology fractions, median speeds and approach cap fraction match raw ticks",
+    "reachable_alive_ticks": 5425,
+    "phase_speed_all_ticks": {
+      "approach": {
+        "n": 6393,
+        "p50": 176.4767177769152,
+        "p90": 1080.8286801801476,
+        "max": 1799.2894067669038
+      },
+      "commit": {
+        "n": 56,
+        "p50": 1026.812772092891,
+        "p90": 1495.9797110324107,
+        "max": 1536.1868670559559
+      },
+      "fast_swing": {
+        "n": 84,
+        "p50": 1194.3041049776061,
+        "p90": 1749.1796861867795,
+        "max": 2074.3938810929208
+      },
+      "active_contact": {
+        "n": 70,
+        "p50": 1603.9478259839402,
+        "p90": 2212.1239414470565,
+        "max": 2344.4917524343095
+      },
+      "follow_through": {
+        "n": 98,
+        "p50": 1145.7606293861431,
+        "p90": 2147.219645708664,
+        "max": 2361.342456104403
+      },
+      "recovery": {
+        "n": 210,
+        "p50": 493.8590274462333,
+        "p90": 988.4084965889888,
+        "max": 1482.649734203354
+      }
+    },
+    "fast_swing_and_active_contact_all_ticks": {
+      "n": 154,
+      "p50": 1385.2011519124446,
+      "p90": 2103.637532948881,
+      "max": 2344.4917524343095
+    },
+    "max_head_displacement_per_tick": 47.28475705052791,
+    "pointer_discontinuities": {
+      "offline_diagnostic_threshold_units_s": 10000,
+      "not_biological_threshold": true,
+      "events": [
+        {
+          "global_tick": 4997,
+          "pointer_speed": 85205.2815264406,
+          "physical_speed": 114.45790438224871,
+          "head_displacement": 0.9711006601003502,
+          "phase": "approach"
+        },
+        {
+          "global_tick": 6873,
+          "pointer_speed": 32554.454380314837,
+          "physical_speed": 142.24564484254321,
+          "head_displacement": 1.5670753611053567,
+          "phase": "approach"
+        }
+      ],
+      "behavior_or_schema_changed": false
+    },
+    "calibrations": {
+      "game_config.json": {
+        "matching_committed_record": "results/game/calibration.json",
+        "runtime_selection": {
+          "threshold": 1.45,
+          "origin": "artifacts/game/calibration.json"
+        },
+        "escape_threshold": 1.45,
+        "detection_rate": 1.0,
+        "median_latency_seconds": 0.06,
+        "false_trigger_ticks": 0,
+        "trials_per_condition": 28,
+        "no_loom": {
+          "ticks": 2520,
+          "mean": 0.08753465546774793,
+          "p99": 1.0006099456580706,
+          "max": 1.4493297338485718
+        },
+        "loom": {
+          "mean_peak": 3.805946049591707,
+          "min_peak": 2.734965000923694,
+          "max_peak": 4.85231913626194
+        }
+      },
+      "game_play_config.json": {
+        "matching_committed_record": "results/game/calibration_game.json",
+        "runtime_selection": {
+          "threshold": 1.35,
+          "origin": "artifacts/game/calibration_game.json"
+        },
+        "escape_threshold": 1.35,
+        "detection_rate": 1.0,
+        "median_latency_seconds": 0.06,
+        "false_trigger_ticks": 0,
+        "trials_per_condition": 28,
+        "no_loom": {
+          "ticks": 2520,
+          "mean": 0.07374839704236186,
+          "p99": 1.000001701505099,
+          "max": 1.3011942505836487
+        },
+        "loom": {
+          "mean_peak": 3.9904235455175825,
+          "min_peak": 2.7882657051086426,
+          "max_peak": 4.771536330139497
+        }
+      },
+      "game_room_config.json": {
+        "matching_committed_record": "results/game/calibration_room_m1_7_1.json",
+        "runtime_selection": {
+          "threshold": 1.45,
+          "origin": "artifacts/game/calibration_room_m1_7_1.json"
+        },
+        "escape_threshold": 1.45,
+        "detection_rate": 1.0,
+        "median_latency_seconds": 0.08,
+        "false_trigger_ticks": 0,
+        "trials_per_condition": 28,
+        "no_loom": {
+          "ticks": 2520,
+          "mean": 0.07753630479934111,
+          "p99": 1.00000011920929,
+          "max": 1.4493308663368225
+        },
+        "loom": {
+          "mean_peak": 4.099191028739385,
+          "min_peak": 2.9138511270284653,
+          "max_peak": 5.9251708984375
+        }
+      }
+    }
+  },
+  "human_replay": {
+    "exact": true,
+    "ticks_verified": 6911,
+    "input_operations": 6924,
+    "episodes": 10,
+    "scope": "all deterministic tick fields including compact neural readouts; presentation/wall time excluded",
+    "source_verified": true,
+    "runtime_verified": {
+      "numba_threads": 8,
+      "numba_threading_layer": "omp"
+    },
+    "full_brain_snapshots_compared": false,
+    "validation_wall_seconds": 28.638560899998993,
+    "caller_threads_before": 1,
+    "caller_threads_after": 1,
+    "human_files_unchanged": 10
+  },
+  "pointer_bands": [
+    {
+      "pointer_band": "stationary",
+      "range_units_s": [
+        0,
+        1
+      ],
+      "ticks": 1426,
+      "near_cap_fraction": 0.0,
+      "swatter_speed": {
+        "n": 1426,
+        "mean": 207.42597982938034,
+        "p25": 3.483215207830513,
+        "p50": 53.501495082340206,
+        "p75": 176.55248673181762,
+        "p90": 863.6231192527052,
+        "p95": 899.9211925336947,
+        "max": 1468.5513692882412
+      },
+      "target_error": {
+        "n": 1426,
+        "mean": 132.65456619147216,
+        "p25": 0.4525119795636613,
+        "p50": 3.9084485850458304,
+        "p75": 18.059664155586688,
+        "p90": 605.4372611097019,
+        "p95": 1013.4303665414227,
+        "max": 1649.3914875124678
+      },
+      "theta": {
+        "n": 1426,
+        "mean": 0.21803185076167447,
+        "p25": 0.11436863968836934,
+        "p50": 0.21254343594333727,
+        "p75": 0.28489976745670637,
+        "p90": 0.3757612146629201,
+        "p95": 0.40978537235959234,
+        "max": 0.4749718385690598
+      },
+      "theta_dot": {
+        "n": 1426,
+        "mean": -0.0022799670999035042,
+        "p25": -0.0457374842119683,
+        "p50": -0.005124056894598161,
+        "p75": 0.04773460335387378,
+        "p90": 0.15001347844470214,
+        "p95": 0.2183154526310814,
+        "max": 0.931315940271768
+      },
+      "threat_state_fraction": {
+        "0": 0.6774193548387096,
+        "1": 0.1935483870967742,
+        "2": 0.12903225806451613
+      }
+    },
+    {
+      "pointer_band": "slow",
+      "range_units_s": [
+        1,
+        300
+      ],
+      "ticks": 2232,
+      "near_cap_fraction": 0.0,
+      "swatter_speed": {
+        "n": 2232,
+        "mean": 211.95947468958818,
+        "p25": 85.56088251421411,
+        "p50": 145.16016078284594,
+        "p75": 233.4128906833645,
+        "p90": 405.9904268592599,
+        "p95": 819.4977428417639,
+        "max": 1628.570972106271
+      },
+      "target_error": {
+        "n": 2232,
+        "mean": 46.2931205907735,
+        "p25": 3.346133810195565,
+        "p50": 6.312029581098107,
+        "p75": 11.139164218918763,
+        "p90": 23.475413718343624,
+        "p95": 310.6693060285059,
+        "max": 1522.125313261078
+      },
+      "theta": {
+        "n": 2232,
+        "mean": 0.29110860367564895,
+        "p25": 0.24240837762835887,
+        "p50": 0.28209089972298446,
+        "p75": 0.33356812178450373,
+        "p90": 0.39749097951222495,
+        "p95": 0.42400655301175255,
+        "max": 0.5046644245866838
+      },
+      "theta_dot": {
+        "n": 2232,
+        "mean": 0.0006806685991739114,
+        "p25": -0.06456489217201572,
+        "p50": 0.004434429581124527,
+        "p75": 0.0794470442740558,
+        "p90": 0.1800789778314999,
+        "p95": 0.2612776844185552,
+        "max": 0.9806904993198168
+      },
+      "threat_state_fraction": {
+        "0": 0.5694444444444444,
+        "1": 0.2589605734767025,
+        "2": 0.17159498207885304
+      }
+    },
+    {
+      "pointer_band": "moderate",
+      "range_units_s": [
+        300,
+        900
+      ],
+      "ticks": 1104,
+      "near_cap_fraction": 0.007246376811594203,
+      "swatter_speed": {
+        "n": 1104,
+        "mean": 501.30052583003516,
+        "p25": 236.98219708934948,
+        "p50": 363.7479265372632,
+        "p75": 671.4823051526735,
+        "p90": 1086.4926640321212,
+        "p95": 1284.0531262185157,
+        "max": 1784.1128080836863
+      },
+      "target_error": {
+        "n": 1104,
+        "mean": 120.72385918682986,
+        "p25": 8.655788894597656,
+        "p50": 17.436597149887184,
+        "p75": 44.85327415138765,
+        "p90": 498.1916184833964,
+        "p95": 769.3754393840301,
+        "max": 1510.4289154957185
+      },
+      "theta": {
+        "n": 1104,
+        "mean": 0.28427245763705866,
+        "p25": 0.22208406004393277,
+        "p50": 0.28264148847615395,
+        "p75": 0.3460475770481557,
+        "p90": 0.3933124786871699,
+        "p95": 0.4123441893738119,
+        "max": 0.5054397577271003
+      },
+      "theta_dot": {
+        "n": 1104,
+        "mean": 0.053468900000308184,
+        "p25": -0.034251098304876465,
+        "p50": 0.03737179144020358,
+        "p75": 0.1357466407705031,
+        "p90": 0.2711838468120419,
+        "p95": 0.37931093729518756,
+        "max": 1.239241616362771
+      },
+      "threat_state_fraction": {
+        "0": 0.49818840579710144,
+        "1": 0.24818840579710144,
+        "2": 0.2536231884057971
+      }
+    },
+    {
+      "pointer_band": "fast",
+      "range_units_s": [
+        900,
+        1800
+      ],
+      "ticks": 241,
+      "near_cap_fraction": 0.15767634854771784,
+      "swatter_speed": {
+        "n": 241,
+        "mean": 1096.9992734827933,
+        "p25": 712.518037058664,
+        "p50": 1058.113663322349,
+        "p75": 1573.7639114090534,
+        "p90": 1766.6875842302236,
+        "p95": 1787.9728802365748,
+        "max": 1796.1849438924748
+      },
+      "target_error": {
+        "n": 241,
+        "mean": 293.06166271203153,
+        "p25": 47.50515696307283,
+        "p50": 158.44456248433994,
+        "p75": 412.3529719837273,
+        "p90": 702.9854026090322,
+        "p95": 1161.0965789958823,
+        "max": 1350.0930812369409
+      },
+      "theta": {
+        "n": 241,
+        "mean": 0.269702315343316,
+        "p25": 0.17893925939523306,
+        "p50": 0.27716473583762674,
+        "p75": 0.3574344587095775,
+        "p90": 0.39652166354720647,
+        "p95": 0.42296241255800726,
+        "max": 0.4938462374084018
+      },
+      "theta_dot": {
+        "n": 241,
+        "mean": 0.18023455455718,
+        "p25": 0.028539691138329548,
+        "p50": 0.14989279098869546,
+        "p75": 0.33301491968815017,
+        "p90": 0.5757159674734835,
+        "p95": 0.6842840564947966,
+        "max": 1.154749610187189
+      },
+      "threat_state_fraction": {
+        "0": 0.3278008298755187,
+        "1": 0.29045643153526973,
+        "2": 0.3817427385892116
+      }
+    },
+    {
+      "pointer_band": "above_cap",
+      "range_units_s": [
+        1800,
+        null
+      ],
+      "ticks": 153,
+      "near_cap_fraction": 0.24183006535947713,
+      "swatter_speed": {
+        "n": 153,
+        "mean": 1378.5473871338595,
+        "p25": 1208.1636311743848,
+        "p50": 1540.815433948924,
+        "p75": 1704.6720905197537,
+        "p90": 1760.1170387113464,
+        "p95": 1782.1859956701912,
+        "max": 1795.142698234886
+      },
+      "target_error": {
+        "n": 153,
+        "mean": 453.2803929461801,
+        "p25": 220.11049132009467,
+        "p50": 375.1455063051329,
+        "p75": 514.6159041449066,
+        "p90": 1056.2476224626714,
+        "p95": 1277.094647847506,
+        "max": 1704.1056305288175
+      },
+      "theta": {
+        "n": 153,
+        "mean": 0.22278169658971128,
+        "p25": 0.10852822973101303,
+        "p50": 0.1731565153113671,
+        "p75": 0.3374648128558358,
+        "p90": 0.38880123362227803,
+        "p95": 0.3969789985921282,
+        "max": 0.46283280478666655
+      },
+      "theta_dot": {
+        "n": 153,
+        "mean": 0.2927062386142202,
+        "p25": 0.09498772287609425,
+        "p50": 0.17949784616162756,
+        "p75": 0.44748101012972163,
+        "p90": 0.7288693943867404,
+        "p95": 0.8043864518033312,
+        "max": 1.3216835706490515
+      },
+      "threat_state_fraction": {
+        "0": 0.39869281045751637,
+        "1": 0.32679738562091504,
+        "2": 0.27450980392156865
+      }
+    }
+  ],
+  "protected": {
+    "original_protected_unchanged": 20,
+    "historical_results_unchanged": 24,
+    "human_recording_files_unchanged": 10,
+    "unchanged_game_modules": [
+      "game/action.py",
+      "game/app.py",
+      "game/session.py",
+      "game/ecology.py",
+      "game/ecological_sense.py",
+      "game/enclosure.py",
+      "game/flight.py",
+      "game/fly.py",
+      "game/perception.py",
+      "game/recording.py",
+      "game/room.py",
+      "game/saccade.py",
+      "game/modes.py"
+    ],
+    "fly_ecology_strike_limits_unchanged": true,
+    "calibrations": {
+      "game_config.json": {
+        "threshold": 1.45,
+        "origin": "artifacts/game/calibration.json"
+      },
+      "game_play_config.json": {
+        "threshold": 1.35,
+        "origin": "artifacts/game/calibration_game.json"
+      },
+      "game_room_config.json": {
+        "threshold": 1.45,
+        "origin": "artifacts/game/calibration_room_m1_7_1.json"
+      }
+    },
+    "original_verification": {
+      "prediction_records_verified": 36,
+      "source_hashes_match": true,
+      "held_out_neuronal_replays": [
+        {
+          "task": "side",
+          "seed": 101,
+          "trial_index": 80,
+          "exact": true
+        },
+        {
+          "task": "order",
+          "seed": 101,
+          "trial_index": 80,
+          "exact": true
+        }
+      ],
+      "frozen_weights_verified": true
+    }
+  },
+  "native_smoke": {
+    "driver": "windows",
+    "frames": 446,
+    "phases": [
+      "active_contact",
+      "approach",
+      "commit",
+      "fast_swing",
+      "follow_through",
+      "recovery"
+    ],
+    "controls": [
+      "click",
+      "fullscreen",
+      "fullscreen_capture",
+      "pause",
+      "restart",
+      "resume",
+      "windowed"
+    ],
+    "session_directory": "D:\\Projects\\flybrain-lab\\results\\game\\sessions\\20260921T042431.422571Z-dcc6af5c",
+    "replay": {
+      "exact": true,
+      "ticks_verified": 206,
+      "input_operations": 211,
+      "episodes": 2,
+      "scope": "all deterministic tick fields including compact neural readouts; presentation/wall time excluded",
+      "source_verified": true,
+      "runtime_verified": {
+        "numba_threads": 4,
+        "numba_threading_layer": "omp"
+      },
+      "full_brain_snapshots_compared": false,
+      "report_path": "D:\\Projects\\flybrain-lab\\results\\game\\sessions\\20260921T042431.422571Z-dcc6af5c\\replays\\af0e0e35a7f2.json"
+    }
+  },
+  "synthetic_replay": {
+    "exact": true,
+    "ticks_verified": 1200,
+    "input_operations": 1212,
+    "episodes": 3,
+    "scope": "all deterministic tick fields including compact neural readouts; presentation/wall time excluded",
+    "source_verified": true,
+    "runtime_verified": {
+      "numba_threads": 4,
+      "numba_threading_layer": "omp"
+    },
+    "full_brain_snapshots_compared": false,
+    "report_path": "D:\\Projects\\flybrain-lab\\results\\game\\sessions\\20260921T042504.900846Z-ef587280\\replays\\f34c254bf8da.json"
+  },
+  "headless_smoke": {
+    "arenas": [
+      "lab",
+      "game",
+      "room"
+    ],
+    "seconds_each": 3,
+    "seed": 101,
+    "all_exit_codes": 0
+  },
+  "implementation_changes_after_human_acceptance": false,
+  "optional_pointer_flag": "existing raw WORLD diagnostics retained; outliers identified offline only",
+  "freeze": "approach, strike phases, swept collision, partial-offscreen geometry, recorder/replay interface and policy isolation"
+}

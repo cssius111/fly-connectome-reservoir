@@ -1,0 +1,110 @@
+{
+  "created_utc": "2026-09-20T20:46:05Z",
+  "rule": "smallest sweep-grid value with zero false triggers across all no-loom ticks",
+  "escape_threshold": 1.45,
+  "detection_rate": 1.0,
+  "median_latency_seconds": 0.08,
+  "false_trigger_ticks": 0,
+  "detection_target": 0.9,
+  "detection_target_met": true,
+  "trials_per_condition": 28,
+  "tick_seconds": 0.02,
+  "no_loom": {
+    "ticks": 2520,
+    "mean": 0.07753630479934111,
+    "p99": 1.00000011920929,
+    "max": 1.4493308663368225
+  },
+  "loom": {
+    "mean_peak": 4.099191028739385,
+    "min_peak": 2.9138511270284653,
+    "max_peak": 5.9251708984375
+  },
+  "config_sha256": "b6748671d2688e7b7fc08e556b535f1d7e4847dc2cebae937cb5dd6c040e2066",
+  "provenance": {
+    "schema_version": 2,
+    "measurement_protocol": "fixed-fly-v2",
+    "config_hash_format": "canonical-json-sort-keys-ascii-compact",
+    "game_config_sha256": "dd1d7106a7e40ec12cd4dc7179d4e8823de2df939fc5739cd7237dcf3d0fc76e",
+    "flybrain_version": "0.1.0",
+    "encoder_population_rule": "min-per-type-per-side-v1",
+    "encoder_seed": 20260917,
+    "encoder_types": {
+      "loom": [
+        "LPLC2"
+      ],
+      "threat": [
+        "LC4"
+      ]
+    },
+    "sensory_input": false,
+    "tick_seconds": 0.02,
+    "brain_dt_seconds": 0.02
+  },
+  "measurement_conditions": {
+    "collisions_enabled": false,
+    "escape_disabled": true,
+    "fly_motion_enabled": false,
+    "swatter_settle_ticks": 300,
+    "note": "fly position and heading are fixed; velocity stays zero, wander is disabled, and collisions/escape actions are disabled"
+  },
+  "neurons": 166700,
+  "connections": 25088107,
+  "input_populations": {
+    "loom": {
+      "types": [
+        "LPLC2"
+      ],
+      "available_L": 94,
+      "available_R": 91,
+      "used_per_side": 91
+    },
+    "threat": {
+      "types": [
+        "LC4"
+      ],
+      "available_L": 71,
+      "available_R": 55,
+      "used_per_side": 55
+    }
+  },
+  "versions": {
+    "flybrain": "0.1.0",
+    "numpy": "2.4.6",
+    "scipy": "1.17.1",
+    "numba": "0.67.0"
+  },
+  "measurement_reuse": {
+    "kind": "fixed-fly-equivalent-config-transfer; not a new measurement",
+    "source_record": "results/game/calibration_room_m1_8_a.json",
+    "source_sha256": "ef20fd1fe92cb50a1dbd5bbf5d7bd4df1377340c5869c43c207cdc55c6788ebb",
+    "source_provenance": {
+      "schema_version": 2,
+      "measurement_protocol": "fixed-fly-v2",
+      "config_hash_format": "canonical-json-sort-keys-ascii-compact",
+      "game_config_sha256": "73a2709585ae63d14cf520a151544d3def8681446c8b4ad58ac3f5471a4aaf7c",
+      "flybrain_version": "0.1.0",
+      "encoder_population_rule": "min-per-type-per-side-v1",
+      "encoder_seed": 20260917,
+      "encoder_types": {
+        "loom": [
+          "LPLC2"
+        ],
+        "threat": [
+          "LC4"
+        ]
+      },
+      "sensory_input": false,
+      "tick_seconds": 0.02,
+      "brain_dt_seconds": 0.02
+    },
+    "original_measurement": "results/game/calibration_room_m1_7_1.json",
+    "original_measurement_sha256": "1df05b3f85885f6074253fccc407b451f998cd8302cc318baa86f832316f1a44",
+    "reason": "Only the kinematics block, config_version and calibration_paths differ. room_kinematic_scale is 1.0, a no-op mapping applied solely to non-neural ecological locomotion speed. The fixed-fly-v2 protocol disables ecology, lifecycle, fly motion and collisions, so retina, brain, encoder, world and swatter inputs are identical and the measured distribution is unchanged.",
+    "changed_config_paths": [
+      "kinematics",
+      "config_version",
+      "policy.calibration_paths"
+    ]
+  }
+}

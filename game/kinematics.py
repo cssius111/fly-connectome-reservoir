@@ -1,0 +1,417 @@
+"""Kinematic profile interface between behavioral context and WORLD physics.
+
+    behavioral / ecological / lifecycle context
+        -> KinematicProfile request      (what the fly is asking its body to do)
+        -> KinematicExecutor             (how that request becomes body velocity/yaw)
+        -> WORLD integration, collision and containment
+
+M1.8-B1 is a **no-op behavioral refactor**. Every effective value produced here equals
+the accepted pre-B1 value, the arithmetic grouping of each update is preserved exactly,
+and no new random draw is introduced. The envelope, limit and persistence fields are
+inert hooks for M1.8-B2 and are ignored by the executor while they are None.
+
+Nothing in this module maps literature magnitudes into ROOM. There is deliberately no
+universal fly-speed constant: see game/M1_8_B_PLAN.md section 2.1, where the single
+class-C `room_kinematic_scale` mapping is defined but its value is left unchosen.
+
+Two relaxation laws exist because the accepted code uses two distinct formulas with
+different floating-point grouping. They are kept separate rather than unified, so that
+B1 can be accepted on bit-identical replay instead of on a tolerance.
+"""
+from dataclasses import dataclass
+import copy
+import math
+
+import numpy as np
+
+# Ecological locomotion contexts that M1.8-B2b may eventually sample. ALERT and ESCAPE
+# are deliberately absent: they remain neural-override paths, so the configured
+# ecology.speed_bl_s ALERT/ESCAPE envelopes are currently non-authoritative and are
+# bypassed whenever threat_priority holds. LAND_APPROACH and TAKEOFF stay owned by the
+# frozen M1.8-A lifecycle. See results/game/M1_8_B2A.md.
+SAMPLED_CONTEXTS = frozenset({'EXPLORE', 'TRANSIT', 'ODOR_TRACK', 'ODOR_SEARCH', 'RECOVER'})
+NEURAL_OVERRIDE_CONTEXTS = frozenset({'ALERT', 'ESCAPE'})
+LIFECYCLE_OWNED_CONTEXTS = frozenset({'LAND_OR_PERCH'})
+
+# Ordinary airborne cruise: a = k * (target*direction - v); v += a * dt
+DAMPED_CRUISE = 'damped_cruise'
+# Lifecycle landing approach: alpha = 1 - exp(-dt/tau); v += alpha * (target*direction - v)
+EXPONENTIAL_APPROACH = 'exponential_approach'
+# WORLD sets the velocity directly (stationary contact, launch impulse); the executor
+# performs no translation of its own.
+DIRECT = 'direct'
+
+RELAXATIONS = (DAMPED_CRUISE, EXPONENTIAL_APPROACH, DIRECT)
+
+
+@dataclass(frozen=True, slots=True)
+class KinematicCaps:
+    """Three separated ceilings, replacing one overloaded `fly.max_speed`.
+
+    All three are **Class C** engineering values: numerical stability and simulator
+    protection. None of them is a species flight maximum, and none is a biological
+    escape-speed constant. See results/game/M1_8_B2B_I.md.
+
+    * `ecological`      truncates commanded (later: sampled) ecological locomotion.
+    * `legacy_accepted` the accepted constraint on threat-priority cruise, the neural
+      escape impulse and the frozen M1.8-A lifecycle bounds. Held at the legacy value.
+    * `safety_ceiling`  a global numerical guard applied last, on every path. It should
+      never bind in normal play.
+
+    M1.8-B2b-i sets all three to the legacy `fly.max_speed`, so every clamp reduces to
+    the accepted arithmetic and the refactor is bit-identical.
+    """
+
+    ecological: float
+    legacy_accepted: float
+    safety_ceiling: float
+
+    def __post_init__(self):
+        for name in ('ecological', 'legacy_accepted', 'safety_ceiling'):
+            value = getattr(self, name)
+            if not math.isfinite(value) or value <= 0.0:
+                raise ValueError('kinematic cap must be positive and finite: ' + name)
+
+    @classmethod
+    def from_config(cls, config: dict, legacy_max_speed: float):
+        """Absent keys fall back to the legacy ceiling, so LAB and GAME are unchanged."""
+        block = config.get('kinematics', {})
+        legacy = float(legacy_max_speed)
+        return cls(float(block.get('ecological_cap_units_s', legacy)),
+                   float(block.get('legacy_accepted_cap_units_s', legacy)),
+                   float(block.get('safety_ceiling_units_s', legacy)))
+
+    def effective(self, profile_cap: float) -> float:
+        """The single clamp the executor applies: the tighter of profile and guard."""
+        return min(profile_cap, self.safety_ceiling)
+
+
+@dataclass(frozen=True, slots=True)
+class KinematicProfile:
+    """A request for body kinematics, separate from the context that produced it.
+
+    `target_speed` is in world units/s and already resolved; `relaxation_rate` is a
+    damping rate in 1/s for DAMPED_CRUISE and a time constant in seconds for
+    EXPONENTIAL_APPROACH. `context` is an identity label for diagnostics only and never
+    reaches a policy observation.
+    """
+
+    context: str
+    relaxation: str = DIRECT
+    target_speed: float = 0.0
+    relaxation_rate: float = 0.0
+    steering_rad_s: float = 0.0
+    spontaneous_clock_rate: float = 1.0
+    turn_gain: float = 1.0
+    # `effective_cap` is what the executor clamps against. `profile_cap` and
+    # `safety_ceiling` record which separated ceiling produced it, so the overloaded
+    # legacy `max_speed` no longer has to mean three different things at once.
+    effective_cap: float = math.inf
+    profile_cap: float = math.inf
+    safety_ceiling: float = math.inf
+    clamp_speed: bool = False
+    # ---- inert M1.8-B2 hooks; None means "use the accepted B1 behavior" -------------
+    speed_envelope_bl_s: tuple[float, float] | None = None
+    acceleration_limit: float | None = None
+    deceleration_limit: float | None = None
+    persistence_seconds: float | None = None
+
+    def __post_init__(self):
+        if self.relaxation not in RELAXATIONS:
+            raise ValueError('unknown kinematic relaxation law: ' + str(self.relaxation))
+        if not self.context:
+            raise ValueError('kinematic profile requires a context identity')
+        if self.effective_cap > min(self.profile_cap, self.safety_ceiling) + 1e-12:
+            raise ValueError('effective cap must not exceed its components')
+        for name in ('target_speed', 'relaxation_rate', 'steering_rad_s',
+                     'spontaneous_clock_rate', 'turn_gain'):
+            if not math.isfinite(getattr(self, name)):
+                raise ValueError('kinematic profile requires finite ' + name)
+        if self.target_speed < 0.0 or self.relaxation_rate < 0.0:
+            raise ValueError('kinematic profile speeds and rates must be non-negative')
+        if self.relaxation is EXPONENTIAL_APPROACH and self.relaxation_rate <= 0.0:
+            raise ValueError('exponential approach requires a positive time constant')
+        if self.speed_envelope_bl_s is not None:
+            low, high = self.speed_envelope_bl_s
+            if not 0.0 <= low <= high:
+                raise ValueError('invalid speed envelope')
+
+
+class KinematicResolver:
+    """Maps behavioral context to a profile request.
+
+    Pure: it holds only immutable body constants, performs no random draw and mutates
+    no state, so introducing it cannot change any RNG call order.
+    """
+
+    def __init__(self, baseline_speed: float, max_speed: float, body_length: float,
+                 damping: float, room_kinematic_scale: float = 1.0,
+                 caps: 'KinematicCaps | None' = None):
+        self.baseline_speed = float(baseline_speed)
+        # Retained as the legacy alias for callers outside the kinematics layer; the
+        # separated ceilings in `self.caps` are what this resolver actually applies.
+        self.max_speed = float(max_speed)
+        self.caps = caps if caps is not None else KinematicCaps(
+            float(max_speed), float(max_speed), float(max_speed))
+        self.body_length = float(body_length)
+        self.damping = float(damping)
+        # Class C simulator/environment mapping, not a measured biological constant.
+        # 1.0 is the accepted no-op value; no literature magnitude has been adopted.
+        self.room_kinematic_scale = float(room_kinematic_scale)
+        if not math.isfinite(self.room_kinematic_scale) or self.room_kinematic_scale <= 0.0:
+            raise ValueError('room_kinematic_scale must be positive and finite')
+
+    def ecological_units(self, speed_bl_s: float) -> float:
+        """BL/s -> body length -> ROOM mapping -> world units/s.
+
+        The single site where the ROOM mapping is applied. At scale 1.0 the trailing
+        multiply is exact in IEEE 754, so the accepted arithmetic is bit-identical.
+        """
+        return speed_bl_s*self.body_length*self.room_kinematic_scale
+
+    def airborne(self, command, threat_priority: bool,
+                 sampled_speed_bl_s: float | None = None,
+                 relaxation_rate: float | None = None) -> KinematicProfile:
+        """Ordinary flight. Neural threat and pulses outrank the ecological command.
+
+        `sampled_speed_bl_s` is the M1.8-B2b hook. None means "no sample taken; use the
+        ecological command unchanged", which is the only behavior B2a produces.
+        `relaxation_rate` is the M1.8-B2e hook for the sampled episode damping rate; None
+        keeps the accepted damping. Neither applies on threat-priority ticks.
+        """
+        if command is None or threat_priority:
+            # Threat-priority cruise and the neural escape impulse share the accepted
+            # legacy constraint; B2b-i does not change its effective value.
+            cap = self.caps.legacy_accepted
+            return KinematicProfile(
+                context='baseline_cruise' if command is None else 'neural_priority',
+                relaxation=DAMPED_CRUISE, target_speed=self.baseline_speed,
+                relaxation_rate=self.damping, steering_rad_s=0.0,
+                spontaneous_clock_rate=1.0, effective_cap=self.caps.effective(cap),
+                profile_cap=cap, safety_ceiling=self.caps.safety_ceiling,
+                clamp_speed=True)
+        requested = (command.target_speed_bl_s if sampled_speed_bl_s is None
+                     else float(sampled_speed_bl_s))
+        cap = self.caps.ecological
+        return KinematicProfile(
+            context='ecology_' + command.state.lower(), relaxation=DAMPED_CRUISE,
+            target_speed=min(cap, self.ecological_units(requested)),
+            relaxation_rate=self.damping if relaxation_rate is None else float(relaxation_rate),
+            steering_rad_s=command.steering_rad_s,
+            spontaneous_clock_rate=command.spontaneous_clock_rate,
+            effective_cap=self.caps.effective(cap), profile_cap=cap,
+            safety_ceiling=self.caps.safety_ceiling, clamp_speed=True)
+
+    def landing_approach(self, target_speed_bl_s: float, tau_seconds: float,
+                         turn_rad_s: float) -> KinematicProfile:
+        """Lifecycle-owned visual approach. Ecological intent is not executed here."""
+        # Frozen M1.8-A: the lifecycle uses the accepted legacy constraint, and neither
+        # the ROOM mapping nor the ecological cap applies to it.
+        cap = self.caps.legacy_accepted
+        return KinematicProfile(
+            context='lifecycle_visual_approach', relaxation=EXPONENTIAL_APPROACH,
+            target_speed=min(cap, target_speed_bl_s*self.body_length),
+            relaxation_rate=float(tau_seconds), steering_rad_s=turn_rad_s,
+            spontaneous_clock_rate=0.0, effective_cap=self.caps.effective(cap),
+            profile_cap=cap, safety_ceiling=self.caps.safety_ceiling, clamp_speed=False)
+
+    def lifecycle_direct(self, context: str, target_speed: float = 0.0) -> KinematicProfile:
+        """Stationary contact and launch, where WORLD sets velocity directly."""
+        cap = self.caps.legacy_accepted
+        return KinematicProfile(context=context, relaxation=DIRECT,
+                                target_speed=target_speed, spontaneous_clock_rate=0.0,
+                                effective_cap=self.caps.effective(cap), profile_cap=cap,
+                                safety_ceiling=self.caps.safety_ceiling,
+                                clamp_speed=False)
+
+
+class KinematicExecutor:
+    """Turns a profile request into body velocity and yaw.
+
+    Each branch reproduces the accepted pre-B1 arithmetic, including operand grouping,
+    so the refactor is verifiable by bit-identical trace comparison rather than by a
+    numerical tolerance.
+    """
+
+    @staticmethod
+    def translate(profile: KinematicProfile, fly, dt: float) -> None:
+        if profile.relaxation == DAMPED_CRUISE:
+            # Damping relaxes velocity toward forward cruise, retaining inertia and
+            # lateral escape momentum. Threat steering arrives only via Action.
+            ax = profile.relaxation_rate * (profile.target_speed * math.cos(fly.heading) - fly.vx)
+            ay = profile.relaxation_rate * (profile.target_speed * math.sin(fly.heading) - fly.vy)
+            fly.vx += ax * dt
+            fly.vy += ay * dt
+        elif profile.relaxation == EXPONENTIAL_APPROACH:
+            alpha = 1-math.exp(-dt/profile.relaxation_rate)
+            fly.vx += alpha*(profile.target_speed*math.cos(fly.heading)-fly.vx)
+            fly.vy += alpha*(profile.target_speed*math.sin(fly.heading)-fly.vy)
+        else:
+            return
+        if profile.clamp_speed:
+            speed = math.hypot(fly.vx, fly.vy)
+            if speed > profile.effective_cap:
+                fly.vx *= profile.effective_cap / speed
+                fly.vy *= profile.effective_cap / speed
+
+    @staticmethod
+    def yaw_rate(profile: KinematicProfile, neural_turn: float, drift_turn: float,
+                 pulse: float, dt: float, max_yaw_rate: float) -> float:
+        """Compose the actuator yaw rate. The clip is a safety bound, not a behavior."""
+        return float(np.clip(neural_turn + drift_turn
+                             + profile.steering_rad_s * profile.turn_gain
+                             + pulse / dt,
+                             -max_yaw_rate, max_yaw_rate))
+
+
+def _triangular_rate(spec: dict) -> tuple[float, float, float]:
+    """Validate a `triangular_symmetric` relaxation-rate specification (M1.8-B2e)."""
+    if spec.get('distribution') != 'triangular_symmetric':
+        raise ValueError('unsupported speed relaxation distribution: ' + str(spec.get('distribution')))
+    low, mode, high = (float(spec[k]) for k in ('min_per_second', 'mode_per_second', 'max_per_second'))
+    if not 0.0 < low < high or not low <= mode <= high:
+        raise ValueError('speed relaxation support must be positive, ordered and non-degenerate')
+    if abs((low + high)/2.0 - mode) > 1e-9:
+        raise ValueError('triangular_symmetric requires the mode at the midpoint')
+    return low, mode, high
+
+
+def _triangular_support(spec: dict, label: str) -> tuple[float, float, float]:
+    """Validate a `triangular_symmetric` speed specification and return its support."""
+    shape = spec.get('distribution')
+    if shape != 'triangular_symmetric':
+        raise ValueError('unsupported ' + label + ' speed distribution: ' + str(shape))
+    low, mode, high = (float(spec[k]) for k in ('min_bl_s', 'mode_bl_s', 'max_bl_s'))
+    if not 0.0 < low <= mode <= high:
+        raise ValueError(label + ' speed support must be positive and ordered')
+    if abs((low + high)/2.0 - mode) > 1e-9:
+        raise ValueError('triangular_symmetric requires the mode at the midpoint')
+    return low, mode, high
+
+
+class KinematicSampler:
+    """Owns the kinematics random streams, kept out of the pure resolver.
+
+        behavioral / ecological context
+          -> KinematicSampler     (this class: may draw a context-dependent speed)
+          -> KinematicResolver    (pure: request -> profile)
+          -> KinematicProfile
+          -> KinematicExecutor
+          -> physics
+
+    M1.8-B2a made the sampler a seeded, inert hook. B2b-ii samples EXPLORE from the
+    original stream (`rng`, offset +24593). B2b-iii adds ODOR_TRACK on its own stream
+    (`odor_track_rng`), and B2d adds ODOR_SEARCH and RECOVER on theirs, so every earlier
+    draw sequence is unchanged by construction. Each context is sampled only when its
+    specification is configured; without any, every call returns None and no draw is
+    taken.
+
+    M1.8-B2e adds an optional relaxation rate: whenever a new episode target is drawn, a
+    damping rate for that episode is drawn from its own stream (`relaxation_rng`) and
+    reported by `relaxation_rate_per_second()`; without the specification it is None and
+    the resolver keeps the accepted `fly.damping_per_second`.
+    """
+
+    # Unique among the seeded streams: flight +3907, room +6011, ecology +7013,
+    # spawn +8191, lifecycle +18001. Asserted pairwise-unique by test_game_kinematics.
+    SEED_OFFSET = 24593
+    ODOR_TRACK_SEED_OFFSET = 30011
+    ODOR_SEARCH_SEED_OFFSET = 36263   # M1.8-B2d
+    RECOVER_SEED_OFFSET = 42061       # M1.8-B2d
+    RELAXATION_SEED_OFFSET = 47933    # M1.8-B2e
+    # Context -> public spec attribute, stream attribute and seed offset.
+    CONTEXTS = {'EXPLORE': ('explore', 'rng', SEED_OFFSET),
+                'ODOR_TRACK': ('odor_track', 'odor_track_rng', ODOR_TRACK_SEED_OFFSET),
+                'ODOR_SEARCH': ('odor_search', 'odor_search_rng', ODOR_SEARCH_SEED_OFFSET),
+                'RECOVER': ('recover', 'recover_rng', RECOVER_SEED_OFFSET)}
+
+    def __init__(self, seed: int, explore: dict | None = None,
+                 odor_track: dict | None = None, odor_search: dict | None = None,
+                 recover: dict | None = None, relaxation: dict | None = None):
+        self.relaxation = dict(relaxation) if relaxation else None
+        self._relaxation_support = _triangular_rate(self.relaxation) if self.relaxation else None
+        self.explore = dict(explore) if explore else None
+        self.odor_track = dict(odor_track) if odor_track else None
+        self.odor_search = dict(odor_search) if odor_search else None
+        self.recover = dict(recover) if recover else None
+        self._supports = {}
+        for state, (spec, _, _) in self.CONTEXTS.items():
+            if getattr(self, spec) is not None:
+                self._supports[state] = _triangular_support(getattr(self, spec),
+                                                            state.lower().replace('_', ' '))
+        self.reset(seed)
+
+    def reset(self, seed: int) -> None:
+        self.seed = int(seed)
+        self._initial = {}
+        for _, stream, offset in self.CONTEXTS.values():
+            rng = np.random.default_rng(self.seed + offset)
+            setattr(self, stream, rng)
+            self._initial[stream] = copy.deepcopy(rng.bit_generator.state)
+        self.relaxation_rng = np.random.default_rng(self.seed + self.RELAXATION_SEED_OFFSET)
+        self._initial['relaxation_rng'] = copy.deepcopy(self.relaxation_rng.bit_generator.state)
+        self.initial_state = self._initial['rng']
+        self.odor_track_initial_state = self._initial['odor_track_rng']
+        self.draws = 0
+        self.draws_by_context = {}
+        self._episode_state = None
+        self._episode_sample = None
+        self._episode_rate = None
+        self._current_rate = None
+        self.relaxation_draws = 0
+
+    @property
+    def untouched(self) -> bool:
+        """True while no draw has been taken from any kinematics stream."""
+        return self.draws == 0 and all(getattr(self, stream).bit_generator.state == state
+                                       for stream, state in self._initial.items())
+
+    def _configured(self, state) -> bool:
+        # Read the public specs, so a diagnostic tool can still disable one context by
+        # setting, for example, `sampler.explore = None`.
+        return state in self.CONTEXTS and getattr(self, self.CONTEXTS[state][0]) is not None
+
+    @property
+    def enabled(self) -> bool:
+        return any(getattr(self, spec) is not None for spec, _, _ in self.CONTEXTS.values())
+
+    def _draw(self, state: str) -> float:
+        low, mode, high = self._supports[state]
+        rng = getattr(self, self.CONTEXTS[state][1])
+        self.draws += 1
+        self.draws_by_context[state] = self.draws_by_context.get(state, 0) + 1
+        return float(rng.triangular(low, mode, high))
+
+    def target_speed_bl_s(self, command, threat_priority: bool) -> float | None:
+        """One sampled target per ecological episode of each configured context.
+
+        `None` means "no sample; use the ecological command unchanged", which is still
+        the answer for every unconfigured context, for threat-priority ticks, and
+        whenever sampling is not configured at all.
+
+        The resample boundary is the existing ecological state transition into the
+        context, so persistence equals the accepted ecological episode (the EXPLORE dwell,
+        or an ODOR_TRACK bout) and no new persistence parameter is invented. No ecology,
+        flight, world, spawn, room or lifecycle random stream is consumed here.
+        """
+        self._current_rate = None
+        if command is None or threat_priority or not self.enabled:
+            return None
+        state = getattr(command, 'state', None)
+        if not self._configured(state):
+            # Track the transition without drawing, so re-entry resamples exactly once.
+            self._episode_state = state
+            self._episode_sample = None
+            return None
+        if self._episode_state != state or self._episode_sample is None:
+            self._episode_sample = self._draw(state)
+            self._episode_state = state
+            if self.relaxation is not None:
+                self.relaxation_draws += 1
+                self._episode_rate = float(self.relaxation_rng.triangular(*self._relaxation_support))
+        self._current_rate = self._episode_rate if self.relaxation is not None else None
+        return self._episode_sample
+
+    def relaxation_rate_per_second(self) -> float | None:
+        """The episode's sampled damping rate for the last sampled target, else None."""
+        return self._current_rate

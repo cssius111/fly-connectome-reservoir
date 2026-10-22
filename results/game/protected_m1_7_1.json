@@ -1,0 +1,54 @@
+{
+  "original_protected_unchanged": 20,
+  "historical_results_unchanged": 24,
+  "human_recording_files_unchanged": 10,
+  "unchanged_game_modules": [
+    "game/action.py",
+    "game/app.py",
+    "game/session.py",
+    "game/ecology.py",
+    "game/ecological_sense.py",
+    "game/enclosure.py",
+    "game/flight.py",
+    "game/fly.py",
+    "game/perception.py",
+    "game/recording.py",
+    "game/room.py",
+    "game/saccade.py",
+    "game/modes.py"
+  ],
+  "fly_ecology_strike_limits_unchanged": true,
+  "calibrations": {
+    "game_config.json": {
+      "threshold": 1.45,
+      "origin": "artifacts/game/calibration.json"
+    },
+    "game_play_config.json": {
+      "threshold": 1.35,
+      "origin": "artifacts/game/calibration_game.json"
+    },
+    "game_room_config.json": {
+      "threshold": 1.45,
+      "origin": "artifacts/game/calibration_room_m1_7_1.json"
+    }
+  },
+  "original_verification": {
+    "prediction_records_verified": 36,
+    "source_hashes_match": true,
+    "held_out_neuronal_replays": [
+      {
+        "task": "side",
+        "seed": 101,
+        "trial_index": 80,
+        "exact": true
+      },
+      {
+        "task": "order",
+        "seed": 101,
+        "trial_index": 80,
+        "exact": true
+      }
+    ],
+    "frozen_weights_verified": true
+  }
+}

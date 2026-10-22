@@ -1,0 +1,33 @@
+{
+  "driver": "windows",
+  "frames": 571,
+  "phases": [
+    "active_contact",
+    "approach",
+    "commit",
+    "fast_swing",
+    "follow_through",
+    "recovery"
+  ],
+  "controls": [
+    "click",
+    "edge_capture",
+    "fullscreen",
+    "fullscreen_capture",
+    "pause",
+    "restart",
+    "resume",
+    "windowed"
+  ],
+  "session_directory": "D:\\Projects\\flybrain-lab\\results\\game\\sessions\\20260920T032054.079052Z-026c8651",
+  "replay": {
+    "exact": true,
+    "ticks_verified": 247,
+    "input_operations": 252,
+    "episodes": 2,
+    "scope": "all deterministic tick fields including compact neural readouts; presentation/wall time excluded",
+    "source_verified": true,
+    "full_brain_snapshots_compared": false,
+    "report_path": "D:\\Projects\\flybrain-lab\\results\\game\\sessions\\20260920T032054.079052Z-026c8651\\replays\\4597fb2e395d.json"
+  }
+}

@@ -1,0 +1,438 @@
+"""Fixed-timestep engine wiring world -> perception -> brain -> world.
+
+Kept separate from `app.py` so the whole closed loop runs headless: the
+determinism test and `tools/calibrate_escape.py` drive a `Session` with a
+recorded input sequence and no pygame at all.
+
+Tick order, once per fixed 20 ms step:
+
+    pointer in  ->  world.set_pointer / request_strike   (mouse stops here)
+                ->  RetinaProjector.project(world)       (world -> Retina)
+                ->  FlyLoop.step(retina, motion)         (Retina -> brain -> Action)
+                ->  world.tick(dt, action)               (physics, collision)
+
+Motion is a whitelisted body-frame snapshot, appended only to policy input;
+it does not drive the brain and contains no world position or threat vector.
+
+The fly therefore acts on what it saw at the start of the tick, a one-tick
+sensorimotor delay.
+"""
+from __future__ import annotations
+
+import json
+import hashlib
+import importlib.metadata
+import math
+from dataclasses import dataclass
+from pathlib import Path
+
+import numpy as np
+
+from .action import Action, FixedEscapePolicy, Policy, MotionState
+from .fly import ROOT, FlyLoop, build_brain
+from .perception import LOOM_TYPES, THREAT_TYPES, Retina, RetinaProjector, RetinalEncoder
+from .world import TickEvents, World
+from .modes import resolve_mode
+from .room import EcologicalProjector
+from .ecology import EcologicalController, ThreatState
+
+CONFIG_PATH = ROOT / "game_config.json"
+
+
+def load_config(path: Path | str = CONFIG_PATH) -> dict:
+    return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+def calibration_provenance(config: dict) -> dict:
+    """Fingerprint actual in-memory configuration, including custom mutations.
+
+    Canonical JSON avoids OS newline/formatting differences. Calibration also
+    retains its raw config file hash for auditing. Schema 2 rejects older
+    measurements whose fly could wander.
+    """
+    serialized = json.dumps(config, sort_keys=True, separators=(",", ":"),
+                            ensure_ascii=True, allow_nan=False).encode("utf-8")
+    return {"schema_version": 2, "measurement_protocol": "fixed-fly-v2",
+            "config_hash_format": "canonical-json-sort-keys-ascii-compact",
+            "game_config_sha256": hashlib.sha256(serialized).hexdigest(),
+            "flybrain_version": importlib.metadata.version("flybrain"),
+            "encoder_population_rule": "min-per-type-per-side-v1",
+            "encoder_seed": config["encoder"]["encoder_seed"],
+            "encoder_types": {"loom": list(LOOM_TYPES), "threat": list(THREAT_TYPES)},
+            "sensory_input": config["brain"]["sensory_input"],
+            "tick_seconds": config["sim"]["tick_seconds"],
+            "brain_dt_seconds": config["brain"]["dt_seconds"]}
+
+
+@dataclass(frozen=True)
+class ThresholdSource:
+    threshold: float
+    origin: str
+    # M1.8-N2 dual-path decoder parameters, verified against the record; None
+    # for the single-sample decoder.
+    decoder: dict | None = None
+
+
+DUAL_PATH_DECODER = "dual_path_v1"
+WINDOW_DECODER = "dual_path_window_v1"
+LATERAL_DECODER = "lateral_dual_path_v1"
+# Exact key set of each explicitly versioned decoder kind.
+DECODER_KINDS = {
+    # M1.8-N2: FAST OR N consecutive samples.
+    DUAL_PATH_DECODER: ("kind", "sustained_threshold", "fast_threshold", "persistence_samples"),
+    # M1.8-N2b: FAST OR (current sample qualifies AND k of the last n qualify).
+    WINDOW_DECODER: ("kind", "sustained_threshold", "fast_threshold",
+                     "sustained_window_samples", "sustained_required_samples",
+                     "require_current_qualifying"),
+    # M1.8-N4B1C: LATERAL (same DNp01 side twice within the lateral window) OR
+    # the M1.8-N2b summed criterion. Class C engineering decoder parameters.
+    LATERAL_DECODER: ("kind", "sustained_threshold", "summed_fast_threshold",
+                      "sustained_window_samples", "sustained_required_samples",
+                      "require_current_qualifying", "lateral_same_side_window_ms",
+                      "lateral_required_spikes"),
+}
+# The summed FAST threshold key of each dual-path kind.
+FAST_KEY = {DUAL_PATH_DECODER: "fast_threshold", WINDOW_DECODER: "fast_threshold",
+            LATERAL_DECODER: "summed_fast_threshold"}
+DECODER_KEYS = DECODER_KINDS[DUAL_PATH_DECODER]
+
+
+def _integer(value, name, minimum):
+    if isinstance(value, bool) or not isinstance(value, int) or value < minimum:
+        raise ValueError(f"policy.escape_decoder.{name} must be an integer >= {minimum}")
+    return value
+
+
+def escape_decoder_spec(config: dict) -> dict | None:
+    """Validated `policy.escape_decoder`, or None for the single-sample decoder.
+
+    Only DNp01 criterion parameters of an explicitly versioned kind are
+    accepted. An unknown key is an error, so no geometry, contact or world gate
+    can be configured here.
+    """
+    block = config["policy"].get("escape_decoder")
+    if block is None:
+        return None
+    if not isinstance(block, dict):
+        raise ValueError("policy.escape_decoder must be an object")
+    kind = block.get("kind")
+    if kind not in DECODER_KINDS:
+        raise ValueError(f"Unsupported policy.escape_decoder kind {kind!r}")
+    keys = DECODER_KINDS[kind]
+    unknown = sorted(set(block) - set(keys) - {"_comment"})
+    if unknown:
+        raise ValueError("Unsupported policy.escape_decoder keys: " + ", ".join(unknown))
+    missing = sorted(set(keys) - set(block))
+    if missing:
+        raise ValueError("Missing policy.escape_decoder keys: " + ", ".join(missing))
+    spec = {key: block[key] for key in keys}
+    if kind == DUAL_PATH_DECODER:
+        _integer(spec["persistence_samples"], "persistence_samples", 2)
+    else:
+        window = _integer(spec["sustained_window_samples"], "sustained_window_samples", 2)
+        required = _integer(spec["sustained_required_samples"], "sustained_required_samples", 2)
+        if required > window:
+            raise ValueError("policy.escape_decoder.sustained_required_samples must not exceed "
+                             "sustained_window_samples")
+        if spec["require_current_qualifying"] is not True:
+            raise ValueError("policy.escape_decoder.require_current_qualifying must be true")
+    if kind == LATERAL_DECODER:
+        ms = spec["lateral_same_side_window_ms"]
+        if isinstance(ms, bool) or not isinstance(ms, (int, float)) or not math.isfinite(ms) or ms <= 0:
+            raise ValueError("policy.escape_decoder.lateral_same_side_window_ms must be a positive number")
+        spec["lateral_same_side_window_ms"] = float(ms)
+        spikes = _integer(spec["lateral_required_spikes"], "lateral_required_spikes", 2)
+        if spikes != 2:
+            raise ValueError("policy.escape_decoder.lateral_required_spikes: only 2 is supported")
+    fast_key = FAST_KEY[kind]
+    for key in ("sustained_threshold", fast_key):
+        value = spec[key]
+        if isinstance(value, bool) or not isinstance(value, (int, float)) \
+                or not math.isfinite(value) or value <= 0.0:
+            raise ValueError(f"policy.escape_decoder.{key} must be a positive number")
+        spec[key] = float(value)
+    if spec[fast_key] <= spec["sustained_threshold"]:
+        raise ValueError(f"policy.escape_decoder.{fast_key} must exceed sustained_threshold")
+    return spec
+
+
+def resolve_escape_threshold(config: dict, root: Path = ROOT) -> ThresholdSource:
+    """Use the first matching record, never merely the first existing file.
+
+    With a dual-path `policy.escape_decoder`, a record matches only if it
+    carries the identical decoder block and its escape_threshold equals the
+    sustained threshold. A scalar single-sample record cannot load a
+    dual-path configuration, and a dual-path record cannot load a
+    single-sample configuration.
+    """
+    policy = config["policy"]
+    command = "python tools/calibrate_escape.py --trials 28"
+    if policy.get("escape_threshold") is not None:
+        raise ValueError("Manual escape_threshold is unsupported; set it to null. Run: " + command)
+    decoder = escape_decoder_spec(config)
+    if decoder is not None:
+        command = {WINDOW_DECODER: "python tools/n2b_decoder_record.py",
+                   LATERAL_DECODER: "python tools/n4b1c_decoder_record.py"}.get(
+                       decoder["kind"], "python tools/n2_decoder_record.py")
+        # Diagnostic hint only: the M1.8-N4B5R geometry configuration carries the same decoder
+        # in its own geometry-candidate record, and the M1.8-B2b-iii configuration with
+        # ODOR_TRACK speed sampling in its own kinematics transfer record.
+        if (decoder["kind"] == LATERAL_DECODER and
+                (config["swatter"].get("directional") or {}).get("tilt_geometry") == "elevation_aware_tilt_v1"):
+            command = "python tools/n4b5r_geometry_record.py"
+            if config.get("kinematics", {}).get("odor_track_speed_bl_s"):
+                command = "python tools/b2b_iii_record.py"
+            if config.get("ecology_threat_input"):
+                command = "python tools/b3a_record.py"
+                # M1.8-B completion stages (config_version 20 on) share one record writer.
+                if config.get("config_version", 0) > 19:
+                    command = "python tools/m1_8_b_stage_record.py STAGE"
+    expected = calibration_provenance(config)
+    tried = []
+    for rel in policy["calibration_paths"]:
+        path = root / rel
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            if not isinstance(data, dict):
+                raise ValueError("calibration record must be a JSON object")
+            if data.get("provenance") != expected:
+                tried.append(f"{rel}: provenance mismatch")
+                continue
+            threshold = float(data["escape_threshold"])
+            if not math.isfinite(threshold) or threshold <= 0.0:
+                tried.append(f"{rel}: invalid threshold")
+                continue
+            recorded = data.get("escape_decoder")
+            if decoder is None:
+                if recorded is not None:
+                    tried.append(f"{rel}: dual-path record for a single-sample decoder")
+                    continue
+            else:
+                if not isinstance(recorded, dict) or \
+                        {k: recorded.get(k) for k in DECODER_KINDS[decoder["kind"]]} != decoder:
+                    tried.append(f"{rel}: escape_decoder mismatch")
+                    continue
+                if threshold != decoder["sustained_threshold"]:
+                    tried.append(f"{rel}: escape_threshold differs from sustained_threshold")
+                    continue
+            return ThresholdSource(threshold, str(rel), decoder)
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            tried.append(f"{rel}: {type(exc).__name__}")
+    raise ValueError("No matching escape-threshold calibration. " + "; ".join(tried)
+                     + ". Run: " + command
+                     + " (add --config PATH when using a custom game config).")
+
+
+def lateral_window_samples(decoder: dict, config: dict) -> int:
+    """The lateral window in samples; it must be a whole number of ticks."""
+    samples = decoder["lateral_same_side_window_ms"] / 1000.0 / float(config["sim"]["tick_seconds"])
+    if abs(samples - round(samples)) > 1e-9 or round(samples) < 1:
+        raise ValueError("policy.escape_decoder.lateral_same_side_window_ms must be a whole, "
+                         "positive number of ticks")
+    return int(round(samples))
+
+
+def dnp01_trace_decay(config: dict) -> float:
+    """Per-sample decay of the DNp01 readout trace, exactly as flybrain.Trace stores it
+    (float32), used only to infer per-side spikes from the observed trace."""
+    import numpy as np
+    return float(np.float32(np.exp(-float(config["sim"]["tick_seconds"])
+                                   / float(config["brain"]["trace_tau_seconds"]))))
+
+
+def build_policy(config: dict, root: Path = ROOT) -> tuple[FixedEscapePolicy, ThresholdSource]:
+    source = resolve_escape_threshold(config, root)
+    p = config["policy"]
+    d = source.decoder
+    if d is None:
+        decoder = {}
+    elif d["kind"] == WINDOW_DECODER:
+        decoder = {"fast_threshold": d["fast_threshold"],
+                   "persistence_samples": d["sustained_required_samples"],
+                   "sustained_window_samples": d["sustained_window_samples"],
+                   "require_current_qualifying": d["require_current_qualifying"]}
+    elif d["kind"] == LATERAL_DECODER:
+        decoder = {"fast_threshold": d["summed_fast_threshold"],
+                   "persistence_samples": d["sustained_required_samples"],
+                   "sustained_window_samples": d["sustained_window_samples"],
+                   "require_current_qualifying": d["require_current_qualifying"],
+                   "lateral_window_samples": lateral_window_samples(d, config),
+                   "lateral_required_spikes": d["lateral_required_spikes"],
+                   "trace_decay": dnp01_trace_decay(config)}
+    else:
+        decoder = {"fast_threshold": d["fast_threshold"],
+                   "persistence_samples": d["persistence_samples"]}
+    policy = FixedEscapePolicy(threshold=source.threshold,
+                               refractory_seconds=float(p["refractory_seconds"]),
+                               tick_seconds=float(config["sim"]["tick_seconds"]),
+                               forward_bias=float(config["fly"]["escape_forward_bias"]),
+                               turn_gain=float(p["turn_gain"]),
+                               alert_threshold_fraction=float(p["alert_threshold_fraction"]),
+                               steering_tau_seconds=float(p["steering_tau_seconds"]),
+                               alert_saccade_strength=float(p["alert_saccade_strength"]),
+                               saccade_interval_seconds=float(p["saccade_interval_seconds"]),
+                               alert_saccade_dwell_seconds=float(p["alert_saccade_dwell_seconds"]),
+                               **decoder)
+    return policy, source
+
+
+# Which ThreatState the ecology receives (ROOM `ecology_threat_input.mode`). The lifecycle
+# always receives the accepted mapping. M1.8-B3a, game/M1_8_B3A_DESIGN.md.
+ECOLOGY_THREAT_POLICY_STATE = "policy_state_v0"
+ECOLOGY_THREAT_EXECUTED = "executed_response_v1"
+ECOLOGY_THREAT_MODES = (ECOLOGY_THREAT_POLICY_STATE, ECOLOGY_THREAT_EXECUTED)
+
+
+def ecology_threat_mode(config: dict) -> str:
+    """Absent block: the accepted mapping, so LAB, GAME and older configurations are unchanged."""
+    mode = (config.get("ecology_threat_input") or {}).get("mode", ECOLOGY_THREAT_POLICY_STATE)
+    if mode not in ECOLOGY_THREAT_MODES:
+        raise ValueError("unknown ecology_threat_input.mode: " + str(mode))
+    return mode
+
+
+def ecological_threat(threat: ThreatState, mode: str, saccade_requested: bool,
+                      saccade_kind: str) -> ThreatState:
+    """The ThreatState handed to the ecology.
+
+    Under executed_response_v1 the policy's ALERT state alone, with no saccade requested
+    on this tick and no ALERT saccade executing, reaches the ecology as CALM. ESCAPE and
+    executed alert responses pass unchanged. A Class C interface choice, not a claim about
+    how a fly's ongoing behaviour treats sub-threshold descending activity.
+    """
+    if (mode == ECOLOGY_THREAT_EXECUTED and threat is ThreatState.ALERT
+            and not saccade_requested and saccade_kind != "ALERT"):
+        return ThreatState.CALM
+    return threat
+
+
+class Session:
+    """One playable run. Deterministic for a fixed seed and input sequence."""
+
+    def __init__(self, config: dict, brain=None, policy: Policy | None = None,
+                 root: Path = ROOT, seed: int | None = None, mode: str = "lab", recorder=None, ecology_enabled: bool | None = None):
+        self.config = config
+        self.mode = resolve_mode(mode)
+        self.recorder = recorder
+        self.root = root
+        self.tick_seconds = float(config["sim"]["tick_seconds"])
+        self.seed = int(config["sim"]["seed"] if seed is None else seed)
+        if not math.isclose(self.tick_seconds, float(config["brain"]["dt_seconds"]),
+                            rel_tol=0.0, abs_tol=1e-12):
+            raise ValueError("sim.tick_seconds must equal brain.dt_seconds")
+        # Validate before loading the graph. A caller-supplied policy, including
+        # calibration's RecordingPolicy, consumes no escape calibration.
+        if policy is None:
+            policy, self.threshold_source = build_policy(config, root)
+        else:
+            self.threshold_source = None
+        self.policy = policy
+        self.brain = brain if brain is not None else build_brain(config, root)
+        self.encoder = RetinalEncoder(self.brain, config)
+        self.fly_loop = FlyLoop(self.brain, self.encoder, policy, config)
+        self.projector = RetinaProjector(self.tick_seconds)
+        self.world = World(config, self.seed)
+        enabled = config.get("ecology", {}).get("enabled", False) if ecology_enabled is None else ecology_enabled
+        self.ecology = EcologicalController(config["ecology"],self.seed, landing_enabled=self.world.lifecycle is None) if enabled and self.world.room is not None else None
+        self.ecological_projector = EcologicalProjector(config["room"]["sensing"]) if self.ecology is not None else None
+        self.ecology_threat_mode = ecology_threat_mode(config)
+        self.last_ecological_sense = None
+        self.last_retina: Retina | None = None
+        self.ticks = 0
+        self.reset(self.seed)
+
+    def reset(self, seed: int | None = None) -> None:
+        if self.recorder is not None and self.recorder.active:
+            self.recorder.finish(self, "restart")
+        if seed is not None:
+            self.seed = int(seed)
+        self.world.reset(self.seed)
+        self.world.lifecycle_active = self.ecology is not None and self.world.lifecycle is not None
+        self.projector.reset()
+        self.last_ecological_sense = None
+        if self.ecology is not None:
+            self.ecology.reset(self.seed)
+            self.ecological_projector.reset()
+        # Offset so the neuronal noise stream is not the same stream as the
+        # world's wander stream.
+        self.fly_loop.reset(self.seed + 977)
+        self.last_retina = None
+        self.ticks = 0
+        if self.recorder is not None:
+            self.recorder.start(self)
+
+    def close(self):
+        if self.recorder is not None:
+            self.recorder.close(self)
+
+    def record_control(self, name, **payload):
+        callback = getattr(self.recorder, "control", None)
+        if callable(callback):callback(self, name, **payload)
+
+    def request_strike(self):
+        """Record a click consumed between ticks without inventing render timing."""
+        accepted = self.world.request_strike()
+        callback = getattr(self.recorder, "input", None)
+        if callable(callback):callback(self, "request_strike", accepted=accepted)
+        return accepted
+
+    def tick(self, pointer: tuple[float, float] | None = None, strike: bool = False) -> TickEvents:
+        if self.world.lifecycle is not None:
+            self.world.lifecycle.events = []
+        if pointer is not None:
+            self.world.set_pointer(pointer[0], pointer[1])
+        callback = getattr(self.recorder, "input", None)
+        if callable(callback):callback(self, "tick", pointer=None if pointer is None else [self.world.swatter.target_x,self.world.swatter.target_y], strike=bool(strike))
+        started = self.world.request_strike() if strike else False
+        retina = self.projector.project(self.world)
+        self.last_retina = retina
+        before_state = self.policy_diagnostics.get("behavior_state", "UNSPECIFIED")
+        action = self.fly_loop.step(retina, self.world.motion_state()) if self.world.fly.alive else Action()
+        self.world.ecological_command = None
+        if self.ecology is not None and self.world.fly_motion_enabled and self.world.fly.alive:
+            self.last_ecological_sense = self.ecological_projector.project(self.world.room,self.world.fly,self.world.time_seconds,self.tick_seconds)
+            neural_state = self.policy_diagnostics.get("behavior_state", "CALM")
+            threat = (ThreatState.ESCAPE if action.escape or neural_state=="ESCAPE" or self.world.saccades.kind=="ESCAPE"
+                      else ThreatState.ALERT if neural_state=="ALERT" or action.saccade or self.world.saccades.kind=="ALERT"
+                      else ThreatState.CALM)
+            # M1.8-B3a: the ecology's input may differ from the lifecycle's, which below
+            # keeps the accepted threat.
+            ecological = ecological_threat(threat, self.ecology_threat_mode, action.saccade != 0,
+                                           self.world.saccades.kind)
+            self.world.ecological_command = self.ecology.step(self.last_ecological_sense,ecological,self.tick_seconds)
+            if self.world.lifecycle is not None:
+                sense = self.world.room.landing_sense(self.world.fly, self.world.time_seconds, self.world.contact_surface_id)
+                motion = self.world.motion_state()
+                body_motion = MotionState(motion.forward_speed/self.world.body_length,
+                                          motion.lateral_speed/self.world.body_length,
+                                          motion.yaw_rate, motion.saccade_remaining)
+                authorized = action.escape and action.strength > 0 and math.hypot(action.forward, action.lateral) > 0
+                self.world.lifecycle.step(sense, body_motion, threat, self.tick_seconds, authorized)
+        self.world.lifecycle_active = self.ecology is not None and self.world.lifecycle is not None
+        events = self.world.tick(self.tick_seconds, action)
+        self.ticks += 1
+        result = TickEvents(started, events.strike_resolved, events.hit, events.escaped)
+        if self.recorder is not None:
+            self.recorder.capture(self, result, before_state)
+        return result
+
+    @property
+    def stats(self):
+        return self.world.stats
+
+    @property
+    def policy_diagnostics(self) -> dict[str, float | str]:
+        """Optional display metadata; never part of policy decisions."""
+        provider = getattr(self.policy, "diagnostics", None)
+        return dict(provider()) if callable(provider) else {}
+
+    def state_vector(self) -> np.ndarray:
+        """World state plus the motor readout, for the determinism test."""
+        motor = self.fly_loop.last_motor
+        neural = np.array([0.0, 0.0, 0.0, 0.0] if motor is None else
+                          [motor.dnp01_left, motor.dnp01_right,
+                           motor.dna02_left, motor.dna02_right], dtype=np.float64)
+        retina = self.last_retina
+        r = np.array([0.0, 0.0, 0.0] if retina is None else
+                     [retina.theta, retina.theta_dot, retina.azimuth], dtype=np.float64)
+        return np.concatenate([self.world.state_vector(), neural, r])

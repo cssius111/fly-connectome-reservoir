@@ -1,0 +1,187 @@
+{
+  "record_kind": "geometry-runtime-candidate-provenance-v1",
+  "not_a_scalar_calibration": true,
+  "not_a_decoder_recalibration": true,
+  "decoder_unchanged": true,
+  "geometry_changed": true,
+  "status": "M1.8-N4B5R runtime candidate; not yet human-accepted",
+  "rule": "The accepted M1.8-N4B1C lateral dual-path decoder, unchanged, under the M1.8-N4B5R elevation-aware paddle tilt geometry. Only the Retina input changes, and only while the paddle is tilted (face < 1) and seen at high elevation.",
+  "escape_threshold": 1.45,
+  "escape_decoder": {
+    "kind": "lateral_dual_path_v1",
+    "sustained_threshold": 1.45,
+    "summed_fast_threshold": 2.1,
+    "sustained_window_samples": 5,
+    "sustained_required_samples": 3,
+    "require_current_qualifying": true,
+    "lateral_same_side_window_ms": 60.0,
+    "lateral_required_spikes": 2,
+    "lateral_window_samples": 3,
+    "spike_inference_rule": "per side: spike_t = trace_t - decay * trace_{t-1} >= 0.5, with decay = float32(exp(-tick_seconds / trace_tau_seconds)); no spike is inferred on the first sample after reset",
+    "lateral_rule": "left and right tracked independently; the qualifying spike must be on the current sample; the previous spike of the SAME side must be at most lateral_window_samples samples earlier; a left spike followed by a right spike never qualifies",
+    "window_rule": "one summed qualification flag per sample, refractory samples included; cleared when an escape fires and on reset",
+    "escape_clears": [
+      "summed window and streak",
+      "lateral last-spike memory, both sides"
+    ],
+    "reset_clears": [
+      "summed window and streak",
+      "lateral spike history and previous trace values",
+      "trigger channel and paths"
+    ],
+    "channel_precedence": [
+      "LATERAL",
+      "FAST",
+      "SUSTAINED"
+    ],
+    "motor_semantics": "unchanged: strength, side, steering, saccade, forward bias and refractory do not depend on the path that fired",
+    "parameter_class": "C"
+  },
+  "parameter_basis": {
+    "sustained_threshold": {
+      "value": 1.45,
+      "basis": "inherited unchanged from the scalar single-sample calibration, used here only as the summed qualification level",
+      "source_record": "results/game/calibration_room_m1_8_b2b_ii.json",
+      "source_sha256": "8c5456520b0b02063377c93670970aefecc8fd22540b012cb176ca25511fc098",
+      "original_measurement": "results/game/calibration_room_m1_7_1.json",
+      "original_measurement_sha256": "1df05b3f85885f6074253fccc407b451f998cd8302cc318baa86f832316f1a44"
+    },
+    "summed_path": {
+      "summed_fast_threshold": 2.1,
+      "sustained_window_samples": 5,
+      "sustained_required_samples": 3,
+      "require_current_qualifying": true,
+      "class": "C",
+      "basis": "the M1.8-N2b summed criterion, unchanged; N2b itself failed its second human re-acceptance and is retained here only as the path that keeps alternating-side hover evidence"
+    },
+    "lateral_path": {
+      "lateral_same_side_window_ms": 60.0,
+      "lateral_required_spikes": 2,
+      "class": "C",
+      "basis": "M1.8-N4A: spontaneous DNp01 spikes are noise driven and independent per side, and the summed trace turns bilateral coincidences into apparent multi-spike evidence; M1.8-N4B1: a same-side 60 ms rule (frozen Rule A) restores legacy-level committed-strike timing with 0 false events on a fresh 280-minute N0; M1.8-N4B1C: combined with the N2b path it restores alternating-side hover coverage and passes a new pre-registered 280-minute N0 holdout. The window is a simulator property (LIF reset to 0 plus independent noise), not a biological refractory constant."
+    },
+    "not_biological_constants": true
+  },
+  "geometry": {
+    "tilt_geometry": "elevation_aware_tilt_v1",
+    "previous_tilt_geometry": "bearing_only_v0",
+    "tilt_anisotropy": 0.25,
+    "formula": "half = paddle_radius * (e + (1 - e) * face) * (1 - tilt_anisotropy * cos(elevation) * (1 - face) * abs(sin(bearing - orientation))), with cos(elevation) = horizontal fly-paddle distance / 3-D fly-paddle distance",
+    "previous_formula": "half = paddle_radius * (e + (1 - e) * face) * (1 - tilt_anisotropy * (1 - face) * abs(sin(bearing - orientation)))",
+    "scope": "ROOM configuration only; GAME and LAB configurations are unchanged",
+    "reason": "correction of the overhead tilt-foreshortening artifact: the bearing-only term turns horizontal bearing rate into apparent expansion of up to 6.9 rad/s under a stationary paddle (0.13 rad/s from range change), producing all overhead free-flight escapes of M1.8-N4B4 and the episode-5 slow-close signal",
+    "research": {
+      "milestone": "M1.8-N4B5",
+      "candidate": "G3_elevation_aware",
+      "research_commit": "0e9d2d9",
+      "frozen_geometry_sha256": "a11cafa09750b50bf3cad6e032746336981cc99b481edcdbd45656ddaa830b49",
+      "geometry_module_sha256_raw_worktree": "c3884e644df5c51ee95489b8f204795e1eb36648d5da14415de3abe0f3d7066a",
+      "files": {
+        "game/M1_8_N4B5_PADDLE_VISUAL_GEOMETRY.md": "08cac01953dd1cba95c124b18c89d389bb4c1586a62af09a46bbce6e826a8b43",
+        "tools/n4b5_geometry.py": "c3884e644df5c51ee95489b8f204795e1eb36648d5da14415de3abe0f3d7066a",
+        "tools/n4b5_analysis.py": "bcb66a0b6dde953e77bf974722f50d636aa46b8e867538e91d9a0365e3639215",
+        "tools/n4b5_resim.py": "4095aa5a82937276cec71364587073cbf69750fc875b928018b502c0d770957d",
+        "tools/n4b5_evaluate.py": "65e372c62e41922c4d2ffaa51cc105d7fcd5b9ef4087e9855f1f8609537dc9b9",
+        "game/M1_8_N4B4_FREE_FLIGHT_ESCAPE_INTERPRETATION.md": "c21d6be173c2d9b4358ab97f511d12801e97ffd10f67abc684982d30b854841b"
+      }
+    },
+    "parameter_class": "C (geometric rendering correction, not a biological parameter)"
+  },
+  "hash_convention": "decoder_record and research files: SHA256 of committed content with CRLF normalised to LF; config_sha256: raw working-file bytes",
+  "decoder_record": {
+    "record": "results/game/calibration_room_m1_8_n4b1c.json",
+    "sha256": "62d68df35c4441e03b31eae907dcc2aca578278b557f184253829d5e18f6a42d",
+    "provenance": {
+      "schema_version": 2,
+      "measurement_protocol": "fixed-fly-v2",
+      "config_hash_format": "canonical-json-sort-keys-ascii-compact",
+      "game_config_sha256": "99e84c2dbc7995a19cd4b3b2f870a58f24ed667c887095e6c56385519cb2d033",
+      "flybrain_version": "0.1.0",
+      "encoder_population_rule": "min-per-type-per-side-v1",
+      "encoder_seed": 20260917,
+      "encoder_types": {
+        "loom": [
+          "LPLC2"
+        ],
+        "threat": [
+          "LC4"
+        ]
+      },
+      "sensory_input": false,
+      "tick_seconds": 0.02,
+      "brain_dt_seconds": 0.02
+    },
+    "record_kind": "lateral-dual-path-decoder-provenance-v1",
+    "modified": false,
+    "note": "the accepted N4B1C decoder record; it continues to match the accepted N4B1C ROOM configuration (commit e3c55b3)"
+  },
+  "tick_seconds": 0.02,
+  "config_sha256": "9f02af4b42c3ae91b267abcfabfb716a76369d9a18f0525f6fbd11b307049538",
+  "provenance": {
+    "schema_version": 2,
+    "measurement_protocol": "fixed-fly-v2",
+    "config_hash_format": "canonical-json-sort-keys-ascii-compact",
+    "game_config_sha256": "756cf2b1e5b2a16a1ead07906a2c93d82e82161efcdc4781e2533b98372b34fb",
+    "flybrain_version": "0.1.0",
+    "encoder_population_rule": "min-per-type-per-side-v1",
+    "encoder_seed": 20260917,
+    "encoder_types": {
+      "loom": [
+        "LPLC2"
+      ],
+      "threat": [
+        "LC4"
+      ]
+    },
+    "sensory_input": false,
+    "tick_seconds": 0.02,
+    "brain_dt_seconds": 0.02
+  },
+  "measurement_conditions": {
+    "collisions_enabled": false,
+    "escape_disabled": true,
+    "fly_motion_enabled": false,
+    "swatter_settle_ticks": 300,
+    "note": "fly position and heading are fixed; velocity stays zero, wander is disabled, and collisions/escape actions are disabled"
+  },
+  "measurement_reuse": {
+    "kind": "geometry runtime candidate; decoder transferred unchanged; not a new measurement",
+    "decoder_source_record": "results/game/calibration_room_m1_8_n4b1c.json",
+    "decoder_source_sha256": "62d68df35c4441e03b31eae907dcc2aca578278b557f184253829d5e18f6a42d",
+    "accepted_runtime_commit": "e3c55b36084cd1d05e5f38d0b178aed0b9a59ddf",
+    "reason": "The decoder parameters are not re-derived. The fixed-fly no-loom measurements behind them see a settled, static paddle, whose encoder drive is zero under either geometry; the geometry changes only the time course of the apparent size of a tilted paddle seen at high elevation. Runtime validation of the candidate is produced by tools/n4b5r_runtime_validation.py.",
+    "changed_config_paths": [
+      "config_version",
+      "policy._comment",
+      "policy.calibration_paths",
+      "swatter.directional._tilt_geometry_comment",
+      "swatter.directional.tilt_geometry"
+    ]
+  },
+  "neurons": 166700,
+  "connections": 25088107,
+  "input_populations": {
+    "loom": {
+      "types": [
+        "LPLC2"
+      ],
+      "available_L": 94,
+      "available_R": 91,
+      "used_per_side": 91
+    },
+    "threat": {
+      "types": [
+        "LC4"
+      ],
+      "available_L": 71,
+      "available_R": 55,
+      "used_per_side": 55
+    }
+  },
+  "versions": {
+    "flybrain": "0.1.0",
+    "numpy": "2.4.6",
+    "scipy": "1.17.1",
+    "numba": "0.67.0"
+  }
+}

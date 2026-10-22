@@ -1,0 +1,77 @@
+{
+  "created_utc": "2026-09-20T03:17:05Z",
+  "rule": "smallest sweep-grid value with zero false triggers across all no-loom ticks",
+  "escape_threshold": 1.7,
+  "detection_rate": 1.0,
+  "median_latency_seconds": 0.1,
+  "false_trigger_ticks": 0,
+  "detection_target": 0.9,
+  "detection_target_met": true,
+  "trials_per_condition": 28,
+  "tick_seconds": 0.02,
+  "no_loom": {
+    "ticks": 2520,
+    "mean": 0.08129245318723197,
+    "p99": 1.0000515552699107,
+    "max": 1.6704326272010803
+  },
+  "loom": {
+    "mean_peak": 4.104505526825127,
+    "min_peak": 3.4415942430496216,
+    "max_peak": 4.795575143258972
+  },
+  "config_sha256": "795099e9fe16a769ff657be0f3c59adb337c5fbf4796cc690d4b8105f718ad9b",
+  "provenance": {
+    "schema_version": 2,
+    "measurement_protocol": "fixed-fly-v2",
+    "config_hash_format": "canonical-json-sort-keys-ascii-compact",
+    "game_config_sha256": "f5858f7ad69d48f1c9898e24ee241f4b3668e7647c7ccf0b5b3f741dc2c20e10",
+    "flybrain_version": "0.1.0",
+    "encoder_population_rule": "min-per-type-per-side-v1",
+    "encoder_seed": 20260917,
+    "encoder_types": {
+      "loom": [
+        "LPLC2"
+      ],
+      "threat": [
+        "LC4"
+      ]
+    },
+    "sensory_input": false,
+    "tick_seconds": 0.02,
+    "brain_dt_seconds": 0.02
+  },
+  "measurement_conditions": {
+    "collisions_enabled": false,
+    "escape_disabled": true,
+    "fly_motion_enabled": false,
+    "swatter_settle_ticks": 100,
+    "note": "fly position and heading are fixed; velocity stays zero, wander is disabled, and collisions/escape actions are disabled"
+  },
+  "neurons": 166700,
+  "connections": 25088107,
+  "input_populations": {
+    "loom": {
+      "types": [
+        "LPLC2"
+      ],
+      "available_L": 94,
+      "available_R": 91,
+      "used_per_side": 91
+    },
+    "threat": {
+      "types": [
+        "LC4"
+      ],
+      "available_L": 71,
+      "available_R": 55,
+      "used_per_side": 55
+    }
+  },
+  "versions": {
+    "flybrain": "0.1.0",
+    "numpy": "2.4.6",
+    "scipy": "1.17.1",
+    "numba": "0.67.0"
+  }
+}

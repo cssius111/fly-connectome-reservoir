@@ -1,0 +1,497 @@
+{
+  "config_version": 26,
+  "_comment": "M1.6 horizontal ROOM slice. Logical units and state speeds are gameplay mappings, not universal biological constants.",
+  "sim": {
+    "tick_seconds": 0.02,
+    "seed": 20260917
+  },
+  "world": {
+    "width": 3840,
+    "height": 2160,
+    "margin": 48,
+    "splat_seconds": 1.6
+  },
+  "swatter": {
+    "paddle_radius": 144.0,
+    "hover_height": 320.0,
+    "windup_height": 150.0,
+    "active_height": 24.0,
+    "edge_on_factor": 0.65,
+    "max_tracking_speed": 1800.0,
+    "smoothing_tau": 0.07,
+    "windup_tracking_factor": 0.35,
+    "active_tracking_factor": 0.0,
+    "windup_seconds": 0.18,
+    "active_seconds": 0.08,
+    "cooldown_seconds": 0.32,
+    "directional": {
+      "history_seconds": 0.2,
+      "sweep_fraction": 0.45,
+      "max_sweep_speed": 1000.0,
+      "min_speed": 20.0,
+      "tilt_anisotropy": 0.25,
+      "tilt_geometry": "elevation_aware_tilt_v1",
+      "_tilt_geometry_comment": "M1.8-N4B5R runtime candidate (ROOM only). The tilt foreshortening term is weighted by cos(elevation) = horizontal / 3-D fly-paddle distance, so the horizontal bearing no longer turns into apparent looming when the paddle is nearly overhead. bearing_only_v0 (the default when absent) is the accepted M1.5/M1.7 formula. Geometry only: the N4B1C decoder is unchanged."
+    },
+    "physical": {
+      "enabled": true,
+      "_comment": "M1.7 edge repair: head extent may leave the viewport; center_inset bounds the physical center only. Dynamics are gameplay mappings.",
+      "history_seconds": 0.2,
+      "approach_speed_limit": 1800.0,
+      "speed_limit": 3200.0,
+      "acceleration_limit": 18000.0,
+      "position_gain": 12.0,
+      "velocity_tau_seconds": 0.045,
+      "angular_speed_limit": 6.0,
+      "angular_acceleration_limit": 24.0,
+      "base_swing_speed": 320.0,
+      "approach_speed_gain": 0.9,
+      "acceleration_trend_gain_seconds": 0.025,
+      "phases_seconds": {
+        "commit": 0.1,
+        "fast_swing": 0.12,
+        "active_contact": 0.1,
+        "follow_through": 0.14,
+        "recovery": 0.3
+      },
+      "heights": [
+        320.0,
+        270.0,
+        90.0,
+        24.0,
+        70.0,
+        320.0
+      ],
+      "faces": [
+        0.0,
+        0.15,
+        0.85,
+        1.0,
+        0.85,
+        0.0
+      ],
+      "integration_step_seconds": 0.002,
+      "calibration_settle_seconds": 6.0,
+      "center_inset": 0.0,
+      "approach_tracking": {
+        "_comment": "World-side velocity matching plus bounded positional correction. No fly coordinates or threat-state inputs. Filter command continuously at paddle substeps.",
+        "position_gain": 6.0,
+        "correction_speed_limit": 900.0,
+        "command_tau_seconds": 0.06
+      }
+    }
+  },
+  "fly": {
+    "radius": 11.0,
+    "damping_per_second": 3.0,
+    "max_speed": 1000.0,
+    "escape_impulse": 880.0,
+    "escape_forward_bias": 0.35,
+    "turn_rate": 4.0,
+    "wander_interval_seconds": 1.6,
+    "baseline_speed": 216.0,
+    "wander_turn_rate": 0.08,
+    "wander_turn_tau_seconds": 0.8,
+    "max_yaw_rate": 31.0,
+    "_comment": "body_length_px defines body length in logical world units. Rendering scales it to display pixels; physics uses logical units/s.",
+    "body_length_px": 24.0,
+    "curvature": {
+      "amplitudes_rad_s": [
+        0.16,
+        0.06
+      ],
+      "periods_seconds": [
+        7.0,
+        13.0
+      ],
+      "period_sampling": {
+        "_comment": "M1.8-B3d. Each drift component keeps its amplitude; its half-period is redrawn every half-cycle from a symmetric triangle on (1 +/- relative_half_width) times the accepted half-period, instead of the fixed 7 s and 13 s periods. Class C; mean periods held.",
+        "distribution": "triangular_symmetric",
+        "relative_half_width": 0.5
+      }
+    },
+    "sideslip": {
+      "max_degrees": 80.0,
+      "realignment_tau_seconds": 0.28
+    }
+  },
+  "brain": {
+    "data": "data",
+    "device": "cpu",
+    "seed": 64,
+    "dt_seconds": 0.02,
+    "sensory_input": false,
+    "refractory_seconds": 0.0,
+    "gain": 3.0,
+    "tonic": 0.14,
+    "noise_hz": 1.2,
+    "noise_amp": 0.22,
+    "trace_tau_seconds": 0.1
+  },
+  "encoder": {
+    "_comment": "LC4/LPLC2 populations are subsampled to min(left, right) using encoder_seed, matching PROTOCOL.md's balancing rule.",
+    "encoder_seed": 20260917,
+    "loom_gain": 20.0,
+    "loom_size": 0.0,
+    "cap": 0.8,
+    "threat_max": 0.8,
+    "threat_theta_reference": 0.5,
+    "threat_theta_dot_reference": 2.0,
+    "virtual_distance": 100.0
+  },
+  "policy": {
+    "_comment": "Exact provenance required. The M1.8-N4B1C lateral dual-path decoder (unchanged) under the M1.8-N4B5R elevation-aware geometry, the M1.8-B2b-iii kinematics and the M1.8-B3a ecology threat input loads the M1.8-B4b transfer record, which carries the identical decoder block for this configuration: rebuild it with python tools/m1_8_b_stage_record.py B4b. Earlier records are preserved unchanged. tools/calibrate_escape.py measures the scalar single-sample criterion only and does not calibrate this decoder.",
+    "escape_threshold": null,
+    "calibration_paths": [
+      "artifacts/game/calibration_room_m1_8_b4b.json",
+      "results/game/calibration_room_m1_8_b4b.json"
+    ],
+    "escape_decoder": {
+      "_comment": "M1.8-N4B1C combined DNp01 criterion. Escape when EITHER path qualifies outside the shared refractory period. LATERAL: the same DNp01 side produces lateral_required_spikes inferred spikes within lateral_same_side_window_ms (per-side spikes inferred from that side's own trace; a left spike followed by a right spike never qualifies). Summed N2b path: FAST when left + right >= summed_fast_threshold; SUSTAINED when the current summed sample is >= sustained_threshold AND at least sustained_required_samples of the most recent sustained_window_samples summed samples are >= sustained_threshold. All values are Class C engineering decoder parameters derived from simulator evidence, not biological constants. sustained_threshold must equal the record's escape_threshold.",
+      "kind": "lateral_dual_path_v1",
+      "sustained_threshold": 1.45,
+      "summed_fast_threshold": 2.1,
+      "sustained_window_samples": 5,
+      "sustained_required_samples": 3,
+      "require_current_qualifying": true,
+      "lateral_same_side_window_ms": 60,
+      "lateral_required_spikes": 2
+    },
+    "refractory_seconds": 0.4,
+    "turn_gain": 0.8,
+    "alert_threshold_fraction": 0.55,
+    "steering_tau_seconds": 0.12,
+    "alert_saccade_strength": 0.6,
+    "saccade_interval_seconds": 0.8,
+    "alert_saccade_dwell_seconds": 0.06
+  },
+  "saccades": {
+    "_comment": "Turn actuator bounds. Duration is derived from a peak angular speed, so bigger turns take longer and no pulse exceeds peak_rate_cap.",
+    "enabled": true,
+    "min_duration_seconds": 0.06,
+    "max_duration_seconds": 0.3,
+    "max_degrees": 120.0,
+    "peak_rate_cap_deg_per_second": 1500.0,
+    "alert_max_degrees": 55.0,
+    "alert_peak_rate_deg_per_second": 900.0,
+    "escape_max_degrees": 110.0,
+    "escape_peak_rate_deg_per_second": 1350.0
+  },
+  "flight": {
+    "_comment": "Category B: phenomenological free flight and boundary behaviour. Seeded, local, and independent of the connectome.",
+    "interval": {
+      "short_seconds": [
+        0.3,
+        0.7
+      ],
+      "ordinary_seconds": [
+        0.8,
+        1.9
+      ],
+      "long_seconds": [
+        2.6,
+        6.0
+      ],
+      "short_probability": 0.28,
+      "long_probability": 0.18,
+      "perimeter_multiplier": 1.7
+    },
+    "correction": {
+      "degrees": [
+        5.0,
+        18.0
+      ],
+      "peak_rate_deg_per_second": [
+        250.0,
+        600.0
+      ],
+      "probability": 0.42
+    },
+    "saccade": {
+      "degrees": [
+        25.0,
+        105.0
+      ],
+      "peak_rate_deg_per_second": [
+        700.0,
+        1400.0
+      ]
+    },
+    "boundary": {
+      "sense_range": 150.0,
+      "avoid_time_to_contact_seconds": 0.55,
+      "avoid_inward_degrees": 14.0,
+      "avoid_refractory_seconds": 0.2,
+      "avoid_peak_rate_deg_per_second": [
+        700.0,
+        1300.0
+      ],
+      "perimeter_enter_proximity": 0.45,
+      "perimeter_leave_proximity": 0.2,
+      "patience_seconds": [
+        1.2,
+        4.5
+      ],
+      "depart_degrees": [
+        40.0,
+        85.0
+      ],
+      "depart_peak_rate_deg_per_second": [
+        600.0,
+        1100.0
+      ]
+    }
+  },
+  "arena": {
+    "name": "room",
+    "width_body_lengths": 160,
+    "height_body_lengths": 90
+  },
+  "spawn": {
+    "randomized": true,
+    "wall_clearance_body_lengths": 6.0,
+    "swatter_clearance_body_lengths": 3.0,
+    "speed_fraction": [
+      0.8,
+      1.05
+    ],
+    "max_slip_degrees": 12.0
+  },
+  "room": {
+    "wind": {
+      "speed": 45.0,
+      "direction_degrees": 0.0,
+      "direction_amplitude_degrees": 12.0,
+      "direction_period_seconds": 45.0,
+      "speed_fraction": 0.15,
+      "speed_period_seconds": 31.0,
+      "physical_force_enabled": false
+    },
+    "food": {
+      "x": 1050.0,
+      "y": 1120.0,
+      "radius": 65.0,
+      "emission_strength": 3.0,
+      "base_width": 100.0,
+      "spread": 0.09,
+      "decay_length": 2400.0,
+      "upwind_softness": 60.0,
+      "meander_amplitude": 45.0,
+      "meander_period_seconds": 11.0,
+      "intermittency_fraction": 0.35,
+      "intermittency_period_seconds": 9.0,
+      "landing_surface": true
+    },
+    "objects": [
+      {
+        "name": "column",
+        "x": 2480.0,
+        "y": 780.0,
+        "radius": 95.0,
+        "contrast": 1.0,
+        "solid": true,
+        "landing_surface": false
+      },
+      {
+        "name": "perch",
+        "x": 2850.0,
+        "y": 1610.0,
+        "radius": 75.0,
+        "contrast": 0.8,
+        "solid": false,
+        "landing_surface": true
+      }
+    ],
+    "sensing": {
+      "antenna_half_spacing": 6.0,
+      "visual_range": 450.0,
+      "background_contrast": 0.6,
+      "derivative_tau_seconds": 0.12,
+      "derivative_cap": 20.0
+    }
+  },
+  "ecology": {
+    "enabled": true,
+    "_comment": "Phenomenological state/flight mappings. No olfactory connectome circuit or learning is implemented.",
+    "odor_on": 0.1,
+    "odor_off": 0.065,
+    "encounter_dwell_seconds": 0.12,
+    "loss_dwell_seconds": 0.45,
+    "search_seconds": 6.0,
+    "odor_bout_seconds": 8.0,
+    "relocation_seconds": 4.0,
+    "recover_seconds": 1.2,
+    "explore_duration_seconds": [
+      3.0,
+      7.0
+    ],
+    "transit_duration_seconds": [
+      2.0,
+      5.0
+    ],
+    "speed_bl_s": {
+      "EXPLORE": [
+        5.0,
+        8.0
+      ],
+      "TRANSIT": [
+        9.0,
+        13.0
+      ],
+      "ODOR_SEARCH": [
+        4.0,
+        7.0
+      ],
+      "ODOR_TRACK": [
+        9.0,
+        13.0
+      ],
+      "LAND_OR_PERCH": [
+        1.0,
+        3.0
+      ],
+      "ALERT": [
+        8.0,
+        12.0
+      ],
+      "ESCAPE": [
+        12.0,
+        18.0
+      ],
+      "RECOVER": [
+        5.0,
+        8.0
+      ]
+    },
+    "speed_tau_seconds": 0.5,
+    "steering_tau_seconds": 0.18,
+    "steering_cap_rad_s": 0.9,
+    "upwind_gain": 1.3,
+    "search_period_seconds": 3.6,
+    "search_amplitude_radians": 1.05,
+    "visual_gain_floor": 0.15,
+    "landing_affordance_threshold": 0.14,
+    "landing_dwell_seconds": 0.16,
+    "landing_attempt_seconds": 0.9,
+    "landing_cooldown_seconds": 8.0,
+    "spontaneous_clock_rate": {
+      "EXPLORE": 1.0,
+      "TRANSIT": 0.45,
+      "ODOR_SEARCH": 1.35,
+      "ODOR_TRACK": 0.35,
+      "LAND_OR_PERCH": 0.0,
+      "ALERT": 0.0,
+      "ESCAPE": 0.0,
+      "RECOVER": 0.7
+    },
+    "alert_recover_seconds": 0.2,
+    "odor_history": {
+      "_comment": "M1.8-B3b. Encounter history H in [0,1] replaces the odor timers: odor_bout_seconds, search_seconds and the relocation after a forced end are no longer read by the ROOM ecology (relocation_seconds is still read by the ecology's own landing path, disabled in ROOM). H rises while odor is detected and decays otherwise (E17: weaker upwind responses with history); ODOR_TRACK upwind gain is scaled by 1 - upwind_attenuation*H and the plume is left at rate H/abandon_seconds; ODOR_SEARCH ends on reacquisition or, after search_min_seconds, at rate 1/search_give_up_seconds. All class C; means held at the accepted 8 s and 6 s. See game/M1_8_B_COMPLETION_DESIGN.md section 5.",
+      "build_seconds": 10.0,
+      "recovery_seconds": 30.0,
+      "upwind_attenuation": 0.5,
+      "abandon_seconds": 3.0,
+      "refractory_seconds": 1.0,
+      "search_min_seconds": 1.0,
+      "search_give_up_seconds": 5.0
+    },
+    "intent_hazards": {
+      "_comment": "M1.8-B3c. EXPLORE and TRANSIT dwell timers (explore_duration_seconds, transit_duration_seconds) replaced by a minimum dwell plus a hazard conditioned on local visual structure u = min(1, (visual_left + visual_right + landing_affordance) / structure_reference): EXPLORE -> TRANSIT at (1 - gain*u)/explore_hazard_seconds, TRANSIT -> EXPLORE at (1 + gain*u)/transit_hazard_seconds. Class C; with no structure the means are the accepted 5.0 s and 3.5 s. TRANSIT speed is unchanged. See game/M1_8_B_COMPLETION_DESIGN.md section 6.",
+      "min_dwell_seconds": 1.0,
+      "explore_hazard_seconds": 4.0,
+      "transit_hazard_seconds": 2.5,
+      "structure_reference": 0.2,
+      "structure_gain": 0.5
+    },
+    "search_half_period_seconds": {
+      "_comment": "M1.8-B3d. The ODOR_SEARCH casting offset keeps its amplitude but its half-period is redrawn every half-cycle instead of the fixed 3.6 s period (search_period_seconds is no longer read). Class C; mean half-period held at 1.8 s.",
+      "distribution": "triangular_symmetric",
+      "min_seconds": 1.2,
+      "mode_seconds": 1.8,
+      "max_seconds": 2.4
+    },
+    "odor_cues": {
+      "_comment": "M1.8-B4a. ODOR_TRACK consumes the odor derivative and the bilateral difference, both divided by max(odor, odor_on): steering += bilateral_gain*tanh(relative bilateral / bilateral_scale) toward the stronger side (E18), and the upwind gain is scaled by 1 + rate_gain*tanh(relative rate / rate_scale) (E16). Class C; no transferable gain exists. See game/M1_8_B_COMPLETION_DESIGN.md section 8.",
+      "bilateral_gain": 0.3,
+      "bilateral_scale": 0.05,
+      "rate_gain": 0.25,
+      "rate_scale": 2.0
+    },
+    "wind_reliability": {
+      "_comment": "M1.8-B4b. Reliability r = clip((|wind| - unreliable_below) / (reliable_above - unreliable_below), 0, 1) of the sensed wind speed scales upwind steering; below r = 0.5 ODOR_SEARCH casts around the current course (E19: wind reliability gates the strategy). Class C. ROOM wind never falls below 38.25 units/s, so r = 1 and ROOM behaviour is unchanged; the strategy applies to weak-wind configurations.",
+      "unreliable_below": 5.0,
+      "reliable_above": 20.0
+    }
+  },
+  "ecology_threat_input": {
+    "_comment": "M1.8-B3a. Which ThreatState the ecology receives; the lifecycle always receives the accepted mapping. executed_response_v1: the fixed policy's ALERT state alone (no saccade requested on the tick and no ALERT saccade executing) reaches the ecology as CALM; ESCAPE and executed alert responses pass unchanged. policy_state_v0, the default when this block is absent, hands the ecology the same threat as the lifecycle. Class C interface choice, not a biological claim. See game/M1_8_B3A_DESIGN.md.",
+    "mode": "executed_response_v1"
+  },
+  "lifecycle": {
+    "enabled": true,
+    "affordance_on": 0.075,
+    "orientation_limit_degrees": 65.0,
+    "orientation_dwell_seconds": 0.12,
+    "orientation_gain": 2.0,
+    "orientation_cap_rad_s": 1.5,
+    "commit_extent_degrees": 60.0,
+    "commit_bearing_degrees": 20.0,
+    "commit_speed_bl_s": 6.0,
+    "expansion_braking_seconds": 0.35,
+    "contact_speed_bl_s": 1.5,
+    "touchdown_max_speed_bl_s": 3.0,
+    "approach_velocity_tau_seconds": 0.18,
+    "cue_loss_seconds": 0.16,
+    "approach_timeout_seconds": 10.0,
+    "retry_seconds": 4.0,
+    "minimum_perch_seconds": 2.0,
+    "departure_rate_per_second": 0.12,
+    "dwell_history_seconds": 12.0,
+    "odor_persistence_gain": 0.5,
+    "feeding_odor_on": 0.1,
+    "feeding_departure_fraction": 0.45,
+    "voluntary_launch_speed_bl_s": 6.0
+  },
+  "kinematics": {
+    "_comment": "M1.8-B2a. room_kinematic_scale is a Class C simulator/environment mapping from body-length-normalized ecological speed to ROOM world units. It is NOT a measured biological constant and no literature magnitude has been adopted. 1.0 is the accepted no-op value. It applies only to non-neural ecological locomotion; threat-priority, landing approach and takeoff are excluded. M1.8-B2b-i separates the overloaded fly.max_speed into three Class C engineering ceilings: ecological locomotion, the accepted legacy neural/escape and lifecycle constraint, and a global numerical safety guard. All three are held at the legacy 1000.0 units/s so behavior is unchanged. None is a species flight maximum.",
+    "room_kinematic_scale": 1.0,
+    "ecological_cap_units_s": 1000.0,
+    "legacy_accepted_cap_units_s": 1000.0,
+    "safety_ceiling_units_s": 1000.0,
+    "explore_speed_bl_s": {
+      "_comment": "M1.8-B2b-ii. One sampled EXPLORE target per ecological EXPLORE episode, replacing the shared deterministic 8 s speed sinusoid for this context only. The shape is PHENOMENOLOGICAL: no reviewed source measures a free-flight speed distribution shape, and E02/E03 do not supply a usable central tendency, spread or support for ROOM. Support and mean are held at the accepted EXPLORE envelope so this stage changes the sampling model, not the magnitude. Persistence is the existing ecology.explore_duration_seconds dwell; no new persistence parameter is added.",
+      "distribution": "triangular_symmetric",
+      "min_bl_s": 5.0,
+      "mode_bl_s": 6.5,
+      "max_bl_s": 8.0
+    },
+    "odor_track_speed_bl_s": {
+      "_comment": "M1.8-B2b-iii. One sampled ODOR_TRACK target per ecological ODOR_TRACK episode, replacing the shared deterministic 8 s speed sinusoid for this context only, drawn from its own random stream. The shape is PHENOMENOLOGICAL, as for EXPLORE: no reviewed source gives a usable groundspeed central tendency, spread or shape for odor tracking in ROOM, and E05 reports a wind-tunnel airspeed, a different quantity that could enter only through room_kinematic_scale, which stays 1.0. Support and mean are held at the accepted ODOR_TRACK envelope. Persistence is the existing ODOR_TRACK episode; no new persistence parameter is added.",
+      "distribution": "triangular_symmetric",
+      "min_bl_s": 9.0,
+      "mode_bl_s": 11.0,
+      "max_bl_s": 13.0
+    },
+    "odor_search_speed_bl_s": {
+      "_comment": "M1.8-B2d. One sampled ODOR_SEARCH target per ecological ODOR_SEARCH episode, replacing the shared deterministic 8 s speed sinusoid for this context only, drawn from its own random stream. The shape is PHENOMENOLOGICAL, as for EXPLORE and ODOR_TRACK; support and mean are held at the accepted ODOR_SEARCH envelope. See game/M1_8_B_COMPLETION_DESIGN.md.",
+      "distribution": "triangular_symmetric",
+      "min_bl_s": 4.0,
+      "mode_bl_s": 5.5,
+      "max_bl_s": 7.0
+    },
+    "recover_speed_bl_s": {
+      "_comment": "M1.8-B2d. One sampled RECOVER target per ecological RECOVER episode, from its own random stream, replacing the shared 8 s sinusoid for this context only. PHENOMENOLOGICAL shape; support and mean held at the accepted RECOVER envelope.",
+      "distribution": "triangular_symmetric",
+      "min_bl_s": 5.0,
+      "mode_bl_s": 6.5,
+      "max_bl_s": 8.0
+    },
+    "speed_relaxation_per_second": {
+      "_comment": "M1.8-B2e. One sampled damping rate per ecological episode of the sampled contexts (EXPLORE, ODOR_TRACK, ODOR_SEARCH, RECOVER), drawn from its own random stream, replacing the fixed fly.damping_per_second for those episodes only. Class C: no reviewed source gives a matched acceleration distribution; the mean is held at the accepted 3.0 /s. Neural-priority, lifecycle and TRANSIT profiles keep the accepted rate.",
+      "distribution": "triangular_symmetric",
+      "min_per_second": 2.0,
+      "mode_per_second": 3.0,
+      "max_per_second": 4.0
+    }
+  }
+}

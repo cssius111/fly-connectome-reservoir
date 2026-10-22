@@ -1,0 +1,195 @@
+{
+  "config_version": 5,
+  "_comment": "M1.5 GAME preset. Logical units are resolution-independent pixels; body length defines the scale. LAB remains in game_config.json.",
+  "sim": {
+    "tick_seconds": 0.02,
+    "seed": 20260917
+  },
+  "world": {
+    "width": 3840,
+    "height": 2160,
+    "margin": 48,
+    "splat_seconds": 1.6
+  },
+  "swatter": {
+    "paddle_radius": 144.0,
+    "hover_height": 320.0,
+    "windup_height": 150.0,
+    "active_height": 24.0,
+    "edge_on_factor": 0.65,
+    "max_tracking_speed": 1800.0,
+    "smoothing_tau": 0.07,
+    "windup_tracking_factor": 0.35,
+    "active_tracking_factor": 0.0,
+    "windup_seconds": 0.18,
+    "active_seconds": 0.08,
+    "cooldown_seconds": 0.32,
+    "directional": {
+      "history_seconds": 0.18,
+      "sweep_fraction": 0.45,
+      "max_sweep_speed": 1000.0,
+      "min_speed": 20.0,
+      "tilt_anisotropy": 0.25
+    }
+  },
+  "fly": {
+    "radius": 11.0,
+    "damping_per_second": 3.0,
+    "max_speed": 1000.0,
+    "escape_impulse": 880.0,
+    "escape_forward_bias": 0.35,
+    "turn_rate": 4.0,
+    "wander_interval_seconds": 1.6,
+    "baseline_speed": 216.0,
+    "wander_turn_rate": 0.08,
+    "wander_turn_tau_seconds": 0.8,
+    "max_yaw_rate": 31.0,
+    "_comment": "body_length_px defines body length in logical world units. Rendering scales it to display pixels; physics uses logical units/s.",
+    "body_length_px": 24.0,
+    "curvature": {
+      "amplitudes_rad_s": [
+        0.16,
+        0.06
+      ],
+      "periods_seconds": [
+        7.0,
+        13.0
+      ]
+    },
+    "sideslip": {
+      "max_degrees": 80.0,
+      "realignment_tau_seconds": 0.28
+    }
+  },
+  "brain": {
+    "data": "data",
+    "device": "cpu",
+    "seed": 64,
+    "dt_seconds": 0.02,
+    "sensory_input": false,
+    "refractory_seconds": 0.0,
+    "gain": 3.0,
+    "tonic": 0.14,
+    "noise_hz": 1.2,
+    "noise_amp": 0.22,
+    "trace_tau_seconds": 0.1
+  },
+  "encoder": {
+    "_comment": "LC4/LPLC2 populations are subsampled to min(left, right) using encoder_seed, matching PROTOCOL.md's balancing rule.",
+    "encoder_seed": 20260917,
+    "loom_gain": 20.0,
+    "loom_size": 0.0,
+    "cap": 0.8,
+    "threat_max": 0.8,
+    "threat_theta_reference": 0.5,
+    "threat_theta_dot_reference": 2.0,
+    "virtual_distance": 100.0
+  },
+  "policy": {
+    "_comment": "Keep escape_threshold null: load a provenance-matched record. Recalibrate with python tools/calibrate_escape.py --config game_play_config.json --trials 28.",
+    "escape_threshold": null,
+    "calibration_paths": [
+      "artifacts/game/calibration_game.json",
+      "results/game/calibration_game.json"
+    ],
+    "refractory_seconds": 0.4,
+    "turn_gain": 0.8,
+    "alert_threshold_fraction": 0.55,
+    "steering_tau_seconds": 0.12,
+    "alert_saccade_strength": 0.6,
+    "saccade_interval_seconds": 0.8,
+    "alert_saccade_dwell_seconds": 0.06
+  },
+  "saccades": {
+    "_comment": "Turn actuator bounds. Duration is derived from a peak angular speed, so bigger turns take longer and no pulse exceeds peak_rate_cap.",
+    "enabled": true,
+    "min_duration_seconds": 0.06,
+    "max_duration_seconds": 0.3,
+    "max_degrees": 120.0,
+    "peak_rate_cap_deg_per_second": 1500.0,
+    "alert_max_degrees": 55.0,
+    "alert_peak_rate_deg_per_second": 900.0,
+    "escape_max_degrees": 110.0,
+    "escape_peak_rate_deg_per_second": 1350.0
+  },
+  "flight": {
+    "_comment": "Category B: phenomenological free flight and boundary behaviour. Seeded, local, and independent of the connectome.",
+    "interval": {
+      "short_seconds": [
+        0.3,
+        0.7
+      ],
+      "ordinary_seconds": [
+        0.8,
+        1.9
+      ],
+      "long_seconds": [
+        2.6,
+        6.0
+      ],
+      "short_probability": 0.28,
+      "long_probability": 0.18,
+      "perimeter_multiplier": 1.7
+    },
+    "correction": {
+      "degrees": [
+        5.0,
+        18.0
+      ],
+      "peak_rate_deg_per_second": [
+        250.0,
+        600.0
+      ],
+      "probability": 0.42
+    },
+    "saccade": {
+      "degrees": [
+        25.0,
+        105.0
+      ],
+      "peak_rate_deg_per_second": [
+        700.0,
+        1400.0
+      ]
+    },
+    "boundary": {
+      "sense_range": 150.0,
+      "avoid_time_to_contact_seconds": 0.55,
+      "avoid_inward_degrees": 14.0,
+      "avoid_refractory_seconds": 0.2,
+      "avoid_peak_rate_deg_per_second": [
+        700.0,
+        1300.0
+      ],
+      "perimeter_enter_proximity": 0.45,
+      "perimeter_leave_proximity": 0.2,
+      "patience_seconds": [
+        1.2,
+        4.5
+      ],
+      "depart_degrees": [
+        40.0,
+        85.0
+      ],
+      "depart_peak_rate_deg_per_second": [
+        600.0,
+        1100.0
+      ]
+    }
+  },
+  "arena": {
+    "name": "game",
+    "width_body_lengths": 160,
+    "height_body_lengths": 90
+  },
+  "spawn": {
+    "randomized": true,
+    "wall_clearance_body_lengths": 6.0,
+    "swatter_clearance_body_lengths": 3.0,
+    "speed_fraction": [
+      0.8,
+      1.05
+    ],
+    "max_slip_degrees": 12.0
+  }
+}
