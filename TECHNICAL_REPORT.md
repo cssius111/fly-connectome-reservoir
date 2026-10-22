@@ -699,7 +699,36 @@ local Windows checks passed (491 tests), a 192 s playtest showed no self-approac
 ecology ALERT without an executed response and unchanged TRANSIT speed, and the user accepted
 B2c-B4b.
 
-### 9.6 Other open items
+### 9.6 Toward a realistic fly: the M3.0 fidelity scorecard
+
+On 2026-10-22 the user set the project's goal: the model fly should behave more like a real fly,
+and difficulty follows from that.
+
+M3.0 was preregistered in [game/M3_0_FIDELITY_SCORECARD_DESIGN.md](game/M3_0_FIDELITY_SCORECARD_DESIGN.md)
+and measured in [results/game/M3_0_FIDELITY_SCORECARD.md](results/game/M3_0_FIDELITY_SCORECARD.md).
+It compares the accepted runtime with published *Drosophila* data:
+- escape comparators, from open full texts: [game/M3_0_ESCAPE_EVIDENCE.md](game/M3_0_ESCAPE_EVIDENCE.md);
+- saccade comparators, from the M1.8-R0 evidence lock.
+
+Findings:
+- **Escape timing.** The model escapes far too early. The angular size at escape is 14-32°,
+  with an implied threshold of 18.6° against 54°.
+- **Escape probability.** The model escapes in every trial (1.00 against 0.82).
+- **Escape direction.** For lateral threats the model jumps forward and away, as real flies do.
+  It cannot tell front from back, because the Retina passes on only the side of a stimulus, so
+  frontal and rear threats get the right-side response.
+- **Escape modes.** The short and long escape modes are not represented.
+- **Spontaneous saccades.** They are about four times too rare (0.34 against 1.37 per s) and too
+  small (57° against about 90°).
+- **Flight speed** (context): it is about 14 times slower in body lengths per second, which is
+  the frozen gameplay scale.
+
+The next fidelity milestone is the user's choice among three groups:
+- the escape decision, which is frozen;
+- the Retina and the escape pathways, which are structural;
+- the flight generator, which is parametric.
+
+### 9.7 Other open items
 
 - **TRANSIT speed** still follows the legacy shared 8 s sinusoid over 9-13 BL/s. A sampling
   stage that holds the envelope (as B2b-ii and B2b-iii did) would not make transit faster;
