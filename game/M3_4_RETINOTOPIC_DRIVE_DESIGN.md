@@ -5,8 +5,9 @@ Status: **preregistered on 2026-10-23, before any implementation or run.**
 **Authorization.**
 - On 2026-10-23 the user read the M3.4 research note and authorized writing this
   preregistration.
-- Implementation, calibration and every check need a separate authorization after the user has
-  read it.
+- After reading it, the same day, they authorized its implementation as written: the
+  `Retina.elevation` field, the `retinotopic_v1` mode, the receptive-field build tool, ROOM
+  `config_version` 30, the calibration and every check.
 - Acceptance remains the user's, after a playtest.
 
 **Basis.**

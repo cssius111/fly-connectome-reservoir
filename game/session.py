@@ -207,6 +207,8 @@ def resolve_escape_threshold(config: dict, root: Path = ROOT) -> ThresholdSource
                     command = "python tools/m3_2_record.py"
     if decoder is not None and decoder["kind"] == DOUBLET_DECODER:
         command = "python tools/m3_3_record.py"
+        if config["encoder"].get("feature_model") == "retinotopic_v1":
+            command = "python tools/m3_4_record.py"
     expected = calibration_provenance(config)
     tried = []
     for rel in policy["calibration_paths"]:
@@ -368,7 +370,7 @@ class Session:
             self.threshold_source = None
         self.policy = policy
         self.brain = brain if brain is not None else build_brain(config, root)
-        self.encoder = RetinalEncoder(self.brain, config)
+        self.encoder = RetinalEncoder(self.brain, config, root)
         self.fly_loop = FlyLoop(self.brain, self.encoder, policy, config)
         self.projector = RetinaProjector(self.tick_seconds)
         self.world = World(config, self.seed)

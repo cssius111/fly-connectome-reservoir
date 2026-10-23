@@ -109,8 +109,10 @@ class TestRawStateCannotReachTheBrain(unittest.TestCase):
         with self.assertRaises((AttributeError, TypeError)):
             r.mouse_x = 640.0                              # no new attributes
         self.assertFalse(hasattr(r, "__dict__"), "Retina must not carry an instance dict")
-        self.assertEqual(set(Retina.__slots__), {"theta", "theta_dot", "azimuth"})
-        self.assertEqual(set(Retina.__dataclass_fields__), {"theta", "theta_dot", "azimuth"})
+        # M3.4 added elevation, one more angle of the same image (game/M3_4_RETINOTOPIC_DRIVE_DESIGN.md).
+        fields = {"theta", "theta_dot", "azimuth", "elevation"}
+        self.assertEqual(set(Retina.__slots__), fields)
+        self.assertEqual(set(Retina.__dataclass_fields__), fields)
 
     def test_flyloop_has_no_reference_to_world(self):
         loop = loop_with()
