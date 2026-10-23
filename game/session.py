@@ -76,6 +76,7 @@ class ThresholdSource:
 DUAL_PATH_DECODER = "dual_path_v1"
 WINDOW_DECODER = "dual_path_window_v1"
 LATERAL_DECODER = "lateral_dual_path_v1"
+DOUBLET_DECODER = "same_side_doublet_v1"
 # Exact key set of each explicitly versioned decoder kind.
 DECODER_KINDS = {
     # M1.8-N2: FAST OR N consecutive samples.
@@ -90,6 +91,9 @@ DECODER_KINDS = {
                       "sustained_window_samples", "sustained_required_samples",
                       "require_current_qualifying", "lateral_same_side_window_ms",
                       "lateral_required_spikes"),
+    # M3.3: only a same-side DNp01 doublet fires; no summed path. The reference threshold
+    # scales the alert, turn and strength logic only. Class C engineering parameters.
+    DOUBLET_DECODER: ("kind", "alert_reference_threshold", "doublet_window_ms", "required_spikes"),
 }
 # The summed FAST threshold key of each dual-path kind.
 FAST_KEY = {DUAL_PATH_DECODER: "fast_threshold", WINDOW_DECODER: "fast_threshold",
@@ -126,6 +130,16 @@ def escape_decoder_spec(config: dict) -> dict | None:
     if missing:
         raise ValueError("Missing policy.escape_decoder keys: " + ", ".join(missing))
     spec = {key: block[key] for key in keys}
+    if kind == DOUBLET_DECODER:
+        for key in ("alert_reference_threshold", "doublet_window_ms"):
+            value = spec[key]
+            if isinstance(value, bool) or not isinstance(value, (int, float)) \
+                    or not math.isfinite(value) or value <= 0.0:
+                raise ValueError(f"policy.escape_decoder.{key} must be a positive number")
+            spec[key] = float(value)
+        if _integer(spec["required_spikes"], "required_spikes", 2) != 2:
+            raise ValueError("policy.escape_decoder.required_spikes: only 2 is supported")
+        return spec
     if kind == DUAL_PATH_DECODER:
         _integer(spec["persistence_samples"], "persistence_samples", 2)
     else:
@@ -191,6 +205,8 @@ def resolve_escape_threshold(config: dict, root: Path = ROOT) -> ThresholdSource
                     command = "python tools/m1_7_2_axis_record.py"
                 if config["encoder"].get("feature_model") == "ache2019_v1":
                     command = "python tools/m3_2_record.py"
+    if decoder is not None and decoder["kind"] == DOUBLET_DECODER:
+        command = "python tools/m3_3_record.py"
     expected = calibration_provenance(config)
     tried = []
     for rel in policy["calibration_paths"]:
@@ -216,8 +232,9 @@ def resolve_escape_threshold(config: dict, root: Path = ROOT) -> ThresholdSource
                         {k: recorded.get(k) for k in DECODER_KINDS[decoder["kind"]]} != decoder:
                     tried.append(f"{rel}: escape_decoder mismatch")
                     continue
-                if threshold != decoder["sustained_threshold"]:
-                    tried.append(f"{rel}: escape_threshold differs from sustained_threshold")
+                key = "sustained_threshold" if "sustained_threshold" in decoder else "alert_reference_threshold"
+                if threshold != decoder[key]:
+                    tried.append(f"{rel}: escape_threshold differs from {key}")
                     continue
             return ThresholdSource(threshold, str(rel), decoder)
         except (OSError, ValueError, KeyError, TypeError) as exc:
@@ -227,13 +244,21 @@ def resolve_escape_threshold(config: dict, root: Path = ROOT) -> ThresholdSource
                      + " (add --config PATH when using a custom game config).")
 
 
+def _window_samples(ms: float, key: str, config: dict) -> int:
+    samples = ms / 1000.0 / float(config["sim"]["tick_seconds"])
+    if abs(samples - round(samples)) > 1e-9 or round(samples) < 1:
+        raise ValueError(f"policy.escape_decoder.{key} must be a whole, positive number of ticks")
+    return int(round(samples))
+
+
 def lateral_window_samples(decoder: dict, config: dict) -> int:
     """The lateral window in samples; it must be a whole number of ticks."""
-    samples = decoder["lateral_same_side_window_ms"] / 1000.0 / float(config["sim"]["tick_seconds"])
-    if abs(samples - round(samples)) > 1e-9 or round(samples) < 1:
-        raise ValueError("policy.escape_decoder.lateral_same_side_window_ms must be a whole, "
-                         "positive number of ticks")
-    return int(round(samples))
+    return _window_samples(decoder["lateral_same_side_window_ms"], "lateral_same_side_window_ms", config)
+
+
+def doublet_window_samples(decoder: dict, config: dict) -> int:
+    """The M3.3 doublet window in samples; it must be a whole number of ticks."""
+    return _window_samples(decoder["doublet_window_ms"], "doublet_window_ms", config)
 
 
 def dnp01_trace_decay(config: dict) -> float:
@@ -246,6 +271,12 @@ def dnp01_trace_decay(config: dict) -> float:
 
 def build_policy(config: dict, root: Path = ROOT) -> tuple[FixedEscapePolicy, ThresholdSource]:
     source = resolve_escape_threshold(config, root)
+    return policy_from_source(config, source), source
+
+
+def policy_from_source(config: dict, source: ThresholdSource) -> FixedEscapePolicy:
+    """The runtime policy for a resolved threshold source. Calibration tools that have no
+    record yet pass a source built from the configured decoder block."""
     p = config["policy"]
     d = source.decoder
     if d is None:
@@ -255,6 +286,11 @@ def build_policy(config: dict, root: Path = ROOT) -> tuple[FixedEscapePolicy, Th
                    "persistence_samples": d["sustained_required_samples"],
                    "sustained_window_samples": d["sustained_window_samples"],
                    "require_current_qualifying": d["require_current_qualifying"]}
+    elif d["kind"] == DOUBLET_DECODER:
+        decoder = {"lateral_window_samples": doublet_window_samples(d, config),
+                   "lateral_required_spikes": d["required_spikes"],
+                   "trace_decay": dnp01_trace_decay(config),
+                   "summed_paths": False}
     elif d["kind"] == LATERAL_DECODER:
         decoder = {"fast_threshold": d["summed_fast_threshold"],
                    "persistence_samples": d["sustained_required_samples"],
@@ -277,7 +313,7 @@ def build_policy(config: dict, root: Path = ROOT) -> tuple[FixedEscapePolicy, Th
                                saccade_interval_seconds=float(p["saccade_interval_seconds"]),
                                alert_saccade_dwell_seconds=float(p["alert_saccade_dwell_seconds"]),
                                **decoder)
-    return policy, source
+    return policy
 
 
 # Which ThreatState the ecology receives (ROOM `ecology_threat_input.mode`). The lifecycle

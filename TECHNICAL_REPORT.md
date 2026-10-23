@@ -753,6 +753,25 @@ The user chose the escape decision first, starting with read-only research. M3.1
     (category B), because the expansion gate passes even very slow expansion.
   - The user chose to record the failure and to keep v27. The v28 candidate stays in git
     history at `408fbc0`, and the gated encoder mode stays unused in the code.
+- **M3.3, both M3.2 failures addressed; failed one check.**
+  - The user asked to fix both M3.2 failures together.
+  - Read-only research ([game/M3_3_ESCAPE_DECISION_RESEARCH.md](game/M3_3_ESCAPE_DECISION_RESEARCH.md))
+    traced them to the decoder's summed N2b paths.
+  - M3.3 ([game/M3_3_ESCAPE_DECISION_DESIGN.md](game/M3_3_ESCAPE_DECISION_DESIGN.md)) kept the
+    M3.2 encoder with a recalibrated scale (0.30 V/mV). It replaced the decoder by a same-side
+    DNp01 doublet within 40 ms.
+  - The results are in [results/game/M3_3_ESCAPE_DECISION.md](results/game/M3_3_ESCAPE_DECISION.md).
+  - **Improvements:**
+    - E2 rose to 38.2°, partial;
+    - E1 is 0.83, a match;
+    - no-player escapes fell to 0, against 9 for v27;
+    - the escape is start-size invariant.
+  - **Failure.** Check V3 failed at one held-out l/v by 2.8 ms beyond its 30 ms tolerance.
+  - **Two defects seen in the threat matrix:**
+    - fast frontal hover-height approaches are almost never escaped;
+    - a strong left-right asymmetry appears near the doublet threshold.
+  - Under the decision rule, v27 stays. The v29 candidate is commit `9830757`. The doublet
+    decoder kind stays unused in the code.
 
 ### 9.7 Other open items
 
