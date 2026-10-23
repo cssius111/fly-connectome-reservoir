@@ -772,6 +772,22 @@ The user chose the escape decision first, starting with read-only research. M3.1
     - a strong left-right asymmetry appears near the doublet threshold.
   - Under the decision rule, v27 stays. The v29 candidate is commit `9830757`. The doublet
     decoder kind stays unused in the code.
+- **M3.4, read-only research on retinotopic drive**
+  ([game/M3_4_RETINOTOPIC_DRIVE_RESEARCH.md](game/M3_4_RETINOTOPIC_DRIVE_RESEARCH.md)).
+  - **Receptive fields.** MaleCNS assigns every optic-lobe synapse to a column. Mapped to the eye
+    through the Zhao et al. 2025 micro-CT eye map, the input synapses give each LPLC2 and LC4
+    cell's receptive field.
+    - The fields are about 44° (LPLC2 dendrites) and 38° (LC4) across, and they tile each eye.
+  - **Gradients.** The MaleCNS weights carry the positional gradients of Dombrovski et al. 2023:
+    - LPLC2 → DNp01 is stronger for dorsal fields;
+    - LC4 → DNp02 is stronger for frontal fields, and LC4 → DNp11 for posterior ones.
+  - **Network test.** Coverage-weighted drive grows smoothly with disk size, and it gives a
+    front/back code at DNp02/DNp11.
+  - **M3.3 asymmetry re-diagnosed.** The cause is the paddle's settling creep, which switches on
+    the size-only LPLC2 term, together with a lower doublet threshold of the left DNp01 under
+    identical drive. The M3.3 report's weight explanation is corrected by an erratum.
+  - No runtime change. Any retinotopic mode needs a preregistration, a Retina elevation field
+    and, for E4, a policy readout change.
 
 ### 9.7 Other open items
 
