@@ -15,6 +15,7 @@ Both run with this checkout's code, whose legacy encoder mode is bit-identical t
     python tools/m3_2_threat_matrix.py run --arm baseline
     python tools/m3_2_threat_matrix.py run --arm candidate
     python tools/m3_2_threat_matrix.py summary
+    (add --out DIR to keep another milestone's runs apart; M3.3 uses artifacts/m3_3_run/threat_matrix)
 
 Outputs go to artifacts/m3_2/threat_matrix/ (git-ignored), one file per arm and trajectory,
 with the M3.0 provenance guard.
@@ -124,10 +125,13 @@ def summary():
 
 
 def main():
+    global OUT
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument('mode', choices=('run', 'summary'))
     parser.add_argument('--arm', choices=ARMS)
+    parser.add_argument('--out', type=Path, default=OUT)
     args = parser.parse_args()
+    OUT = args.out
     if args.mode == 'run':
         if args.arm is None:
             parser.error('run needs --arm')
