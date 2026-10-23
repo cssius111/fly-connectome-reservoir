@@ -124,6 +124,7 @@ Median size at escape for starts of 5°, 10° and 20°:
 | Rest, 16 min | 1 | 0 |
 | Replayed no-player flight, legacy encoder, 60 min | 0.033 per min | 0 |
 | Replayed no-player flight, M3.2 encoder, 60 min | 1.48 per min | 0 |
+| Replayed no-player flight, M3.2 encoder with the 10°/s gate, 60 min | 0.10 per min | 0 |
 
 The flight replay feeds the Retina recorded in v27 no-player flight (seeds 9701-9720) into each
 variant, open-loop. It approximates the closed loop, since the path would change after a
@@ -131,6 +132,8 @@ variant's first different action.
 - **Legacy check.** The legacy N4B1C rate matches the closed-loop v27 baseline of M3.2 V6b
   (0.04 per min).
 - **M3.2 encoder.** The open-loop M3.2 rate is higher than its closed-loop 0.42 per minute.
+- **The gate.** It lowers the runtime decoder's false alarms but does not remove them. The
+  doublet rule needs no gate.
 
 ## 4. Candidate design for M3.3
 
