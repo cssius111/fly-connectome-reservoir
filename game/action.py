@@ -148,6 +148,12 @@ class FixedEscapePolicy:
       motor output does not depend on which path fired. The 60 ms window
       (3 samples) is a Class C simulator-derived engineering parameter, not a
       biological constant.
+      The M3.3 same-side doublet decoder (`summed_paths=False`) keeps only the
+      lateral path: no FAST or SUSTAINED path exists, so slow bilateral DNp01
+      activity cannot fire an escape. `threshold` then only scales the alert,
+      turn and strength logic. Its window (2 samples, 40 ms) is a Class C
+      simulator-derived constant: at rest no two DNp01 spikes of one side are
+      closer than 6 ticks (game/M3_3_ESCAPE_DECISION_RESEARCH.md).
     * Alert: subthreshold DNp01 activity enables a modest, smoothed turn.
     * Direction: graded DNp01 left/right contrast in the fly's body frame,
       away from the more active side; a tie has no arbitrary lateral bias.
@@ -166,7 +172,8 @@ class FixedEscapePolicy:
                  require_current_qualifying: bool = True,
                  lateral_window_samples: int | None = None,
                  lateral_required_spikes: int = 2,
-                 trace_decay: float | None = None):
+                 trace_decay: float | None = None,
+                 summed_paths: bool = True):
         if not (threshold > 0.0):
             raise ValueError(f"escape threshold must be positive, got {threshold!r}")
         if isinstance(persistence_samples, bool) or not isinstance(persistence_samples, int) \
@@ -193,7 +200,7 @@ class FixedEscapePolicy:
             if isinstance(lateral_window_samples, bool) or not isinstance(lateral_window_samples, int) \
                     or lateral_window_samples < 1:
                 raise ValueError("lateral_window_samples must be an integer >= 1")
-            if sustained_window_samples is None:
+            if sustained_window_samples is None and summed_paths:
                 raise ValueError("the lateral path is defined only on top of the window criterion")
             if lateral_required_spikes != 2 or isinstance(lateral_required_spikes, bool):
                 raise ValueError("only two-spike same-side lateral evidence is supported")
@@ -201,6 +208,12 @@ class FixedEscapePolicy:
                 raise ValueError("the lateral path needs the DNp01 trace decay in (0, 1)")
         elif trace_decay is not None:
             raise ValueError("trace_decay is used only by the lateral path")
+        if summed_paths is not True and summed_paths is not False:
+            raise ValueError("summed_paths must be a bool")
+        if not summed_paths and (lateral_window_samples is None or fast_threshold is not None
+                                 or sustained_window_samples is not None):
+            raise ValueError("the doublet-only decoder needs the lateral path and no summed criterion")
+        self.summed_paths = summed_paths
         self.lateral_window_samples = (None if lateral_window_samples is None
                                        else int(lateral_window_samples))
         self.lateral_required_spikes = int(lateral_required_spikes)
@@ -263,7 +276,8 @@ class FixedEscapePolicy:
         """
         windowed = self.sustained_window_samples is not None
         lateral = self.lateral_window_samples is not None
-        return {"escape_decoder": ("lateral_dual_path_v1" if lateral else
+        return {"escape_decoder": ("same_side_doublet_v1" if not self.summed_paths else
+                                   "lateral_dual_path_v1" if lateral else
                                    "dual_path_window_v1" if windowed else
                                    "dual_path_v1" if self.dual_path else "single_sample"),
                 "escape_threshold": self.threshold,
@@ -304,7 +318,7 @@ class FixedEscapePolicy:
         Precedence for the diagnostic channel: LATERAL, FAST, SUSTAINED. The
         full set of qualifying paths is kept in self._pending_paths.
         """
-        summed = self._summed_channel(total)
+        summed = self._summed_channel(total) if self.summed_paths else None
         if self.lateral_window_samples is None:
             return summed
         paths = []
