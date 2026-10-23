@@ -273,6 +273,38 @@ class TestFrontalDiskDrivesBothEyes(unittest.TestCase):
             ws.close()
 
 
+class TestRoomCandidate(unittest.TestCase):
+    """The M3.4 candidate, ROOM config_version 30: the preregistered encoder block and the M3.3 decoder."""
+
+    def setUp(self):
+        self.room = load_config(ROOT / "game_room_config.json")
+
+    def test_candidate_configuration(self):
+        from game.session import escape_decoder_spec
+        self.assertEqual(self.room["config_version"], 30)
+        self.assertEqual(encoder_feature_model(self.room), FEATURE_MODEL_RETINOTOPIC)
+        block = self.room["encoder"]["retinotopic"]
+        self.assertEqual({k: block[k] for k in ("acceptance_fwhm_deg", "lplc2_min_edge_speed_deg_s",
+                                                "fields_file")},
+                         {"acceptance_fwhm_deg": 7.7, "lplc2_min_edge_speed_deg_s": 10.0,
+                          "fields_file": "data/receptive_fields_v1.npz"})
+        self.assertEqual(escape_decoder_spec(self.room),
+                         {"kind": "same_side_doublet_v1", "alert_reference_threshold": 1.45,
+                          "doublet_window_ms": 40.0, "required_spikes": 2})
+
+    def test_candidate_resolves_the_m3_4_record(self):
+        from game.session import resolve_escape_threshold
+        source = resolve_escape_threshold(self.room)
+        self.assertEqual(source.origin, "results/game/calibration_room_m3_4.json")
+        self.assertEqual(source.threshold, 1.45)
+        record = load_config(ROOT / source.origin)
+        self.assertEqual(record["encoder"]["block"], self.room["encoder"]["retinotopic"])
+
+    def test_lab_and_game_keep_the_legacy_encoder(self):
+        for name in ("game_config.json", "game_play_config.json"):
+            self.assertNotIn("feature_model", load_config(ROOT / name)["encoder"])
+
+
 @unittest.skipUnless((ROOT / "data/receptive_fields_v1.npz").exists(), "receptive-field table not built")
 class TestBuiltTable(unittest.TestCase):
     def test_built_table_drives_the_covered_eyes(self):

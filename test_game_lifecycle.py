@@ -6,6 +6,7 @@ import json
 import math
 import os
 from pathlib import Path
+import subprocess
 import tempfile
 import unittest
 import numpy as np
@@ -21,7 +22,13 @@ from game.world import World, Fly
 from test_game import same_content, shared_brain
 
 ROOT = Path(__file__).parent
-ROOM = load_config(ROOT/'game_room_config.json')
+# The accepted ROOM configuration these M1.8-A lifecycle tests were written for: v27, read from
+# main after M3.3. From M3.4 on the working ROOM configuration may be a candidate whose encoder
+# changes the escape behaviour (game/M3_4_RETINOTOPIC_DRIVE_DESIGN.md); the lifecycle mechanics
+# tested here do not depend on the encoder.
+V27_COMMIT = '7483e512d83ed07a74f5b5ca8b4e89f9ded9122b'
+ROOM = json.loads(subprocess.check_output(['git', 'show', V27_COMMIT + ':game_room_config.json'],
+                                          cwd=ROOT, text=True))
 DT = .02
 
 

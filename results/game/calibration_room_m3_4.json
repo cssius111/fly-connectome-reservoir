@@ -1,0 +1,298 @@
+{
+  "record_kind": "m3-4-retinotopic-drive-record-v1",
+  "stage": "M3.4",
+  "not_a_scalar_calibration": true,
+  "decoder_unchanged": false,
+  "decoder_replaced": true,
+  "encoder_changed": true,
+  "retina_changed": true,
+  "geometry_changed": false,
+  "rule": "Each LPLC2 and LC4 cell is driven by min(cap, scale * F * c), where F is its type's Ache et al. 2019 term in mV and c the fraction of its MaleCNS receptive field inside the swatter's disk, seen through Gaussian column acceptance functions; LPLC2 only while the image edge expands at >= lplc2_min_edge_speed_deg_s. Escape on a same-side DNp01 doublet within 40 ms (same_side_doublet_v1).",
+  "escape_threshold": 1.45,
+  "escape_decoder": {
+    "kind": "same_side_doublet_v1",
+    "alert_reference_threshold": 1.45,
+    "doublet_window_ms": 40.0,
+    "required_spikes": 2
+  },
+  "parameter_basis": {
+    "alert_reference_threshold": {
+      "value": 1.45,
+      "basis": "carried over unchanged from the M1.7.2 record; it scales the unchanged alert, turn and strength logic and fires nothing",
+      "source_record": "results/game/calibration_room_m1_7_2.json",
+      "source_sha256": "005880fcf9ca6dfa08a025deff0f8de2989ddaf508493083fabdce30063f3788"
+    },
+    "doublet_window_ms": {
+      "value": 40.0,
+      "class": "C",
+      "basis": "the M3.3 decoder, unchanged (game/M3_3_ESCAPE_DECISION_DESIGN.md)"
+    },
+    "acceptance_fwhm_deg": {
+      "value": 7.7,
+      "class": "A",
+      "basis": "light-adapted R1-R6 acceptance angle, 7.70 +- 1.27 deg (Juusola et al. 2017, eLife 6:e26117)"
+    },
+    "lplc2_min_edge_speed_deg_s": {
+      "value": 10.0,
+      "class": "B",
+      "basis": "edge speed of the standard constant-velocity looming stimulus of Klapoetke et al. 2017, to which LPLC2 responds strongly; no LPLC2 response is assumed below it"
+    },
+    "not_biological_constants": [
+      "scale_volts_per_mv",
+      "doublet_window_ms"
+    ]
+  },
+  "geometry": {
+    "tilt_geometry": "elevation_aware_tilt_v1",
+    "previous_tilt_geometry": "bearing_only_v0",
+    "tilt_anisotropy": 0.25,
+    "formula": "half = paddle_radius * (e + (1 - e) * face) * (1 - tilt_anisotropy * cos(elevation) * (1 - face) * abs(sin(bearing - orientation))), with cos(elevation) = horizontal fly-paddle distance / 3-D fly-paddle distance",
+    "previous_formula": "half = paddle_radius * (e + (1 - e) * face) * (1 - tilt_anisotropy * (1 - face) * abs(sin(bearing - orientation)))",
+    "scope": "ROOM configuration only; GAME and LAB configurations are unchanged",
+    "reason": "correction of the overhead tilt-foreshortening artifact: the bearing-only term turns horizontal bearing rate into apparent expansion of up to 6.9 rad/s under a stationary paddle (0.13 rad/s from range change), producing all overhead free-flight escapes of M1.8-N4B4 and the episode-5 slow-close signal",
+    "research": {
+      "milestone": "M1.8-N4B5",
+      "candidate": "G3_elevation_aware",
+      "research_commit": "0e9d2d9",
+      "frozen_geometry_sha256": "a11cafa09750b50bf3cad6e032746336981cc99b481edcdbd45656ddaa830b49",
+      "geometry_module_sha256_raw_worktree": "c3884e644df5c51ee95489b8f204795e1eb36648d5da14415de3abe0f3d7066a",
+      "files": {
+        "game/M1_8_N4B5_PADDLE_VISUAL_GEOMETRY.md": "08cac01953dd1cba95c124b18c89d389bb4c1586a62af09a46bbce6e826a8b43",
+        "tools/n4b5_geometry.py": "c3884e644df5c51ee95489b8f204795e1eb36648d5da14415de3abe0f3d7066a",
+        "tools/n4b5_analysis.py": "bcb66a0b6dde953e77bf974722f50d636aa46b8e867538e91d9a0365e3639215",
+        "tools/n4b5_resim.py": "4095aa5a82937276cec71364587073cbf69750fc875b928018b502c0d770957d",
+        "tools/n4b5_evaluate.py": "65e372c62e41922c4d2ffaa51cc105d7fcd5b9ef4087e9855f1f8609537dc9b9",
+        "game/M1_8_N4B4_FREE_FLIGHT_ESCAPE_INTERPRETATION.md": "c21d6be173c2d9b4358ab97f511d12801e97ffd10f67abc684982d30b854841b"
+      }
+    },
+    "parameter_class": "C (geometric rendering correction, not a biological parameter)",
+    "paddle_axis": "line_symmetric_v1",
+    "previous_paddle_axis": "heading_v0",
+    "axis_note": "the tilt term reads the paddle line axis instead of swatter.orientation; the line axis steers like the 360-degree heading tracker but folds an error above 90 degrees to the opposite direction, so a reversal no longer spins the paddle",
+    "axis_reason": "reversal spins of the frozen M1.7.1 controller add about 0.35 escapes per hover minute in recorded human play (results/game/M1_8_STOP_ROTATION_AUDIT.md)",
+    "axis_scope": "ROOM configuration only; GAME and LAB configurations are unchanged"
+  },
+  "kinematics": {
+    "_comment": "M1.8-B2a. room_kinematic_scale is a Class C simulator/environment mapping from body-length-normalized ecological speed to ROOM world units. It is NOT a measured biological constant and no literature magnitude has been adopted. 1.0 is the accepted no-op value. It applies only to non-neural ecological locomotion; threat-priority, landing approach and takeoff are excluded. M1.8-B2b-i separates the overloaded fly.max_speed into three Class C engineering ceilings: ecological locomotion, the accepted legacy neural/escape and lifecycle constraint, and a global numerical safety guard. All three are held at the legacy 1000.0 units/s so behavior is unchanged. None is a species flight maximum.",
+    "room_kinematic_scale": 1.0,
+    "ecological_cap_units_s": 1000.0,
+    "legacy_accepted_cap_units_s": 1000.0,
+    "safety_ceiling_units_s": 1000.0,
+    "explore_speed_bl_s": {
+      "_comment": "M1.8-B2b-ii. One sampled EXPLORE target per ecological EXPLORE episode, replacing the shared deterministic 8 s speed sinusoid for this context only. The shape is PHENOMENOLOGICAL: no reviewed source measures a free-flight speed distribution shape, and E02/E03 do not supply a usable central tendency, spread or support for ROOM. Support and mean are held at the accepted EXPLORE envelope so this stage changes the sampling model, not the magnitude. Persistence is the existing ecology.explore_duration_seconds dwell; no new persistence parameter is added.",
+      "distribution": "triangular_symmetric",
+      "min_bl_s": 5.0,
+      "mode_bl_s": 6.5,
+      "max_bl_s": 8.0
+    },
+    "odor_track_speed_bl_s": {
+      "_comment": "M1.8-B2b-iii. One sampled ODOR_TRACK target per ecological ODOR_TRACK episode, replacing the shared deterministic 8 s speed sinusoid for this context only, drawn from its own random stream. The shape is PHENOMENOLOGICAL, as for EXPLORE: no reviewed source gives a usable groundspeed central tendency, spread or shape for odor tracking in ROOM, and E05 reports a wind-tunnel airspeed, a different quantity that could enter only through room_kinematic_scale, which stays 1.0. Support and mean are held at the accepted ODOR_TRACK envelope. Persistence is the existing ODOR_TRACK episode; no new persistence parameter is added.",
+      "distribution": "triangular_symmetric",
+      "min_bl_s": 9.0,
+      "mode_bl_s": 11.0,
+      "max_bl_s": 13.0
+    },
+    "odor_search_speed_bl_s": {
+      "_comment": "M1.8-B2d. One sampled ODOR_SEARCH target per ecological ODOR_SEARCH episode, replacing the shared deterministic 8 s speed sinusoid for this context only, drawn from its own random stream. The shape is PHENOMENOLOGICAL, as for EXPLORE and ODOR_TRACK; support and mean are held at the accepted ODOR_SEARCH envelope. See game/M1_8_B_COMPLETION_DESIGN.md.",
+      "distribution": "triangular_symmetric",
+      "min_bl_s": 4.0,
+      "mode_bl_s": 5.5,
+      "max_bl_s": 7.0
+    },
+    "recover_speed_bl_s": {
+      "_comment": "M1.8-B2d. One sampled RECOVER target per ecological RECOVER episode, from its own random stream, replacing the shared 8 s sinusoid for this context only. PHENOMENOLOGICAL shape; support and mean held at the accepted RECOVER envelope.",
+      "distribution": "triangular_symmetric",
+      "min_bl_s": 5.0,
+      "mode_bl_s": 6.5,
+      "max_bl_s": 8.0
+    },
+    "speed_relaxation_per_second": {
+      "_comment": "M1.8-B2e. One sampled damping rate per ecological episode of the sampled contexts (EXPLORE, ODOR_TRACK, ODOR_SEARCH, RECOVER), drawn from its own random stream, replacing the fixed fly.damping_per_second for those episodes only. Class C: no reviewed source gives a matched acceleration distribution; the mean is held at the accepted 3.0 /s. Neural-priority, lifecycle and TRANSIT profiles keep the accepted rate.",
+      "distribution": "triangular_symmetric",
+      "min_per_second": 2.0,
+      "mode_per_second": 3.0,
+      "max_per_second": 4.0
+    }
+  },
+  "ecology_threat_input": {
+    "_comment": "M1.8-B3a. Which ThreatState the ecology receives; the lifecycle always receives the accepted mapping. executed_response_v1: the fixed policy's ALERT state alone (no saccade requested on the tick and no ALERT saccade executing) reaches the ecology as CALM; ESCAPE and executed alert responses pass unchanged. policy_state_v0, the default when this block is absent, hands the ecology the same threat as the lifecycle. Class C interface choice, not a biological claim. See game/M1_8_B3A_DESIGN.md.",
+    "mode": "executed_response_v1"
+  },
+  "encoder": {
+    "feature_model": "retinotopic_v1",
+    "previous_feature_model": "legacy_v0",
+    "published_constants": {
+      "lc4_mv_per_deg_s": 0.0002567,
+      "lplc2_peak_mv": 1.7,
+      "lplc2_center_deg": 42.0,
+      "lplc2_log_width": 0.52,
+      "weight_lplc2": 1.45,
+      "weight_lc4": 1.62
+    },
+    "source": "Ache et al. 2019, Curr Biol 29:1073-1081, doi:10.1016/j.cub.2019.01.079",
+    "block": {
+      "scale_volts_per_mv": 71.3,
+      "acceptance_fwhm_deg": 7.7,
+      "lplc2_min_edge_speed_deg_s": 10.0,
+      "fields_file": "data/receptive_fields_v1.npz",
+      "fields_sha256": "f75cfca9e565d254923dcbd4d3893605f1db7071171ef9ace482443f38da7c86"
+    },
+    "scale_basis": "the only calibrated constant; chosen by the preregistered grid search against the peak times of the paper's own GF model (tools/m3_2_ache_targets.py) on seeds 600001-600024 with the disk at azimuth 50 deg, elevation 11 deg, not against behaviour",
+    "calibration_at_chosen_scale": {
+      "scale_volts_per_mv": 71.3,
+      "admissible": true,
+      "loss_ms2": 614.2316926212526,
+      "per_lv": {
+        "10": {
+          "fraction": 0.75,
+          "median_t_ms": 5.699476972386569,
+          "median_theta_deg": 90.0,
+          "target_ms": -2.3
+        },
+        "20": {
+          "fraction": 0.7916666666666666,
+          "median_t_ms": -8.601046055226853,
+          "median_theta_deg": 90.0,
+          "target_ms": -29.7
+        },
+        "40": {
+          "fraction": 1.0,
+          "median_t_ms": -77.2020921104537,
+          "median_theta_deg": 54.77921548424232,
+          "target_ms": -81.3
+        },
+        "80": {
+          "fraction": 1.0,
+          "median_t_ms": -174.4041842209074,
+          "median_theta_deg": 49.28228211465667,
+          "target_ms": -183.8
+        }
+      }
+    },
+    "receptive_fields": {
+      "file": "data/receptive_fields_v1.npz",
+      "content_digest": "f75cfca9e565d254923dcbd4d3893605f1db7071171ef9ace482443f38da7c86",
+      "digest_rule": "game.perception.fields_digest (key, dtype, shape and bytes of every array)",
+      "builder": "tools/build_receptive_fields.py",
+      "synapses": "https://storage.googleapis.com/flyem-male-cns/v1.0/male-cns-v1.0-synapses-precomputed",
+      "eye_map": "Zhao et al. 2025, reiserlab/eyemap_T4 data/microCT/20240701 (right eye; left mirrored)",
+      "committed": false
+    },
+    "scope": "ROOM configuration only; GAME and LAB configurations keep legacy_v0"
+  },
+  "retina": {
+    "added_field": "elevation",
+    "default": 0.0,
+    "rule": "atan2(swatter.height, horizontal distance), radians"
+  },
+  "design_note": "game/M3_4_RETINOTOPIC_DRIVE_DESIGN.md",
+  "research_note": "game/M3_4_RETINOTOPIC_DRIVE_RESEARCH.md",
+  "hash_convention": "source records: SHA256 of committed content with CRLF normalised to LF; config_sha256: raw working-file bytes",
+  "source_record": {
+    "record": "results/game/calibration_room_m1_7_2.json",
+    "sha256": "005880fcf9ca6dfa08a025deff0f8de2989ddaf508493083fabdce30063f3788",
+    "provenance": {
+      "schema_version": 2,
+      "measurement_protocol": "fixed-fly-v2",
+      "config_hash_format": "canonical-json-sort-keys-ascii-compact",
+      "game_config_sha256": "40ced2219287da5aba3b200943ecaca52af2e45e9f6e3b95f87b81460b02f947",
+      "flybrain_version": "0.1.0",
+      "encoder_population_rule": "min-per-type-per-side-v1",
+      "encoder_seed": 20260917,
+      "encoder_types": {
+        "loom": [
+          "LPLC2"
+        ],
+        "threat": [
+          "LC4"
+        ]
+      },
+      "sensory_input": false,
+      "tick_seconds": 0.02,
+      "brain_dt_seconds": 0.02
+    },
+    "record_kind": "m1-7-2-paddle-axis-transfer-provenance-v1",
+    "modified": false
+  },
+  "tick_seconds": 0.02,
+  "config_sha256": "452a62555d381bd8d80fc37af5fa77f1fbf49512bae0e67d7b52142b43c11fc5",
+  "provenance": {
+    "schema_version": 2,
+    "measurement_protocol": "fixed-fly-v2",
+    "config_hash_format": "canonical-json-sort-keys-ascii-compact",
+    "game_config_sha256": "a9481ffa040153f47df25a8866ca9e50d4b4f9a6bbd4ca7049e4276d797a9a60",
+    "flybrain_version": "0.1.0",
+    "encoder_population_rule": "min-per-type-per-side-v1",
+    "encoder_seed": 20260917,
+    "encoder_types": {
+      "loom": [
+        "LPLC2"
+      ],
+      "threat": [
+        "LC4"
+      ]
+    },
+    "sensory_input": false,
+    "tick_seconds": 0.02,
+    "brain_dt_seconds": 0.02
+  },
+  "measurement_conditions": {
+    "collisions_enabled": false,
+    "escape_disabled": true,
+    "fly_motion_enabled": false,
+    "swatter_settle_ticks": 300,
+    "note": "fly position and heading are fixed; velocity stays zero, wander is disabled, and collisions/escape actions are disabled"
+  },
+  "measurement_reuse": {
+    "kind": "decoder replaced and encoder changed; alert reference carried over",
+    "source_record": "results/game/calibration_room_m1_7_2.json",
+    "source_sha256": "005880fcf9ca6dfa08a025deff0f8de2989ddaf508493083fabdce30063f3788",
+    "baseline_commit": "7483e512d83ed07a74f5b5ca8b4e89f9ded9122b",
+    "changed_config_paths": [
+      "config_version",
+      "encoder._feature_model_comment",
+      "encoder.feature_model",
+      "encoder.retinotopic",
+      "policy._comment",
+      "policy.calibration_paths",
+      "policy.escape_decoder._comment",
+      "policy.escape_decoder.alert_reference_threshold",
+      "policy.escape_decoder.doublet_window_ms",
+      "policy.escape_decoder.kind",
+      "policy.escape_decoder.lateral_required_spikes",
+      "policy.escape_decoder.lateral_same_side_window_ms",
+      "policy.escape_decoder.require_current_qualifying",
+      "policy.escape_decoder.required_spikes",
+      "policy.escape_decoder.summed_fast_threshold",
+      "policy.escape_decoder.sustained_required_samples",
+      "policy.escape_decoder.sustained_threshold",
+      "policy.escape_decoder.sustained_window_samples"
+    ]
+  },
+  "neurons": 166700,
+  "connections": 25088107,
+  "input_populations": {
+    "loom": {
+      "types": [
+        "LPLC2"
+      ],
+      "available_L": 94,
+      "available_R": 91,
+      "used_per_side": 91
+    },
+    "threat": {
+      "types": [
+        "LC4"
+      ],
+      "available_L": 71,
+      "available_R": 55,
+      "used_per_side": 55
+    }
+  },
+  "versions": {
+    "flybrain": "0.1.0",
+    "numpy": "2.4.6",
+    "scipy": "1.17.1",
+    "numba": "0.67.0"
+  }
+}

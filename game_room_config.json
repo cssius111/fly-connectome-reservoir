@@ -1,5 +1,5 @@
 {
-  "config_version": 27,
+  "config_version": 30,
   "_comment": "M1.6 horizontal ROOM slice. Logical units and state speeds are gameplay mappings, not universal biological constants.",
   "sim": {
     "tick_seconds": 0.02,
@@ -139,25 +139,30 @@
     "threat_max": 0.8,
     "threat_theta_reference": 0.5,
     "threat_theta_dot_reference": 2.0,
-    "virtual_distance": 100.0
+    "virtual_distance": 100.0,
+    "feature_model": "retinotopic_v1",
+    "_feature_model_comment": "M3.4 (game/M3_4_RETINOTOPIC_DRIVE_DESIGN.md): each LPLC2 and LC4 cell is driven by min(cap, scale * F * c), where F is its type's Ache et al. 2019 term (STAR Methods eqs. 3, 4 and 7, constants held in game/perception.py) and c the fraction of its MaleCNS receptive field inside the swatter's disk, seen through Gaussian column acceptance functions of acceptance_fwhm_deg (Juusola et al. 2017). LPLC2 is driven only while the image edge expands at >= lplc2_min_edge_speed_deg_s (Klapoetke et al. 2017). The receptive fields come from fields_file, built locally by tools/build_receptive_fields.py and verified by its content digest. scale_volts_per_mv is the one calibrated constant (tools/m3_4_retinotopic.py, against the peak times of the paper's GF model, not behaviour). loom_gain, loom_size, threat_max and the threat references are used only by legacy_v0, the default when feature_model is absent.",
+    "retinotopic": {
+      "scale_volts_per_mv": 71.3,
+      "acceptance_fwhm_deg": 7.7,
+      "lplc2_min_edge_speed_deg_s": 10.0,
+      "fields_file": "data/receptive_fields_v1.npz",
+      "fields_sha256": "f75cfca9e565d254923dcbd4d3893605f1db7071171ef9ace482443f38da7c86"
+    }
   },
   "policy": {
-    "_comment": "Exact provenance required. The M1.8-N4B1C lateral dual-path decoder (unchanged) under the M1.8-N4B5R elevation-aware geometry, the M1.8-B2b-iii to B4b kinematics and ecology and the M1.7.2 paddle line axis loads the M1.7.2 transfer record, which carries the identical decoder block for this configuration: rebuild it with python tools/m1_7_2_axis_record.py. Earlier records are preserved unchanged. tools/calibrate_escape.py measures the scalar single-sample criterion only and does not calibrate this decoder.",
+    "_comment": "Exact provenance required. The M3.3 same-side doublet decoder, which replaces the M1.8-N4B1C decoder in ROOM, with the M3.4 retinotopic_v1 encoder, the M1.8-N4B5R elevation-aware geometry, the M1.8-B2b-iii to B4b kinematics and ecology and the M1.7.2 paddle line axis loads the M3.4 record: rebuild it with python tools/m3_4_record.py. Earlier records are preserved unchanged. tools/calibrate_escape.py measures the scalar single-sample criterion only and does not calibrate this decoder.",
     "escape_threshold": null,
     "calibration_paths": [
-      "artifacts/game/calibration_room_m1_7_2.json",
-      "results/game/calibration_room_m1_7_2.json"
+      "artifacts/game/calibration_room_m3_4.json",
+      "results/game/calibration_room_m3_4.json"
     ],
     "escape_decoder": {
-      "_comment": "M1.8-N4B1C combined DNp01 criterion. Escape when EITHER path qualifies outside the shared refractory period. LATERAL: the same DNp01 side produces lateral_required_spikes inferred spikes within lateral_same_side_window_ms (per-side spikes inferred from that side's own trace; a left spike followed by a right spike never qualifies). Summed N2b path: FAST when left + right >= summed_fast_threshold; SUSTAINED when the current summed sample is >= sustained_threshold AND at least sustained_required_samples of the most recent sustained_window_samples summed samples are >= sustained_threshold. All values are Class C engineering decoder parameters derived from simulator evidence, not biological constants. sustained_threshold must equal the record's escape_threshold.",
-      "kind": "lateral_dual_path_v1",
-      "sustained_threshold": 1.45,
-      "summed_fast_threshold": 2.1,
-      "sustained_window_samples": 5,
-      "sustained_required_samples": 3,
-      "require_current_qualifying": true,
-      "lateral_same_side_window_ms": 60,
-      "lateral_required_spikes": 2
+      "_comment": "M3.3 same-side DNp01 doublet (game/M3_3_ESCAPE_DECISION_DESIGN.md). Escape only when one DNp01 side produces required_spikes inferred spikes at most doublet_window_ms apart, outside the refractory period (per-side spikes inferred from that side's own trace; a left spike followed by a right spike never qualifies). There is no summed path. alert_reference_threshold scales the unchanged alert, turn and strength logic and must equal the record's escape_threshold. Class C engineering decoder parameters derived from simulator evidence, not biological constants. Replaces the M1.8-N4B1C decoder in ROOM.",
+      "kind": "same_side_doublet_v1",
+      "alert_reference_threshold": 1.45,
+      "doublet_window_ms": 40,
+      "required_spikes": 2
     },
     "refractory_seconds": 0.4,
     "turn_gain": 0.8,
