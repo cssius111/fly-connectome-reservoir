@@ -30,7 +30,7 @@ Status: **measurement in progress (2026-10-23).**
 | V4 non-looming disks | 0 escapes in 120 trials | at most 1 | pass |
 | V5 spontaneous | 0 in 768 s | none | pass |
 | V6a threat matrix | running | descriptive | - |
-| V6b no-player flight | running | not more than baseline | - |
+| V6b no-player flight | 0 escapes against 9 in 240 minutes each | not more than baseline | **pass** |
 | V7 tests | 534 of 534 pass | all pass | pass |
 
 **What V3's miss means.**
@@ -113,5 +113,25 @@ receding disk.
 **V5.** There were no escapes in V1's 768 pre-stimulus seconds.
 
 ## 5. V6
+
+### V6b: paired no-player flight
+
+Seeds 9801-9880, 180 s each, pointer parked far away.
+- Baseline: v27 at `b5e6021`.
+- Candidate: v29.
+- Every escape was classified by the N4B4 counterfactual method.
+
+| Arm | Escapes | Per minute (95 % upper bound) | A | B | C | D |
+|---|---|---|---|---|---|---|
+| baseline, v27 | 9 (8 FAST, 1 SUSTAINED) | 0.037 (0.065) | 1 | 2 | 1 | 5 |
+| candidate, v29 | **0** | 0.000 (0.012) | 0 | 0 | 0 | 0 |
+
+- **What changed.** Every baseline escape came through the summed N2b paths. M3.3 removes them.
+- **What stayed the same.** In 71 of the 80 seeds both arms escape at exactly the same ticks;
+  those seeds have no escape in either arm.
+- **M3.2's failure is fixed.** M3.2's tenfold rise in no-player escapes (101 against 10) is gone.
+  v29 escapes less than the v27 baseline.
+
+### V6a: the N4B6 threat matrix
 
 Running; filled in when complete.
