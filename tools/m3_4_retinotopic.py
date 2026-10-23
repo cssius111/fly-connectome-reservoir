@@ -7,6 +7,7 @@ work, with the M3.0 provenance guard, so an interrupted run resumes where it sto
 
     python tools/m3_4_retinotopic.py calibrate [--lane K --lanes N]   # section 4, seeds 600001-600024
     python tools/m3_4_retinotopic.py validate                         # section 5: V1-V5, V8, D1
+    python tools/m3_4_retinotopic.py d2                               # D2: V6a with a 1 deg/s edge bound
     python tools/m3_4_retinotopic.py report
 
 Stimulus positions:
@@ -62,6 +63,7 @@ START_LV_MS, START_DEG = (40, 80, 160), (5.0, 10.0, 20.0)
 V8B_LV_MS = (20, 40, 80)
 SYMMETRY_TOLERANCE = 0.20
 D1_DNS = ('DNp02', 'DNp11')
+D2_MIN_EDGE_SPEED_DEG_S = 1.0
 
 
 def table_digest():
@@ -280,6 +282,27 @@ def validate():
     session.close()
 
 
+def d2():
+    """D2: the V6a threat matrix with lplc2_min_edge_speed_deg_s = 1.0 (descriptive only).
+
+    tools/m3_2_threat_matrix.py runs it unchanged as its candidate arm, on the v30 configuration
+    with that one value changed, so the decoder policy comes from policy_from_source instead of a
+    record."""
+    import tools.m3_2_threat_matrix as TM
+    from game.session import Session
+    config = copy.deepcopy(validation_config())
+    config['encoder']['retinotopic']['lplc2_min_edge_speed_deg_s'] = D2_MIN_EDGE_SPEED_DEG_S
+    encoder_feature_model(config)
+    saved = TM.OUT, TM.arm_config, TM.Session
+    TM.OUT = OUT / 'd2_threat_matrix'
+    TM.arm_config = lambda arm: config
+    TM.Session = lambda cfg, **kwargs: Session(cfg, policy=candidate_policy(cfg), **kwargs)
+    try:
+        TM.run('candidate')
+    finally:
+        TM.OUT, TM.arm_config, TM.Session = saved
+
+
 def validation_report():
     saved = (R.OUT, R.START_LV_MS, R.START_DEG)
     R.OUT, R.START_LV_MS, R.START_DEG = OUT, START_LV_MS, START_DEG
@@ -338,14 +361,14 @@ def report():
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument('mode', choices=('calibrate', 'validate', 'report'))
+    parser.add_argument('mode', choices=('calibrate', 'validate', 'd2', 'report'))
     parser.add_argument('--lane', type=int, default=0)
     parser.add_argument('--lanes', type=int, default=1)
     args = parser.parse_args()
     if args.mode == 'calibrate':
         calibrate(args.lane, args.lanes)
     else:
-        {'validate': validate, 'report': report}[args.mode]()
+        {'validate': validate, 'd2': d2, 'report': report}[args.mode]()
 
 
 if __name__ == '__main__':
