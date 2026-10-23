@@ -11,7 +11,9 @@ guard, so an interrupted run resumes where it stopped.
 Calibration builds each grid configuration in memory: the v27 ROOM configuration with the
 ache2019_v1 encoder at the grid scale and the same_side_doublet_v1 decoder. Its policy comes from
 game.session.policy_from_source, exactly as the runtime maps a decoder block, so no record is
-needed yet. Validation runs the v29 ROOM configuration as the runtime loads it.
+needed yet. Validation runs the v29 ROOM configuration as the runtime loads it, so it needs
+the v29 candidate (commit 9830757) checked out; M3.3 failed check V3 and the working
+configuration is v27 again.
 """
 from __future__ import annotations
 

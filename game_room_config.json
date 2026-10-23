@@ -1,5 +1,5 @@
 {
-  "config_version": 29,
+  "config_version": 27,
   "_comment": "M1.6 horizontal ROOM slice. Logical units and state speeds are gameplay mappings, not universal biological constants.",
   "sim": {
     "tick_seconds": 0.02,
@@ -139,26 +139,25 @@
     "threat_max": 0.8,
     "threat_theta_reference": 0.5,
     "threat_theta_dot_reference": 2.0,
-    "virtual_distance": 100.0,
-    "feature_model": "ache2019_v1",
-    "_feature_model_comment": "M3.3 (game/M3_3_ESCAPE_DECISION_DESIGN.md), with the M3.2 encoder mode: LPLC2 is driven by a Gaussian of log angular size and LC4 linearly by angular velocity, only while the stimulus expands, with the published constants of Ache et al. 2019 (STAR Methods eqs. 3, 4 and 7) held in game/perception.py. scale_volts_per_mv maps GF millivolts to encoder volts; it is the one calibrated constant (tools/m3_3_escape_decision.py, against the peak times of the paper's GF model, not behaviour). loom_gain, loom_size, threat_max and the threat references are used only by legacy_v0, the default when feature_model is absent.",
-    "ache2019": {
-      "scale_volts_per_mv": 0.3
-    }
+    "virtual_distance": 100.0
   },
   "policy": {
-    "_comment": "Exact provenance required. The M3.3 same-side doublet decoder, which replaces the M1.8-N4B1C decoder in ROOM, with the M3.3 ache2019_v1 encoder, the M1.8-N4B5R elevation-aware geometry, the M1.8-B2b-iii to B4b kinematics and ecology and the M1.7.2 paddle line axis loads the M3.3 record: rebuild it with python tools/m3_3_record.py. Earlier records are preserved unchanged. tools/calibrate_escape.py measures the scalar single-sample criterion only and does not calibrate this decoder.",
+    "_comment": "Exact provenance required. The M1.8-N4B1C lateral dual-path decoder (unchanged) under the M1.8-N4B5R elevation-aware geometry, the M1.8-B2b-iii to B4b kinematics and ecology and the M1.7.2 paddle line axis loads the M1.7.2 transfer record, which carries the identical decoder block for this configuration: rebuild it with python tools/m1_7_2_axis_record.py. Earlier records are preserved unchanged. tools/calibrate_escape.py measures the scalar single-sample criterion only and does not calibrate this decoder.",
     "escape_threshold": null,
     "calibration_paths": [
-      "artifacts/game/calibration_room_m3_3.json",
-      "results/game/calibration_room_m3_3.json"
+      "artifacts/game/calibration_room_m1_7_2.json",
+      "results/game/calibration_room_m1_7_2.json"
     ],
     "escape_decoder": {
-      "_comment": "M3.3 same-side DNp01 doublet (game/M3_3_ESCAPE_DECISION_DESIGN.md). Escape only when one DNp01 side produces required_spikes inferred spikes at most doublet_window_ms apart, outside the refractory period (per-side spikes inferred from that side's own trace; a left spike followed by a right spike never qualifies). There is no summed path. alert_reference_threshold scales the unchanged alert, turn and strength logic and must equal the record's escape_threshold. Class C engineering decoder parameters derived from simulator evidence, not biological constants. Replaces the M1.8-N4B1C decoder in ROOM.",
-      "kind": "same_side_doublet_v1",
-      "alert_reference_threshold": 1.45,
-      "doublet_window_ms": 40,
-      "required_spikes": 2
+      "_comment": "M1.8-N4B1C combined DNp01 criterion. Escape when EITHER path qualifies outside the shared refractory period. LATERAL: the same DNp01 side produces lateral_required_spikes inferred spikes within lateral_same_side_window_ms (per-side spikes inferred from that side's own trace; a left spike followed by a right spike never qualifies). Summed N2b path: FAST when left + right >= summed_fast_threshold; SUSTAINED when the current summed sample is >= sustained_threshold AND at least sustained_required_samples of the most recent sustained_window_samples summed samples are >= sustained_threshold. All values are Class C engineering decoder parameters derived from simulator evidence, not biological constants. sustained_threshold must equal the record's escape_threshold.",
+      "kind": "lateral_dual_path_v1",
+      "sustained_threshold": 1.45,
+      "summed_fast_threshold": 2.1,
+      "sustained_window_samples": 5,
+      "sustained_required_samples": 3,
+      "require_current_qualifying": true,
+      "lateral_same_side_window_ms": 60,
+      "lateral_required_spikes": 2
     },
     "refractory_seconds": 0.4,
     "turn_gain": 0.8,

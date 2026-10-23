@@ -14,6 +14,9 @@ The tool refuses to write unless:
   (artifacts/m3_3_run/report.json, written by tools/m3_3_escape_decision.py report).
 
     python tools/m3_3_record.py
+
+M3.3 failed check V3 and the ROOM configuration was restored to v27. The record describes the v29
+candidate at commit 9830757; run the tool with that configuration checked out.
 """
 from __future__ import annotations
 

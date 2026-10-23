@@ -15,6 +15,9 @@ from game.session import DOUBLET_DECODER, doublet_window_samples, escape_decoder
 from test_game_n4b1c_decoder import DECAY, DT, ROOT, feed, fired, lateral_policy, traces
 
 ROOM = load_config(ROOT/'game_room_config.json')
+# The tested M3.3 candidate (ROOM v29). M3.3 failed check V3, so the working ROOM configuration
+# is v27 again (results/game/M3_3_ESCAPE_DECISION.md); the candidate stays in git history.
+CANDIDATE_COMMIT = '9830757837a181114b15923df8929f231b710ce9'
 DOUBLET = {'kind': DOUBLET_DECODER, 'alert_reference_threshold': 1.45, 'doublet_window_ms': 40,
            'required_spikes': 2}
 
@@ -98,14 +101,26 @@ class TestDoubletRule(unittest.TestCase):
 
 
 class TestRoomConfiguration(unittest.TestCase):
-    """The v29 ROOM configuration and its record."""
+    """The tested v29 candidate at CANDIDATE_COMMIT, its record, and the restored v27."""
 
-    def test_room_uses_the_calibrated_encoder_and_the_doublet_decoder(self):
+    @classmethod
+    def setUpClass(cls):
+        import json
+        import subprocess
+        cls.candidate = json.loads(subprocess.check_output(
+            ['git', 'show', CANDIDATE_COMMIT + ':game_room_config.json'], cwd=ROOT, text=True))
+
+    def test_the_working_room_configuration_is_v27_with_the_n4b1c_decoder(self):
+        self.assertEqual(ROOM['config_version'], 27)
+        self.assertNotIn('feature_model', ROOM['encoder'])
+        self.assertEqual(escape_decoder_spec(ROOM)['kind'], 'lateral_dual_path_v1')
+
+    def test_the_candidate_used_the_calibrated_encoder_and_the_doublet_decoder(self):
         from game.perception import FEATURE_MODEL_ACHE2019, encoder_feature_model
-        self.assertEqual(ROOM['config_version'], 29)
-        self.assertEqual(encoder_feature_model(ROOM), FEATURE_MODEL_ACHE2019)
-        self.assertEqual(ROOM['encoder']['ache2019'], {'scale_volts_per_mv': 0.3})
-        self.assertEqual(escape_decoder_spec(ROOM),
+        self.assertEqual(self.candidate['config_version'], 29)
+        self.assertEqual(encoder_feature_model(self.candidate), FEATURE_MODEL_ACHE2019)
+        self.assertEqual(self.candidate['encoder']['ache2019'], {'scale_volts_per_mv': 0.3})
+        self.assertEqual(escape_decoder_spec(self.candidate),
                          {**DOUBLET, 'doublet_window_ms': 40.0, 'alert_reference_threshold': 1.45})
 
     def test_lab_and_game_keep_their_decoders_and_the_legacy_encoder(self):
@@ -115,28 +130,28 @@ class TestRoomConfiguration(unittest.TestCase):
             spec = escape_decoder_spec(config)
             self.assertTrue(spec is None or spec['kind'] != DOUBLET_DECODER, name)
 
-    def test_the_record_binds_the_configuration(self):
+    def test_the_record_binds_the_candidate(self):
         from game.session import build_policy, calibration_provenance, resolve_escape_threshold
         from test_game import same_content
         from tools.m3_3_record import RECORD, SOURCE_RECORD
         record = load_config(ROOT/RECORD)
         self.assertEqual(record['record_kind'], 'm3-3-escape-decision-record-v1')
-        self.assertEqual(record['provenance'], calibration_provenance(ROOM))
-        resolved = resolve_escape_threshold(ROOM)
+        self.assertEqual(record['provenance'], calibration_provenance(self.candidate))
+        resolved = resolve_escape_threshold(self.candidate)
         self.assertEqual((resolved.origin, resolved.threshold), (RECORD, 1.45))
         self.assertTrue(record['decoder_replaced'] and record['encoder_changed'])
         self.assertTrue(same_content(ROOT/SOURCE_RECORD, record['source_record']['sha256']))
-        policy, _ = build_policy(ROOM)
+        policy, _ = build_policy(self.candidate)
         self.assertEqual((policy.summed_paths, policy.lateral_window_samples, policy.fast_threshold,
                           policy.sustained_window_samples, policy.refractory_ticks), (False, 2, None, None, 20))
 
     def test_the_writer_rejects_a_change_outside_the_m3_3_keys(self):
         from tools.m3_3_record import build_record
-        config = copy.deepcopy(ROOM)
+        config = copy.deepcopy(self.candidate)
         config['encoder']['loom_gain'] += 1
         with self.assertRaises(SystemExit):
             build_record(config)
-        config = copy.deepcopy(ROOM)
+        config = copy.deepcopy(self.candidate)
         config['policy']['escape_decoder']['doublet_window_ms'] = 60
         with self.assertRaises(SystemExit):
             build_record(config)

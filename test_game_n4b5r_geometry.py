@@ -169,17 +169,13 @@ class TestScopeAndVersioning(unittest.TestCase):
         after['policy']['calibration_paths'] = ACCEPTED['policy']['calibration_paths']
         self.assertEqual(after, ACCEPTED)
         self.assertEqual(escape_decoder_spec(N4B5R_ROOM), escape_decoder_spec(ACCEPTED))
-        # The current ROOM keeps the accepted geometry; M1.7.2 adds only the paddle-axis keys
-        # (versioned in test_game_m1_7_2). The accepted decoder ran until v27; M3.3 replaces it
-        # in v29 (versioned in test_game_m3_3).
+        # The current ROOM keeps the accepted geometry and decoder; M1.7.2 adds only the
+        # paddle-axis keys (versioned in test_game_m1_7_2).
         directional = copy.deepcopy(ROOM['swatter']['directional'])
         for key in ('paddle_axis', '_paddle_axis_comment'):
             directional.pop(key)
         self.assertEqual(directional, N4B5R_ROOM['swatter']['directional'])
-        v27 = json.loads(subprocess.check_output(['git', 'show', 'b5e6021d6dc7d7636071a12a8b6eaa0952e327d4:game_room_config.json'],
-                                                 cwd=ROOT, text=True))
-        self.assertEqual(escape_decoder_spec(v27), escape_decoder_spec(ACCEPTED))
-        self.assertEqual(escape_decoder_spec(ROOM)['kind'], 'same_side_doublet_v1')
+        self.assertEqual(escape_decoder_spec(ROOM), escape_decoder_spec(ACCEPTED))
 
 
 class TestProvenance(unittest.TestCase):

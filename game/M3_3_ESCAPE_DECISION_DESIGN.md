@@ -1,6 +1,8 @@
 # M3.3: size-tuned encoder and a same-side doublet decoder (preregistration)
 
 Status: **preregistered on 2026-10-23, before any implementation or run.**
+Result: V3 failed, so the decision rule failed (`results/game/M3_3_ESCAPE_DECISION.md`). The ROOM
+configuration stays v27; the v29 candidate is commit `9830757`.
 
 **Authorization.** The change replaces the frozen N4B1C decoder of the ROOM configuration.
 - On 2026-10-23 the user authorized writing this preregistration.

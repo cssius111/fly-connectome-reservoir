@@ -1,10 +1,12 @@
 # M3.3: size-tuned encoder and a same-side doublet decoder, results
 
-Status: **measurement in progress (2026-10-23).**
-- V1-V5 are complete. **V3 failed on one of its three l/v values**, so under the decision rule
-  the v29 configuration is not a playtest candidate.
-- V6a and V6b are still running.
-- Nothing was tuned after the scale was calibrated.
+Status: **measurement complete on 2026-10-23. V3 failed on one of its three l/v values, so
+under the preregistered decision rule the v29 configuration is not a playtest candidate.**
+- **Configuration.** As the rule requires, the ROOM configuration is restored to v27. The tested
+  v29 candidate stays in git history at `9830757`.
+- **What is kept.** Its record, the `same_side_doublet_v1` decoder kind and the `ache2019_v1`
+  encoder mode stay in the code. No configuration uses them.
+- **Tuning.** Nothing was tuned after the scale was calibrated.
 
 **Sources:**
 - Preregistration: `game/M3_3_ESCAPE_DECISION_DESIGN.md`
@@ -14,8 +16,8 @@ Status: **measurement in progress (2026-10-23).**
   - `tools/m3_3_escape_decision.py`: calibration and V1-V5;
   - `tools/m3_2_threat_matrix.py`: V6a;
   - `tools/paired_free_flight_check.py`: V6b.
-- Configuration and record: `game_room_config.json` v29 and
-  `results/game/calibration_room_m3_3.json`, on the working branch. `main` runs v27.
+- Configuration and record: the v29 candidate `game_room_config.json` at `9830757` and
+  `results/game/calibration_room_m3_3.json`. The working configuration is v27.
 - Raw data: `artifacts/m3_3_run/` (git-ignored).
 
 ## 1. Summary
@@ -29,9 +31,15 @@ Status: **measurement in progress (2026-10-23).**
 | V3 held-out l/v | 15 ms: 25 ms off; **30 ms: 32.8 ms off**; 60 ms: 13 ms off | within 30 ms | **fail** |
 | V4 non-looming disks | 0 escapes in 120 trials | at most 1 | pass |
 | V5 spontaneous | 0 in 768 s | none | pass |
-| V6a threat matrix | running | descriptive | - |
+| V6a threat matrix | fast frontal approach escapes fall from 1.00 to 0.04; a strong left-right asymmetry appears | descriptive | see section 5 |
 | V6b no-player flight | 0 escapes against 9 in 240 minutes each | not more than baseline | **pass** |
 | V7 tests | 534 of 534 pass | all pass | pass |
+
+**Outcome.** M3.3 fixes the no-player escapes (V6b) and moves both E1 and E2 into the
+preregistered bands. It fails V3 narrowly, and V6a reveals two defects that any later acceptance
+would have to address:
+- fast frontal hover-height approaches are almost never escaped;
+- there is a strong left-right asymmetry near the doublet threshold.
 
 **What V3's miss means.**
 - At l/v 30 ms the median escape time is 22.9 ms before collision. The GF model's peak is 55.7 ms
@@ -134,4 +142,70 @@ Seeds 9801-9880, 180 s each, pointer parked far away.
 
 ### V6a: the N4B6 threat matrix
 
-Running; filled in when complete.
+The preregistered N4B6 trajectories, seeds 500001-500048, fixed fly, runtime decoder live
+(`tools/m3_2_threat_matrix.py --out artifacts/m3_3_run/threat_matrix`).
+
+| Trajectory | Role | v27: escaped, first escape, size | v29: escaped, first escape, size |
+|---|---|---|---|
+| A1 frontal very slow | approach | 0.00 | 0.10, 12.3 s, 24.6° |
+| A2 frontal slow | approach | 0.04, 5.4 s, 27.9° | 0.04, 4.8 s, 25.1° |
+| B1 frontal medium | approach | 0.25, 2.1 s, 24.8° | 0.02, 2.4 s, 28.1° |
+| **B2 frontal fast (reference)** | approach | **1.00**, 0.66 s, 21.1° | **0.04**, 1.27 s, 28.7° |
+| C1 oblique slow, right | approach | 0.04, 5.4 s, 27.9° | 0.04, 4.8 s, 25.1° |
+| **C2 oblique slow, left** | approach | 0.04, 4.6 s, 23.7° | **0.90**, 6.2 s, 27.8° |
+| C3 lateral slow, close | approach | 0.04, 5.4 s, 27.9° | 0.69, 6.8 s, 31.2° |
+| D1-D3 glancing | approach | 0.00-0.02 | 0.00 |
+| E1 abort slow | abort | 0.00 | 0.00 |
+| E2 abort medium | abort | 0.15, 2.0 s, 23.6° | 0.00 |
+| F1-F3 stationary, receding, orbit | control | 0.00 | 0.00 |
+
+**Two findings.** Neither is a criterion, but both matter for any acceptance.
+
+1. **Fast frontal approaches are almost never escaped.**
+   - B2 drops from 1.00 to 0.04, and B1 from 0.25 to 0.02.
+   - In these hover-height trajectories the paddle's image stays near 21-31°, below the 42° peak
+     of the LPLC2 size term. The drive rarely reaches a doublet.
+2. **The decision is left-right asymmetric.**
+   - C2 (left) escapes in 0.90 of trials and C1 (right) in 0.04; under v27 both were 0.04.
+   - The two DNp01 cells receive different input weights in MaleCNS: LC4 gives 0.183 to the
+     left DNp01 and 0.161 to the right (M3.1, section 3).
+   - Near the doublet threshold that difference flips the outcome.
+   - Real flies show no comparable asymmetry, so this is a defect of operating the chain at its
+     threshold.
+
+## 6. What the result means
+
+- **What worked.**
+  - The same-side doublet rule removes the slow, bilateral summed-path escapes completely, both
+    in no-player flight and at rest.
+  - With the Ache-type encoder, the loom decision now follows angular size. It is start-size
+    invariant, the escape probability matches the real fly's, and the timing slope falls from
+    3.7 (M3.2) to 2.9.
+- **What failed.** The chain now decides only when the drive reaches the doublet threshold,
+  which the LPLC2 term reaches only near its 42° peak. That threshold has three consequences:
+  - timing on one held-out l/v misses by 2.8 ms beyond the tolerance (V3);
+  - images that stay below about 30° rarely cause an escape, so hover-height frontal approaches
+    are almost never escaped (V6a);
+  - the small left-right difference in MaleCNS input weights onto DNp01 decides the outcome
+    (V6a).
+- **What would remove the threshold dependence.** Each of these would be a new preregistered
+  milestone:
+  - a drive that grows smoothly with the fraction of the population in view, such as the
+    retinotopic recruitment of M3.1 C2;
+  - an escape pathway beyond DNp01, the long mode (E5).
+
+## 7. Reproduction
+
+`validate` and `tools/m3_3_record.py` need the v29 candidate configuration. Check out
+`game_room_config.json` from `9830757` first, and restore it afterwards.
+
+```
+python tools/m3_3_escape_decision.py calibrate
+python tools/m3_3_escape_decision.py validate
+python tools/m3_3_escape_decision.py report
+python tools/m3_2_threat_matrix.py run --arm baseline --out artifacts/m3_3_run/threat_matrix
+python tools/m3_2_threat_matrix.py run --arm candidate --out artifacts/m3_3_run/threat_matrix
+NUMBA_NUM_THREADS=1 python tools/paired_free_flight_check.py run --arm baseline --lane 0 --lanes 2 \
+    --baseline-commit b5e6021 --first-seed 9801 --last-seed 9880 --out artifacts/m3_3_run/free_flight
+    (lanes 0 and 1; then --arm candidate; then classify and summary with the same options)
+```
