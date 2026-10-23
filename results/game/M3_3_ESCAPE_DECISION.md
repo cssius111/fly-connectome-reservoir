@@ -31,7 +31,7 @@ Status: **measurement in progress (2026-10-23).**
 | V5 spontaneous | 0 in 768 s | none | pass |
 | V6a threat matrix | running | descriptive | - |
 | V6b no-player flight | running | not more than baseline | - |
-| V7 tests | the full suite is running | all pass | pending |
+| V7 tests | 534 of 534 pass | all pass | pass |
 
 **What V3's miss means.**
 - At l/v 30 ms the median escape time is 22.9 ms before collision. The GF model's peak is 55.7 ms
