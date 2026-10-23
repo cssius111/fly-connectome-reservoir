@@ -2,9 +2,11 @@
 
 Status: **preregistered on 2026-10-23, before any implementation or run.**
 
-**Authorization so far.** On 2026-10-23 the user authorized writing this preregistration. It
-changes the frozen N4B1C decoder of the ROOM configuration, so implementation needs a second,
-explicit authorization after the user has read it.
+**Authorization.** The change replaces the frozen N4B1C decoder of the ROOM configuration.
+- On 2026-10-23 the user authorized writing this preregistration.
+- After reading it, the same day, they authorized its implementation as written: the decoder
+  replacement in ROOM `config_version` 29, the calibration and every check.
+- Acceptance remains the user's, after a playtest.
 
 **Correction before any run (2026-10-23).** The first version (`523ff2d`) named seeds
 800001-800024 for V2-V4. N4B7 (`tools/n4b7_candidates.py`) had already used them. They are
