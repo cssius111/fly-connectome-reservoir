@@ -97,5 +97,50 @@ class TestDoubletRule(unittest.TestCase):
         self.assertEqual((a.lateral, a.forward, a.strength, a.turn), (b.lateral, b.forward, b.strength, b.turn))
 
 
+class TestRoomConfiguration(unittest.TestCase):
+    """The v29 ROOM configuration and its record."""
+
+    def test_room_uses_the_calibrated_encoder_and_the_doublet_decoder(self):
+        from game.perception import FEATURE_MODEL_ACHE2019, encoder_feature_model
+        self.assertEqual(ROOM['config_version'], 29)
+        self.assertEqual(encoder_feature_model(ROOM), FEATURE_MODEL_ACHE2019)
+        self.assertEqual(ROOM['encoder']['ache2019'], {'scale_volts_per_mv': 0.3})
+        self.assertEqual(escape_decoder_spec(ROOM),
+                         {**DOUBLET, 'doublet_window_ms': 40.0, 'alert_reference_threshold': 1.45})
+
+    def test_lab_and_game_keep_their_decoders_and_the_legacy_encoder(self):
+        for name in ('game_config.json', 'game_play_config.json'):
+            config = load_config(ROOT/name)
+            self.assertNotIn('feature_model', config['encoder'], name)
+            spec = escape_decoder_spec(config)
+            self.assertTrue(spec is None or spec['kind'] != DOUBLET_DECODER, name)
+
+    def test_the_record_binds_the_configuration(self):
+        from game.session import build_policy, calibration_provenance, resolve_escape_threshold
+        from test_game import same_content
+        from tools.m3_3_record import RECORD, SOURCE_RECORD
+        record = load_config(ROOT/RECORD)
+        self.assertEqual(record['record_kind'], 'm3-3-escape-decision-record-v1')
+        self.assertEqual(record['provenance'], calibration_provenance(ROOM))
+        resolved = resolve_escape_threshold(ROOM)
+        self.assertEqual((resolved.origin, resolved.threshold), (RECORD, 1.45))
+        self.assertTrue(record['decoder_replaced'] and record['encoder_changed'])
+        self.assertTrue(same_content(ROOT/SOURCE_RECORD, record['source_record']['sha256']))
+        policy, _ = build_policy(ROOM)
+        self.assertEqual((policy.summed_paths, policy.lateral_window_samples, policy.fast_threshold,
+                          policy.sustained_window_samples, policy.refractory_ticks), (False, 2, None, None, 20))
+
+    def test_the_writer_rejects_a_change_outside_the_m3_3_keys(self):
+        from tools.m3_3_record import build_record
+        config = copy.deepcopy(ROOM)
+        config['encoder']['loom_gain'] += 1
+        with self.assertRaises(SystemExit):
+            build_record(config)
+        config = copy.deepcopy(ROOM)
+        config['policy']['escape_decoder']['doublet_window_ms'] = 60
+        with self.assertRaises(SystemExit):
+            build_record(config)
+
+
 if __name__ == '__main__':
     unittest.main()

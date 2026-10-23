@@ -28,7 +28,10 @@ from game.session import (Session, build_policy, calibration_provenance, dnp01_t
 from test_game import shared_brain
 
 ROOT = Path(__file__).parent
-ROOM = load_config(ROOT/'game_room_config.json')
+# The last ROOM configuration that runs the N4B1C decoder (v27). From M3.3 on, the working ROOM
+# configuration runs the same-side doublet decoder (versioned in test_game_m3_3).
+ROOM = json.loads(subprocess.check_output(
+    ['git', 'show', 'b5e6021d6dc7d7636071a12a8b6eaa0952e327d4:game_room_config.json'], cwd=ROOT, text=True))
 DT = 0.02
 DECAY = dnp01_trace_decay(ROOM)
 BASELINE = '76806f0'

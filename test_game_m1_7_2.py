@@ -21,7 +21,10 @@ from test_game import same_content
 from tools.m1_7_2_axis_record import BASELINE_COMMIT, RECORD, SOURCE_RECORD, build_record
 
 ROOT = Path(__file__).parent
-ROOM = load_config(ROOT/'game_room_config.json')
+# v27 is read from main after M3.2, because M3.3 moved the working file to v29 (versioned in
+# test_game_m3_3).
+ROOM = json.loads(subprocess.check_output(['git', 'show', 'b5e6021d6dc7d7636071a12a8b6eaa0952e327d4:game_room_config.json'],
+                                          cwd=ROOT, text=True))
 V26 = json.loads(subprocess.check_output(['git', 'show', BASELINE_COMMIT + ':game_room_config.json'],
                                          cwd=ROOT, text=True))
 DT = 0.02

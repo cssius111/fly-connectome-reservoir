@@ -170,10 +170,15 @@ class TestRoomConfiguration(unittest.TestCase):
         cls.source = load_config(ROOT / SOURCE_RECORD)
         cls.record_path = RECORD
 
-    def test_the_working_room_configuration_is_the_reverted_v27(self):
-        self.assertEqual(self.room["config_version"], 27)
-        self.assertEqual(encoder_feature_model(self.room), FEATURE_MODEL_LEGACY)
-        self.assertNotIn("ache2019", self.room["encoder"])
+    def test_the_restored_v27_configuration_uses_the_legacy_encoder(self):
+        # M3.2 restored v27 (b5e6021); M3.3 later moved the working file to v29.
+        import json
+        import subprocess
+        v27 = json.loads(subprocess.check_output(
+            ["git", "show", "b5e6021d6dc7d7636071a12a8b6eaa0952e327d4:game_room_config.json"], cwd=ROOT, text=True))
+        self.assertEqual(v27["config_version"], 27)
+        self.assertEqual(encoder_feature_model(v27), FEATURE_MODEL_LEGACY)
+        self.assertNotIn("ache2019", v27["encoder"])
 
     def test_the_candidate_used_the_calibrated_ache2019_encoder(self):
         self.assertEqual(self.candidate["config_version"], 28)
