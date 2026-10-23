@@ -6,6 +6,10 @@ Status: **preregistered on 2026-10-23, before any implementation or run.**
 changes the frozen N4B1C decoder of the ROOM configuration, so implementation needs a second,
 explicit authorization after the user has read it.
 
+**Correction before any run (2026-10-23).** The first version (`523ff2d`) named seeds
+800001-800024 for V2-V4. N4B7 (`tools/n4b7_candidates.py`) had already used them. They are
+replaced by the unused seeds 810001-810024.
+
 **Basis.** The read-only research note `game/M3_3_ESCAPE_DECISION_RESEARCH.md` (`3c9dfb2`). The
 design was chosen there by exploration on seeds 700001-700024 and flight seeds 9701-9720. No
 check below uses those seeds.
@@ -93,9 +97,9 @@ The M3.2 procedure, unchanged except for the decoder and the grid:
 | Check | What is run | Criterion |
 |---|---|---|
 | V1 | The M3.0 protocol E exactly: seeds 500001-500048, four azimuths, four l/v | **Primary: E2 is partial or match (implied threshold 34-74°).** Also E1 at least partial (0.57-1.00). E3-E6 reported. |
-| V2 | Start-size invariance: l/v 40, 80 and 160 ms from 5°, 10° and 20°, seeds 800001-800024 | At each l/v the median sizes at escape lie within 10° of each other |
-| V3 | Held-out l/v of 15, 30 and 60 ms on the calibration stimulus, seeds 800001-800024 | Median escape time within 30 ms of the GF model's peak (-16.4, -55.7, -132.6 ms) |
-| V4 | Static disks (10°, 30°, 60°, 90°) and a receding disk, seeds 800001-800024 | At most one escape in total |
+| V2 | Start-size invariance: l/v 40, 80 and 160 ms from 5°, 10° and 20°, seeds 810001-810024 | At each l/v the median sizes at escape lie within 10° of each other |
+| V3 | Held-out l/v of 15, 30 and 60 ms on the calibration stimulus, seeds 810001-810024 | Median escape time within 30 ms of the GF model's peak (-16.4, -55.7, -132.6 ms) |
+| V4 | Static disks (10°, 30°, 60°, 90°) and a receding disk, seeds 810001-810024 | At most one escape in total |
 | V5 | Spontaneous escapes in V1's pre-stimulus seconds | None |
 | V6a | The N4B6 threat matrix (`tools/m3_2_threat_matrix.py`), v27 against v29 | Descriptive |
 | V6b | Paired no-player flight (`tools/paired_free_flight_check.py`), baseline v27 at `b5e6021`, fresh seeds 9801-9880 | The candidate's total escapes are not larger than the baseline's |
