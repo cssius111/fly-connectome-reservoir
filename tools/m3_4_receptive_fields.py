@@ -20,6 +20,8 @@ Subcommands:
 - gradients: LPLC2/LC4 -> DNp01, DNp02, DNp11, DNp04 weights against receptive-field position;
 - reach: the DN input weight a disk reaches under coverage-weighted drive;
 - simulate: coverage-weighted drive into the frozen network, seeds 920001-920012;
+- explore: the same drive with an LPLC2 edge-speed requirement on the calibration stimulus,
+  decided by the M3.3 doublet rule, seeds 930001-930024;
 - sides: identical drive to the left or right encoder cells, seeds 920101-920124;
 - mirror: the Retina streams of the N4B6 trajectories C1 and C2.
 
@@ -29,6 +31,10 @@ Subcommands:
     python tools/m3_4_receptive_fields.py gradients
     python tools/m3_4_receptive_fields.py reach --eyemap ../eyemap_T4
     python tools/m3_4_receptive_fields.py simulate --eyemap ../eyemap_T4 --scale 0.3 1.0 3.0
+    python tools/m3_4_receptive_fields.py explore --eyemap ../eyemap_T4 --scale 1 2 3 5 8 12 20 30
+    python tools/m3_4_receptive_fields.py explore --eyemap ../eyemap_T4 --scale 45 70 100 150 --edge-speed 10
+    python tools/m3_4_receptive_fields.py explore --eyemap ../eyemap_T4 --edge-profile gaussian \
+        --scale 5 10 20 40 80 160 320 --edge-speed 10
     python tools/m3_4_receptive_fields.py sides
     python tools/m3_4_receptive_fields.py mirror
 """
@@ -64,8 +70,12 @@ DNS = ('DNp01', 'DNp02', 'DNp11', 'DNp04')
 OWN_LOBE_ROIS = {'R': ('LO(R)', 'LOP(R)'), 'L': ('LO(L)', 'LOP(L)')}
 CENTRE_HEX = (18, 19)               # hex1, hex2 of the eye centre (reiserlab convention)
 SOFT_EDGE_DEG = 2.5                 # half the ~5 deg inter-ommatidial angle
+ACCEPTANCE_FWHM_DEG = 7.70           # light-adapted R1-R6 acceptance angle (Juusola et al. 2017)
+ACCEPTANCE_SIGMA_DEG = ACCEPTANCE_FWHM_DEG / (2 * math.sqrt(2 * math.log(2)))
 SIMULATE_SEEDS = tuple(range(920001, 920013))
 SIDES_SEEDS = tuple(range(920101, 920125))
+EXPLORE_SEEDS = tuple(range(930001, 930025))
+ACHE_POSITION_DEG = (50.0, 11.0)     # Ache et al. 2019 electrophysiology stimulus (az, el)
 ALIGN = {'float32': 4, 'uint32': 4, 'int32': 4, 'uint16': 2, 'int16': 2, 'uint8': 1, 'int8': 1}
 
 
@@ -380,9 +390,15 @@ def gradients(args):
 
 
 class Coverage:
-    """Fraction of each driven cell's column-weighted receptive field inside a disk."""
+    """Fraction of each driven cell's column-weighted receptive field inside a disk.
 
-    def __init__(self, eye, used):
+    profile 'logistic': a logistic edge of SOFT_EDGE_DEG (the research note's sections 5-6);
+    profile 'gaussian': each column sees the disk through a Gaussian acceptance function of
+    ACCEPTANCE_FWHM_DEG half-width, so its share is the normal CDF of the edge distance.
+    """
+
+    def __init__(self, eye, used, profile='logistic'):
+        self.profile = profile
         data = load_fields()
         self.cells = {}
         for t in TYPES:
@@ -397,7 +413,12 @@ class Coverage:
         out = []
         for index, side, dirs, w in self.cells[cell_type]:
             ang = np.degrees(np.arccos(np.clip(dirs @ centre, -1, 1)))
-            out.append((index, side, float((w / (1 + np.exp((ang - theta_deg / 2) / SOFT_EDGE_DEG))).sum())))
+            if self.profile == 'gaussian':
+                from scipy.special import ndtr
+                share = ndtr((theta_deg / 2 - ang) / ACCEPTANCE_SIGMA_DEG)
+            else:
+                share = 1 / (1 + np.exp((ang - theta_deg / 2) / SOFT_EDGE_DEG))
+            out.append((index, side, float((w * share).sum())))
         return out
 
 
@@ -433,9 +454,16 @@ def reach(args):
         print('  az %3d  DNp02 %.4f  DNp11 %.4f  DNp11 share %.2f' % (az, a, p, p / (a + p)))
 
 
+def ache_features(theta, theta_dot):
+    """The M3.2 Ache et al. 2019 LPLC2 (size) and LC4 (angular velocity) terms in mV."""
+    from game.perception import ACHE2019 as a
+    r = math.log(math.degrees(theta) / a['lplc2_center_deg'])
+    lplc2 = a['weight_lplc2'] * a['lplc2_peak_mv'] * math.exp(-r * r / (2 * a['lplc2_log_width'] ** 2))
+    return {'LPLC2': lplc2, 'LC4': a['weight_lc4'] * a['lc4_mv_per_deg_s'] * math.degrees(theta_dot)}
+
+
 def simulate(args):
     """Coverage-weighted Ache et al. 2019 drive: scale * feature (mV) * coverage, capped at 0.8 V."""
-    from game.perception import ACHE2019
     eye = EyeMap(args.eyemap)
     brain, encoder, used = encoder_cells()
     cover = Coverage(eye, used)
@@ -448,12 +476,6 @@ def simulate(args):
     pre, stim, post = 30, int(math.ceil((t1 - t0) / dt)), 10
     conditions = (('front', 20, 0), ('lateral', 70, 0), ('back', 120, 0), ('dorsal', 70, 50),
                   ('ventral', 70, -40), ('lateral-left', -70, 0))
-
-    def features(theta, theta_dot):
-        a = ACHE2019
-        r = math.log(math.degrees(theta) / a['lplc2_center_deg'])
-        lplc2 = a['weight_lplc2'] * a['lplc2_peak_mv'] * math.exp(-r * r / (2 * a['lplc2_log_width'] ** 2))
-        return {'LPLC2': lplc2, 'LC4': a['weight_lc4'] * a['lc4_mv_per_deg_s'] * math.degrees(theta_dot)}
 
     results = {}
     for scale in args.scale:
@@ -468,7 +490,7 @@ def simulate(args):
                         theta = min(2 * math.atan(lv / -(t0 + (k - pre + 1) * dt)), math.radians(90.0))
                         theta_dot, previous = (theta - previous) / dt, theta
                         if theta_dot > 0:
-                            for t, mv in features(theta, theta_dot).items():
+                            for t, mv in ache_features(theta, theta_dot).items():
                                 for i, _, c in cover(t, centre, math.degrees(theta)):
                                     if scale * mv * c > 1e-4:
                                         inject.append((np.array([i]), min(cap, scale * mv * c)))
@@ -483,6 +505,80 @@ def simulate(args):
                 '%s %.2f' % (k, v) for k, v in results['%.2f %s' % (scale, name)].items())), flush=True)
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / 'simulate.json').write_text(json.dumps(results, indent=1) + '\n', encoding='utf-8')
+
+
+def explore(args):
+    """Coverage-weighted drive with an LPLC2 edge-speed requirement, decided by the M3.3 doublet rule.
+
+    The M3.2/M3.3 calibration stimulus (10 -> 90 deg, l/v 10-80 ms) at the Ache et al. 2019
+    electrophysiology position (azimuth 50 deg, elevation 11 deg). LPLC2 cells are driven only
+    while the disk edge expands at >= the given speed (deg/s; 0 = any expansion). The first
+    same-side DNp01 doublet (<= 2 samples apart) inside the calibration window is the escape.
+    Seeds 930001-930024.
+    """
+    import tools.m3_2_ache_targets as T
+    import tools.m3_2_escape_roles as R
+    eye = EyeMap(args.eyemap)
+    brain, _, used = encoder_cells()
+    cover = Coverage(eye, used, args.edge_profile)
+    escape = {s: int(brain.groups['escape_' + s][0]) for s in 'LR'}
+    dt, cap = float(room_config()['sim']['tick_seconds']), 0.8
+    targets = {r['lv_ms']: r['peak_time_ms'] / 1000.0 for r in T.targets(T.CALIBRATION_LV_MS)}
+    centre = unit(*ACHE_POSITION_DEG)
+    stimuli = {}
+    for lv_ms in T.CALIBRATION_LV_MS:
+        retinas, pre, t0, thetas, last = R.looming(lv_ms / 1000.0, dt, 10.0, 90.0,
+                                                   targets[lv_ms] + R.WINDOW_AFTER_TARGET_S)
+        ticks = []
+        for r in retinas:
+            if r.theta_dot > 0:
+                ticks.append((math.degrees(r.theta_dot) / 2, ache_features(r.theta, r.theta_dot),
+                              {t: cover(t, centre, math.degrees(r.theta)) for t in TYPES}))
+            else:
+                ticks.append(None)
+        stimuli[lv_ms] = (ticks, pre, t0, last)
+    results = {}
+    for edge_speed in args.edge_speed:
+        for scale in args.scale:
+            row = {}
+            for lv_ms, (ticks, pre, t0, last) in stimuli.items():
+                drives = []
+                for tick in ticks:
+                    inject = []
+                    if tick is not None:
+                        speed, mv, cov = tick
+                        for t in TYPES:
+                            if t == 'LPLC2' and speed < edge_speed:
+                                continue
+                            inject += [(np.array([i]), min(cap, scale * mv[t] * c))
+                                       for i, _, c in cov[t] if scale * mv[t] * c > 1e-4]
+                    drives.append(inject)
+                times = []
+                for seed in EXPLORE_SEEDS:
+                    brain.reset(seed)
+                    previous, first = {'L': None, 'R': None}, None
+                    for k, inject in enumerate(drives):
+                        fired = brain.step(inject=inject)
+                        for s in 'LR':
+                            if escape[s] in fired:
+                                if previous[s] is not None and k - previous[s] <= 2 and pre <= k <= last:
+                                    first = k
+                                previous[s] = k
+                        if first is not None:
+                            break
+                    times.append(None if first is None else ((first - pre + 1) * dt - t0) * 1000.0)
+                hit = [x for x in times if x is not None]
+                row[lv_ms] = {'fraction': len(hit) / len(times),
+                              'median_t_ms': float(np.median(hit)) if hit else None,
+                              'target_ms': targets[lv_ms] * 1000.0}
+            results['edge %.0f scale %.2f' % (edge_speed, scale)] = row
+            print('edge >= %4.1f deg/s, scale %5.2f | %s' % (edge_speed, scale, ' | '.join(
+                '%d ms %.2f %s/%+.0f' % (lv, r['fraction'], '-' if r['median_t_ms'] is None
+                                         else '%+.0f' % r['median_t_ms'], r['target_ms'])
+                for lv, r in row.items())), flush=True)
+    OUT.mkdir(parents=True, exist_ok=True)
+    name = 'explore_%s_%s.json' % (args.edge_profile, '_'.join('%g' % x for x in args.scale))
+    (OUT / name).write_text(json.dumps(results, indent=1) + '\n', encoding='utf-8')
 
 
 def sides_test(args):
@@ -545,14 +641,18 @@ def mirror(args):
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument('mode', choices=('orientation', 'fields', 'gradients', 'reach', 'simulate',
-                                         'sides', 'mirror'))
+                                         'explore', 'sides', 'mirror'))
     parser.add_argument('--eyemap', help='path to a clone of reiserlab/eyemap_T4')
     parser.add_argument('--scale', type=float, nargs='+', default=[0.3, 1.0, 3.0])
+    parser.add_argument('--edge-speed', type=float, nargs='+', default=[10.0, 0.0],
+                        help='explore: minimum LPLC2 edge speed in deg/s (0 = any expansion)')
+    parser.add_argument('--edge-profile', choices=('logistic', 'gaussian'), default='logistic',
+                        help='explore: disk edge seen by each column')
     args = parser.parse_args()
-    if args.mode in ('fields', 'reach', 'simulate') and not args.eyemap:
+    if args.mode in ('fields', 'reach', 'simulate', 'explore') and not args.eyemap:
         parser.error('%s needs --eyemap' % args.mode)
     {'orientation': orientation, 'fields': fields, 'gradients': gradients, 'reach': reach,
-     'simulate': simulate, 'sides': sides_test, 'mirror': mirror}[args.mode](args)
+     'simulate': simulate, 'explore': explore, 'sides': sides_test, 'mirror': mirror}[args.mode](args)
 
 
 if __name__ == '__main__':
