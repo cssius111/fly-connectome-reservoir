@@ -217,30 +217,137 @@ input synapses; sigma is the per-axis width of an equivalent isotropic Gaussian.
   (15 LPLC2 per side have centres above 40° elevation), and the disk is split between the eyes.
 - **The hypothesis of section 5 is refuted.** Functional fields are not the missing factor.
 
-## 8. The two giant fibers are coupled in the real fly, but not in the model
+## 8. Each giant fiber sees both eyes in the real fly, and barely in the model
 
-- **Evidence.** The giant fibers are dye-coupled through the giant commissural interneuron (GCI).
-  "NB dye injection into GFI in a UAS-hid/+ control animal shows both GFIs labeled in the
-  brain", with "the GFI (arrows) interconnected by the GCI (arrowheads)" (eNeuro 2018,
-  "Newly Identified Electrically Coupled Neurons Support Development of the Drosophila Giant
-  Fiber Model Circuit").
-- **What it implies.** Dye coupling indicates gap junctions, so a disk split between the eyes
-  would depolarize both giant fibers together.
-- **What is not known.** The source gives no coupling strength, and states nothing on
-  bilateral synchrony.
-- **The model.** MaleCNS contains chemical synapses only. In the frozen network each DNp01 sees
-  only its own side's LPLC2 and LC4, so an overhead strike recruits two half-populations that
-  never sum.
+### 8.1 Literature
+
+- **The contralateral eye drives each giant fiber as strongly as the ipsilateral one.**
+  - **Source.** Jang, Goodman, Ausborn and von Reyn 2023 (J Exp Biol 226:jeb244790).
+  - **Method.** Whole-cell recordings from the GF in tethered flies.
+  - **Stimuli.** Looms at -45°, 0° and +45° azimuth, all at 0° elevation, r/v 10-80 ms,
+    expanding from 10° to 63°.
+  - **Magnitude.** "We found the GF peak response magnitude was not significantly different
+    across stimulus locations".
+  - **Latency.** "we found no significant difference in the peak latency" (n = 10 flies).
+    Their text states no mV or ms values.
+- **The signal comes from the contralateral eye itself.**
+  - **Test.** They painted the contralateral eye (5 painted flies, 10 controls).
+  - **Result.** The occlusion "eliminated the GF response for all but the final expansion" of
+    the contralateral loom.
+  - **Conclusion.** "the GF receives contralateral information through an unidentified
+    commissural pathway".
+- **The pathway is probably not the GF's electrical coupling.** The authors argue that input over
+  the GF's electrical synapses "would be attenuated and delayed". Contralateral responses are
+  neither attenuated nor delayed, so they conclude that "contralateral visual information is not
+  arriving through this connection".
+- **Two looms do not add up.**
+  - **Test.** Simultaneous looms at ±45°.
+  - **Sum.** The response was "significantly less than the sum of the individual responses
+    across all r/v values".
+  - **Single loom.** Dual-loom responses were "not significantly different from a single loom
+    response".
+  - **Reading.** The GF may "quickly reach an upper bound on its response".
+- **Electrical coupling exists, but it is not quantified.**
+  - **Dye coupling.** The GF dye-couples to the giant commissural interneurons (GCIs) at about
+    55 h of metamorphosis, and the shakB2 mutation prevents it (Phelan et al. 1996, J Neurosci
+    16:1101-1113). Dye injected into one GF labels both (Kennedy and Broadie 2018, eNeuro
+    5:ENEURO.0346-18.2018).
+  - **GCI identity.** Virtual Fly Brain lists GCI as a synonym of AMMC-A1, and Jang et al. 2023
+    write "giant commissural interneurons (aka AMMC-A1)".
+  - **Synchrony.** "The two GFs are electrically coupled together and thus thought to fire
+    synchronously" (Blagburn 2019, bioRxiv 10.1101/796185, citing Phelan et al. 1996). This is an
+    inference: no paired GF recording was found.
+  - **Strength.** No coupling coefficient was found.
+- **No overhead loom has been tested.**
+  - **Elevations used.** The studies found used looms at 0° (Jang et al. 2023) and at 45°
+    (FlyPEZ, Dombrovski et al. 2023). Card and Dickinson 2008 (Curr Biol 18:1300-1307) used a disk
+    falling along a 50° downward trajectory.
+  - **Dorsal activation.** Dorsal LPLC2 drive the GF more strongly than ventral LPLC2
+    (Dombrovski et al. 2023, ATP activation). MaleCNS carries the same gradient (M3.4 research
+    note, section 4).
+
+### 8.2 The frozen network
+
+`tools/m3_5_bilateral.py` measures what reaches each DNp01 from each eye (raw data in
+`artifacts/m3_5/bilateral/`).
+
+**Weights** (`paths`; normalised weights of `data/weights.npz`):
+
+| Onto DNp01 | from the ipsilateral eye's LPLC2 + LC4 | from the contralateral eye's |
+|---|---|---|
+| left | 0.311 direct, 0.043 two-hop | 0 direct, 0.0049 two-hop |
+| right | 0.299 direct, 0.035 two-hop | 0 direct, 0.0038 two-hop |
+
+The contralateral two-hop weight runs through three cell types, each fed by its own side's eye
+and projecting to the opposite DNp01:
+
+| Carrier | Cells per side | Input from its own eye | Onto the opposite DNp01 | Onto its own DNp01 |
+|---|---|---|---|---|
+| PVLP151 | 2 | LPLC2 0.16-0.18, LC4 0.04-0.05 | 0.016 | 0.0004-0.0008 |
+| AMMC-A1 (the GCI) | 3 | LC4 0.22-0.25 | 0.003-0.004 | 0.0004-0.0005 |
+| DNp11 | 1 | LC4 0.17 | 0.0052 (right to left), 0.0000 (left to right) | 0.0002-0.0003 |
+
+- **GFC1-4.** The four GF-coupled clusters of Kennedy and Broadie 2018 receive no LPLC2 or LC4
+  input in the network.
+- **The GCI.** The GCI, which the literature reports electrically coupled to the GF, is thus a
+  visual cell in MaleCNS: it is driven by its own eye's LC4 and projects to the opposite DNp01.
+  The chemical weight is small. Its electrical coupling, absent from the network, has no
+  measured strength.
+
+**Response** (`drive`): a constant 0.8 V on 25, 50 or 100 % of one side's encoder cells. The
+input is the extra synaptic input to each DNp01 per tick, mean of 12 seeds over 6 ticks.
+
+| Driven share | 25 % | 50 % | 100 % |
+|---|---|---|---|
+| ipsilateral DNp01 input (left, right driven) | +0.22, +0.22 V | +0.49, +0.48 V | +0.87, +0.94 V |
+| contralateral DNp01 input | +0.003, +0.010 V | +0.010, +0.016 V | +0.010, +0.023 V |
+| contralateral / ipsilateral | 0.01-0.05 | 0.02-0.03 | 0.01-0.02 |
+| contralateral DNp01 spikes in 72 ticks | 1, 1 | 1, 1 | 1, 1 |
+
+- **Scale.** The gap from rest (0.772 V) to threshold (1.0 V) is 0.23 V. The ipsilateral input
+  crosses it within one or two ticks; the contralateral input never fires the cell.
+- **The gap to the real fly.** The model's giant fiber responds to the contralateral eye at
+  1-5 % of its ipsilateral response. The real GF responds to both alike. This is a fidelity gap
+  in its own right, independent of the strike geometry. It is not in the M3.0 scorecard.
+
+### 8.3 What bilateral pooling would do for overhead strikes
+
+v30 on the overhead strike (medians of 12 seeds, from `tools/m3_5_latency.py`). The table gives
+the encoder cells at the 0.8 V cap, on the side with more capped cells and on both eyes pooled:
+
+| Tick | 6 | 7 | 8 | 9 | 10 (contact) | 11 | 12 |
+|---|---|---|---|---|---|---|---|
+| θ | 44° | 52° | 66° | 85° | 103° | 111° | 114° |
+| the side with more | 18 | 22 | 31 | 46 | 55 | 59 | 60 |
+| both eyes pooled | 33 | 43 | 60 | 84 | 101 | 104 | 104 |
+
+- **The upper bound.** If each giant fiber received both eyes alike, the recruitment v30's
+  doublets now need (55-60 capped cells, reached at ticks 10-12) would come about two ticks
+  earlier. Linear pooling is an upper bound, since two looms do not add up in the real GF.
+- **Still not before contact.** With the network's 2-3-tick floor (section 5), the decision
+  would come at about tick 10-11: at contact instead of 2-4 ticks after it.
+- **The strike itself is the main limit.** The overhead image passes 55-65° only 2-3 ticks before
+  contact (section 1). A size-rule fly with a 40-60 ms delay decides at about contact, as
+  section 3 noted for the real fly.
 
 ## 9. What this leaves
 
-- **Lateral and frontal looms on the horizon.** The retinotopic drive gives a real-fly size
-  rule.
-- **Overhead strikes.** The model cannot decide them in time, for two reasons:
+- **Lateral and frontal looms on the horizon.** The retinotopic drive gives a real-fly size rule
+  (E2).
+- **Bilateral pooling: a measured gap, sourced but not quantified.**
+  - **The gap.** Each real GF responds to the contralateral eye like the ipsilateral one; the
+    model's does at 1-5 %.
+  - **The likely substrate.** The frozen network contains chemical carriers for it (PVLP151,
+    AMMC-A1/GCI, DNp11), but they are weak.
+  - **What closing it takes.** It would mean strengthening those carriers or adding an
+    electrical term, so it changes the frozen connectome's effective weights. That needs the
+    user's explicit authorization.
+  - **A target.** Jang et al. 2023 give one: contralateral and ipsilateral responses with no
+    significant difference. Their text gives no magnitudes, so the tolerance would have to come
+    from their figures.
+- **Its effect on overhead strikes is small.** Even full pooling would bring the decision only
+  to about contact. Overhead strikes stay at the edge, for two reasons:
   - the eye's sparse zenith coverage, which is real anatomy;
-  - the missing electrical coupling between the giant fibers, which the chemical connectome
-    leaves out.
-- **What a fix would change.** Any fix would add something outside the chemical MaleCNS
-  connectome, either a GF-GF coupling in the network or a bilateral rule in the readout. That
-  touches the frozen connectome or the frozen decoder, so it needs the user's explicit decision,
-  sourced coupling data and a preregistration.
+  - the strike's fast final swing.
+- **Not supported by the literature.** A GF-GF electrical coupling as the route for visual input:
+  Jang et al. 2023 argue against it.
