@@ -541,3 +541,91 @@ Circular means against the M3.0 E4 bands (match within 45°):
     section 4).
   - **The gameplay consequence.** A size-rule fly escapes no hovering paddle and decides strikes
     at about contact.
+
+## 14. V2 at l/v 40 ms: one timing distribution, placed late by the stimulus position
+
+The user chose on 2026-10-24 to study why V2 splits into two clusters. The tool is
+`tools/m3_5_v2_split.py`, with raw data in `artifacts/m3_5/v2_split/`.
+- **Stimulus.** V2's looms (l/v 40 ms) under the v30 candidate.
+- **Seeds.** 970301-970348, 48 per condition.
+
+**The network's doublet level.**
+- **The update.** The frozen LIF update is v ← 0.8187 v + input + 0.14, plus noise kicks of
+  0.22 V at 1.2 Hz. A spike resets v to 0.
+- **A second spike within 2 ticks of a reset.** It needs (0.14 + I)(1 + 0.8187) ≥ 1, a constant
+  input I ≥ 0.41 V per tick.
+- **A first spike from rest.** It needs far less.
+- **Encoder cells at the 0.8 V cap.** They fire about every second tick (0.94 V after a reset),
+  so DNp01's input reaches this level only when many cells are at the cap.
+
+**Decisions per tick.** Each entry gives τ, the time before collision, then the number of the 48
+decisions at that τ:
+
+| Start, position | Decisions per tick (τ: n) | Median τ | Mean τ | Median size |
+|---|---|---|---|---|
+| 5°, az 90° el 0° (V2) | 76: 7, 56: 11, 36: 10, 16: 19, -4: 1 | 36 ms | 37.7 ms | 95.8° |
+| 10°, az 90° el 0° (V2) | 137: 1, 77: 3, 57: 15, 37: 12, 17: 12, -3: 5 | 37 ms | 38.7 ms | 94.2° |
+| 20°, az 90° el 0° (V2) | 127: 1, 67: 11, 47: 4, 27: 6, 7: 26 | 7 ms | 29.1 ms | 160.6° |
+| 19.144°, az 90° el 0° (grid control) | 77: 2, 57: 10, 37: 4, 17: 31, -3: 1 | 17 ms | 29.1 ms | 133.5° |
+| 10°, az 90° el 30° | 97: 2, 77: 3, 57: 8, 37: 24, 17: 10, -3: 1 | 37 ms | 40.3 ms | 94.2° |
+| 5°, az 50° el 11° (calibration) | 176: 2, 136: 1, 116: 2, 96: 4, 76: 17, 56: 11, 36: 7, 16: 4 | 76 ms | 69.3 ms | 55.4° |
+| 10°, az 50° el 11° (calibration) | 177: 2, 97: 5, 77: 19, 57: 12, 37: 9, 17: 1 | 77 ms | 69.5 ms | 54.8° |
+| 20°, az 50° el 11° (calibration) | 127: 5, 87: 7, 67: 22, 47: 2, 27: 11, 7: 1 | 67 ms | 64.9 ms | 61.8° |
+
+On the 10° start's grid, θ at τ = 77, 57, 37, 17 and -3 ms is 55°, 70°, 94°, 134° and 180°.
+
+**Right DNp01 input per tick** (mean of 48, 10° start):
+
+| τ | 117 ms | 97 ms | 77 ms | 57 ms | 37 ms | 17 ms |
+|---|---|---|---|---|---|---|
+| az 90° el 0° | 0.26 | 0.33 | 0.40 | 0.48 | 0.62 | 0.76 |
+| az 50° el 11° | 0.36 | 0.41 | 0.50 | 0.55 | 0.66 | 0.79 |
+
+**Static reach** (`reach`): the right DNp01 weight a 55° disk reaches.
+- **The two positions.** The calibration position reaches 0.073, the largest of 12 positions
+  (az 30-90°, el 0-30°). V2's position reaches 0.054, the smallest, 27 % less.
+
+What this shows:
+- **There is one distribution, not two clusters.**
+  - **In time.** The decisions spread over 4-5 consecutive ticks in a single broad peak.
+  - **In size.** The two clusters exist only in size: at l/v 40 ms one tick near collision changes
+    θ by 15-45°.
+- **Why V2's position decides late.**
+  - **The doublet level.** The input reaches it at about 55° (τ 77 ms). That is the real fly's
+    takeoff size: the X16 law gives 2.0 × 40 - 6 = 74 ms, about 57°.
+  - **The wait.** Doublets then form stochastically, so the median decision comes about two
+    ticks later (τ 37 ms, 94°).
+  - **At the calibration position.** The level is reached a tick earlier, and the median
+    decision is at the real fly's time and size (τ 77 ms, 55°).
+- **The start size has a small real effect.**
+  - **The effect.** Larger starts decide 5-10 ms later on average (5° and 10° against 19.1° and
+    20°).
+  - **The tick grid.** The 20° start's grid also sits 10 ms closer to collision (t0 modulo 20 ms
+    is 6.9 ms, against 17.2 ms for 10°). The grid-matched 19.144° start has the same mean time as
+    20°, so the grid changes only which sizes are sampled (161° against 134° at the last tick).
+- **V2 passes at the calibration position.** The spread there is 7.0° (55.4°, 54.8°, 61.8°),
+  within the 10° tolerance. At V2's position the same model spreads 66.4°.
+- **The failure is position-dependent timing.**
+  - **The sensitivity.** The decision time depends steeply on how much DNp01 weight a disk
+    reaches near the doublet level: 27 % less costs about 40 ms.
+  - **The same delay in E2.** At the scorecard's position, V1's E2 fit has a delay of -43 ms
+    against the real -6 ms. E2 was classed a match because its band applies to the threshold
+    implied by the slope.
+- **What real-fly data say.**
+  - **Azimuth.** The real GF's peak latency does not differ between -45°, 0° and +45° azimuth
+    on the horizon (Jang et al. 2023).
+  - **These two positions.** No accessible real-fly data compare 50°/11° with 90°/0° directly.
+- **A common thread with section 5.** About two ticks pass between reaching the doublet level and
+  the decision. This costs most where θ grows fastest: V2 at l/v 40 ms, strikes, and E3 at
+  l/v 10 ms.
+
+**Possible next steps.** Each needs the user's decision; a runtime change also needs a
+preregistration.
+- **A timing map (read-only).** Measure the decision time at l/v 40 and 80 ms over azimuth 0-150°
+  and elevation 0-50°. This would show how far the model departs from a position-invariant
+  giant fiber over the visual field, including the paddle's elevations.
+- **Calibrating where behaviour was measured.** Calibrate the scale on the behavioural
+  comparator's geometry (lateral, on the horizon) instead of the Ache et al. 2019
+  electrophysiology position. That would move decisions at V2's position earlier, and those at
+  the Ache position earlier than the GF-model targets (V3 at risk). It moves the error rather
+  than removing it.
