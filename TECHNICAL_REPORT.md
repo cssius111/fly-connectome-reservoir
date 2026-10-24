@@ -842,6 +842,15 @@ The user chose the escape decision first, starting with read-only research. M3.1
     - **E4.**
       - **The signal.** The DNp02/DNp11 contrast orders front, side and rear correctly.
       - **Its limit.** It is too weak above the horizon for a robust direction readout.
+  - **V2 re-examined** (erratum in the M3.4 report, section 8).
+    - **One distribution.** At l/v 40 ms the decisions form a single timing distribution over
+      4-5 ticks, not two clusters.
+    - **V2's position.** There the stochastic doublet decides about two ticks after DNp01's
+      input reaches the doublet level at about 55°.
+    - **The calibration position.** A disk there reaches 27 % more DNp01 weight, and v30
+      decides at the real fly's time and size (77 ms before collision, 55°). V2's spread there
+      is 7.0°, within tolerance.
+    - **So:** the failure is position-dependent decision timing.
 
 ### 9.7 Other open items
 
