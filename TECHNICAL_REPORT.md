@@ -828,6 +828,20 @@ The user chose the escape decision first, starting with read-only research. M3.1
       weights, and the literature gives no magnitude for it.
     - **Its effect on strikes.** Even full pooling would move the overhead strike decision only
       to about contact.
+  - **The remaining list, researched on 2026-10-24.**
+    - **Left-right balance.**
+      - **The cause.** The count-balanced subsets drop 16 left LC4 cells, mostly with lateral
+        fields near the horizon.
+      - **The fix.** Driving every cell removed the V8a-type asymmetry on fresh seeds and leaves
+        the calibration side unchanged.
+      - **Total-weight balancing** does not help.
+    - **Rear blind spot.**
+      - **It is real anatomy.** The posterior blind region is the real eye's (same eye map).
+      - **The comparators.** The real-fly rear data come from threats at about 50° elevation.
+        There the model escapes 21-24 of 24 rear looms, but mostly after collision.
+    - **E4.**
+      - **The signal.** The DNp02/DNp11 contrast orders front, side and rear correctly.
+      - **Its limit.** It is too weak above the horizon for a robust direction readout.
 
 ### 9.7 Other open items
 

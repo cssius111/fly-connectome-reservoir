@@ -351,3 +351,193 @@ the encoder cells at the 0.8 V cap, on the side with more capped cells and on bo
   - the strike's fast final swing.
 - **Not supported by the literature.** A GF-GF electrical coupling as the route for visual input:
   Jang et al. 2023 argue against it.
+
+## 10. Left-right balance: the count rule is the cause
+
+The user chose on 2026-10-24 to leave the bilateral gap open and to work through the remaining
+list. `tools/m3_5_side_balance.py` compares four encoder cell selections under the v30
+candidate (scale 71.3 V/mV, calibrated for the first). Raw data are in
+`artifacts/m3_5/side_balance/`.
+- **`count`.** The v30 encoder: `RetinalEncoder` drives min(left, right) cells per type, chosen
+  with encoder_seed 20260917.
+- **`all`.** Every LPLC2 and LC4 cell, each through its own receptive field.
+- **`count_weighted`.** The count subsets, with each side's drive of a type multiplied by the mean
+  of the two sides' DNp01 weight over this side's DNp01 weight.
+- **`all_weighted`.** Every cell, with the same factor.
+
+**What the count rule drops.** MaleCNS has 94 left and 91 right LPLC2, and 71 left and 55 right
+LC4. The count rule therefore drops 3 left LPLC2 and 16 left LC4 cells. The dropped LC4 cells
+are not spread over the eye:
+- 12 of the 16 have field centres at |azimuth| 60-110°;
+- 7 of those 12 lie within 20° of the horizon, where the V1 lateral loom sits.
+
+**Weights onto DNp01** (`weights`):
+
+| Rule | LPLC2 left / right | LC4 left / right |
+|---|---|---|
+| count | 0.125 / 0.138 | 0.144 / 0.161 |
+| all | 0.128 / 0.138 | 0.183 / 0.161 |
+
+**Reach** (`reach`): the coverage-weighted DNp01 weight of mirrored disks, 20-90° across.
+Right / left:
+
+| Position | count | all | count_weighted | all_weighted |
+|---|---|---|---|---|
+| V1 lateral (az 90°, el 0°) | 1.24-1.50 | 0.94-0.96 | 1.12-1.34 | 0.98-1.00 |
+| calibration (az 50°, el 11°) | 1.12-1.16 | 0.96-1.00 | 1.00-1.04 | 0.99-1.03 |
+| front-lateral (az 30°, el 0°) | 1.04-1.11 | 0.91-0.96 | 0.93-0.99 | 0.94-1.00 |
+| rear-lateral (az 130°, el 0°) | 1.32-1.58 | 0.99-1.11 | 1.18-1.41 | 1.04-1.18 |
+
+**Network trials** (`trials`): protocol-E looms at ±90° on the horizon, seeds 970001-970024. Each
+cell gives escapes of 24, median time before collision and median size at escape:
+
+| l/v | right, count = all | left, count | left, all | left, count_weighted | left, all_weighted |
+|---|---|---|---|---|---|
+| 10 ms | 22, -6 ms, 180° | **14**, -26 ms, 180° | 24, -6 ms, 180° | 16, -26 ms, 180° | 24, -6 ms, 180° |
+| 20 ms | 24, -11 ms, 180° | 24, -11 ms, 180° | 24, +9 ms, 134° | 24, -21 ms, 180° | 24, +9 ms, 134° |
+| 80 ms | 24, +134 ms, 62° | 24, **+94 ms, 81°** | 24, +134 ms, 62° | 24, +84 ms, 87° | 24, +134 ms, 62° |
+
+- **The right side is identical under `count` and `all`.** The count subsets already contain
+  every right cell, and no right trial differs. The calibration stimulus sits on the right, so
+  `all` leaves the calibrated scale and V3 valid.
+- **`count` reproduces the V8a failure on fresh seeds.** At l/v 10 ms it gives right 22 against
+  left 14, a difference of 0.33. At l/v 80 ms left escapes come 40 ms later and 19° larger.
+- **`all` removes it.**
+  - At l/v 10 ms it gives 22 against 24.
+  - At l/v 80 ms the two sides have the same median time and size.
+  - The one residual: at l/v 20 ms the left decides earlier than the right.
+- **Balancing the total weight does not help.** The count rule's deficit is positional: it is
+  missing lateral fields, not total weight. `all_weighted` changes a few trials and no median
+  over `all`.
+- **The network asymmetry seen earlier does not show here.** The M3.4 research note (section 6)
+  found that the left DNp01 forms doublets under weaker LPLC2-only drive. Under `all`, this
+  shows no side difference on the horizon looms.
+
+## 11. The rear blind spot is the real eye's, and the real-fly rear data are elevated
+
+`tools/m3_5_rear_field.py`; raw data in `artifacts/m3_5/rear_field/`.
+
+- **The eye.**
+  - **Model.** Both eyes use the Zhao et al. 2025 micro-CT eye map, whose equator row reaches
+    151° (M3.4 research note, section 2).
+  - **Real eye.** The paper reports a field reaching about 155° behind.
+  - **So:** the posterior blind region, about ±155-180°, is the real eye's.
+- **The real-fly rear comparators are elevated threats.**
+  - **Card and Dickinson 2008** used "a 14-cm-diameter black disk that fell toward the animals
+    along a 50° downward trajectory". Its azimuth relative to the fly varied because the flies
+    settled in random orientations. "Ninety-six percent of the flies responded to the
+    descending disk by jumping."
+  - **FlyPEZ looms** used an "elevation of 45° and azimuth of 0°, 90° or 180° ± 22.5°"
+    (Dombrovski et al. 2023).
+  - **M3.0.** Its protocol E puts the rear loom on the horizon straight behind the fly, inside
+    the blind region.
+
+**Coverage** (`coverage`, `count`): the DNp01 weight a disk reaches, both sides summed:
+
+| Disk centre | 40° | 60° | 90° |
+|---|---|---|---|
+| az 90°, el 0° | 0.031 | 0.062 | 0.122 |
+| az 150°, el 0° | 0.010 | 0.019 | 0.041 |
+| az 180°, el 0° | 0.000 | 0.003 | 0.017 |
+| az 90°, el 50° | 0.029 | 0.063 | 0.137 |
+| az 150°, el 50° | 0.016 | 0.035 | 0.079 |
+| az 180°, el 50° | 0.009 | 0.024 | 0.069 |
+
+**Network trials** (`trials`, seeds 970101-970124). Escapes, escapes before collision, and the
+median time before collision:
+
+| Position | l/v 40, count | l/v 40, all | l/v 80, count | l/v 80, all |
+|---|---|---|---|---|
+| lateral, el 0° | 24, 23, +37 ms | 24, 23, +37 ms | 24, 24, +134 ms | 24, 24, +134 ms |
+| lateral, el 50° | 24, 21, +27 ms | 24, 21, +27 ms | 24, 24, +124 ms | 24, 24, +124 ms |
+| rear, el 0° | 9, 0, -43 ms | 8, 0, -23 ms | 6, 0, -6 ms | 13, 0, -26 ms |
+| rear, el 50° | 21, 0, -23 ms | 21, 0, -23 ms | 23, 7, -6 ms | 24, 13, +14 ms |
+
+- **At the comparators' geometry the model does escape rear threats.**
+  - **How often.** Elevated rear looms are escaped in 21-24 of 24 trials, close to the 96 % of
+    Card and Dickinson.
+  - **How late.** Late: at l/v 40 ms none before collision, at l/v 80 ms 7-13 of 24.
+- **Why later than lateral threats.** The disk straight behind is split between the eyes (the
+  bilateral gap of section 8), and the DNp01 weight it reaches is about half a lateral disk's,
+  pooled over both eyes.
+- **No comparator for the timing.** Card and Dickinson give one latency for all directions
+  pooled (215 ± 42 ms from stimulus start). Whether real rear escapes also come later is not in
+  the accessible texts.
+- **So there is no separate rear defect.** The blind region is real anatomy, and the late
+  elevated rear escapes share the bilateral cause.
+- **A scorecard note.** M3.0's E1/E4 rear and front rows use elevation 0°, while their
+  comparators used about 50°. Moving them to the comparators' elevation would change the M3.0
+  protocol and needs its own preregistration.
+
+## 12. E4: DNp02 against DNp11 carries front and back, but weakly above the horizon
+
+`tools/m3_5_direction.py`; raw data in `artifacts/m3_5/direction/`.
+
+**The real fly** (Dombrovski et al. 2023):
+- **DNp11.** "Activation of DNp11 evoked forward takeoffs".
+- **DNp02.** Activating DNp02 with DNp04 "evoked a strong bias towards backward takeoffs".
+  DNp04 alone gave "omnidirectional takeoffs".
+- **Silencing.** "on average most DNp02-silenced flies took off forwards, directly towards the
+  stimulus" for frontal looms.
+- **The GF.** It "is not expected to control the escape takeoff direction", and its activation
+  gave a "weak forward takeoff bias".
+
+**The current decoder.**
+- **Lateral component.** The DNp01 left-right contrast.
+- **Forward component.** The constant `forward_bias` 0.35.
+- **What it gives.** Side escapes go at ±67-71°, and frontal ones forward.
+
+**At the moment of the doublet decision** (`trials`, l/v 40 ms, seeds 970201-970224, rule
+`all`):
+
+| Position | Escapes | Spikes since onset, DNp02 / DNp11 (mean) | Contrast, trace (median; share > 0) | Contrast, spikes (median) |
+|---|---|---|---|---|
+| front, el 0° | 24 | 6.2 / 1.0 | -0.60 (0.00) | -0.75 |
+| right, el 0° | 24 | 2.8 / 1.7 | -0.22 (0.08) | -0.33 |
+| rear, el 0° | 10 | 2.6 / 2.3 | -0.09 (0.10) | 0.00 |
+| front, el 50° | 24 | 4.7 / 2.3 | -0.20 (0.08) | -0.33 |
+| right, el 50° | 24 | 2.6 / 2.2 | +0.02 (0.54) | 0.00 |
+| rear, el 50° | 18 | 3.2 / 3.7 | +0.11 (0.67) | 0.00 |
+
+The contrast is (DNp11 - DNp02) / (DNp11 + DNp02), both sides summed. The left side is similar:
+-0.13 (trace) and -0.20 (spikes) on the horizon, -0.05 and 0.00 at 50°.
+- **The order is right at each elevation.** Front < side < rear.
+- **The range is small above the horizon.** An elevated frontal loom gives about the same
+  contrast as a lateral loom on the horizon.
+
+**A candidate readout, evaluated offline.** forward = 0.35 + k × contrast, lateral unchanged.
+Circular means against the M3.0 E4 bands (match within 45°):
+- **k = 1.0, traces.**
+  - Front on the horizon reads +162° (match).
+  - Sides read -83° / +79° (match, near the 90° edge).
+  - Rear reads +19° (match).
+  - The elevated front reads -2° (gap).
+- **Larger k.** It turns the elevated front backward (+156° at k = 2), but pushes the sides on
+  the horizon past 90° (-99°, gap).
+- **Spike counts.** They give the same picture.
+
+**What it means.**
+- **Where it would work.** A DNp02/DNp11 readout could turn M3.0's horizon front row into a match
+  in a narrow gain window, k ≈ 1-1.5.
+- **Where it would not.** It would not do so reliably for elevated frontal threats, which is the
+  geometry of the real-fly assays and of the game's paddle.
+- **The sides.** It also moves side escapes further from the real ±45°.
+- **The gain.** It would be a fitted parameter.
+- **Recommendation.** Not to build it as the next milestone on its own.
+
+## 13. What the list leaves
+
+- **Left-right balance.**
+  - **The cause.** The count rule.
+  - **The fix.** Driving every cell (`all`). It is the anatomy, leaves the calibration side
+    unchanged, and removed the V8a-type asymmetry on fresh seeds.
+  - **What it would need.** It is a runtime change, so it needs a preregistration. It would be a
+    component of any later retinotopic candidate. Alone it would not make v30 acceptable,
+    because V2 fails on the right side, which `all` leaves unchanged.
+- **Rear blind spot.** It is real anatomy, and it needs no fix.
+- **E4.** It is feasible only marginally (section 12).
+- **The remaining blockers of the retinotopic line.**
+  - **V2.** The split between early and late decisions at l/v 40 ms (results/game/M3_4_RETINOTOPIC_DRIVE.md,
+    section 4).
+  - **The gameplay consequence.** A size-rule fly escapes no hovering paddle and decides strikes
+    at about contact.
