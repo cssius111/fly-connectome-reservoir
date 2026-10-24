@@ -1,6 +1,8 @@
 # M3.4: retinotopic LPLC2/LC4 drive (preregistration)
 
 Status: **preregistered on 2026-10-23, before any implementation or run.**
+Result: V2 and V8a failed, so the decision rule failed (`results/game/M3_4_RETINOTOPIC_DRIVE.md`).
+The ROOM configuration stays v27; the v30 candidate is commit `10e12f6`.
 
 **Authorization.**
 - On 2026-10-23 the user read the M3.4 research note and authorized writing this

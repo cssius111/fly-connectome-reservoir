@@ -22,6 +22,10 @@ Calibration builds each grid configuration in memory:
 
 Validation runs the v30 ROOM configuration as the runtime loads it. The receptive-field table
 data/receptive_fields_v1.npz must be built first (tools/build_receptive_fields.py).
+
+M3.4 failed checks V2 and V8a and the working configuration is v27 again
+(results/game/M3_4_RETINOTOPIC_DRIVE.md). To rerun validate or d2, check out
+game_room_config.json from the v30 candidate commit 10e12f6 first.
 """
 from __future__ import annotations
 

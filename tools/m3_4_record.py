@@ -15,6 +15,9 @@ The tool refuses to write unless:
   digest of the local data/receptive_fields_v1.npz.
 
     python tools/m3_4_record.py
+
+M3.4 failed checks V2 and V8a and the ROOM configuration was restored to v27. The record describes
+the v30 candidate at commit 10e12f6; run the tool with that configuration checked out.
 """
 from __future__ import annotations
 

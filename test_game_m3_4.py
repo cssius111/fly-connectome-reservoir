@@ -273,11 +273,25 @@ class TestFrontalDiskDrivesBothEyes(unittest.TestCase):
             ws.close()
 
 
+# The tested M3.4 candidate (ROOM v30). M3.4 failed checks V2 and V8a, so the working ROOM
+# configuration is v27 again (results/game/M3_4_RETINOTOPIC_DRIVE.md); the candidate stays in git
+# history.
+CANDIDATE_COMMIT = "10e12f6c29a285817e020b06b7c0dfc2d3ae5fe1"
+
+
 class TestRoomCandidate(unittest.TestCase):
     """The M3.4 candidate, ROOM config_version 30: the preregistered encoder block and the M3.3 decoder."""
 
     def setUp(self):
-        self.room = load_config(ROOT / "game_room_config.json")
+        import json
+        import subprocess
+        self.room = json.loads(subprocess.check_output(
+            ["git", "show", CANDIDATE_COMMIT + ":game_room_config.json"], cwd=ROOT, text=True))
+
+    def test_the_working_room_configuration_is_v27(self):
+        room = load_config(ROOT / "game_room_config.json")
+        self.assertEqual(room["config_version"], 27)
+        self.assertNotIn("feature_model", room["encoder"])
 
     def test_candidate_configuration(self):
         from game.session import escape_decoder_spec
