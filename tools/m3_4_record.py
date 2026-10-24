@@ -96,6 +96,8 @@ def build_record(config=None):
     if block['fields_sha256'] != digest:
         raise SystemExit('encoder.retinotopic.fields_sha256 is not the digest of the local ' + H.FIELDS_FILE)
     calibration = calibrated_scale()
+    if H.recorded_fields(H.OUT / 'calibration')['fields_sha256'] != block['fields_sha256']:
+        raise SystemExit('the calibration was produced with a different receptive-field table')
     scale = block['scale_volts_per_mv']
     if scale != calibration['chosen_scale_volts_per_mv']:
         raise SystemExit('the configured scale %r is not the calibrated %r'

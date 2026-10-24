@@ -68,6 +68,7 @@ V8B_LV_MS = (20, 40, 80)
 SYMMETRY_TOLERANCE = 0.20
 D1_DNS = ('DNp02', 'DNp11')
 D2_MIN_EDGE_SPEED_DEG_S = 1.0
+FIELDS_MARKER = 'receptive_fields.json'
 
 
 def table_digest():
@@ -76,6 +77,36 @@ def table_digest():
         raise SystemExit('%s is missing; run python tools/build_receptive_fields.py first' % FIELDS_FILE)
     with np.load(path) as z:
         return fields_digest({k: z[k] for k in z.files})
+
+
+def check_fields(out_dir):
+    """Refuse to add results to a directory produced with a different receptive-field table.
+
+    M.check_provenance covers game/*.py and the working ROOM file, which does not name the table
+    once the configuration is v27 again; this marker records the table's content digest."""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    path = out_dir / FIELDS_MARKER
+    current = {'fields_file': FIELDS_FILE, 'fields_sha256': table_digest()}
+    if not path.exists():
+        if any(p.name not in ('provenance.json', FIELDS_MARKER) for p in out_dir.glob('*.json')):
+            raise SystemExit('%s holds results without %s; move them away to start a fresh run'
+                             % (out_dir, FIELDS_MARKER))
+        path.write_text(json.dumps(current, indent=1) + '\n', encoding='utf-8')
+        return
+    if json.loads(path.read_text(encoding='utf-8')) != current:
+        raise SystemExit('%s was produced with a different receptive-field table; move it away to '
+                         'start a fresh run' % out_dir)
+
+
+def recorded_fields(out_dir):
+    """The table digest a result directory was produced with; refused unless it is the current one."""
+    path = out_dir / FIELDS_MARKER
+    if not path.exists():
+        raise SystemExit('%s has no %s; its results cannot be reported' % (out_dir, FIELDS_MARKER))
+    recorded = json.loads(path.read_text(encoding='utf-8'))
+    if recorded['fields_sha256'] != table_digest():
+        raise SystemExit('%s was produced with a different receptive-field table' % out_dir)
+    return recorded
 
 
 def retinotopic_block(scale, min_edge=LPLC2_MIN_EDGE_SPEED_DEG_S):
@@ -136,6 +167,7 @@ def calibrate(lane=0, lanes=1):
     brain = build_brain(base, ROOT)
     out = OUT / 'calibration'
     M.check_provenance(out, 's*.json')
+    check_fields(out)
     for k, scale in enumerate(GRID):
         path = out / ('s%.2f.json' % scale)            # the file name tools/m3_2_escape_roles reads
         if k % lanes != lane or path.exists():
@@ -157,6 +189,7 @@ def calibrate(lane=0, lanes=1):
 def calibration_choice():
     saved = R.OUT, R.GRID
     R.OUT, R.GRID = OUT, GRID
+    recorded_fields(OUT / 'calibration')
     try:
         return R.calibration_choice()
     finally:
@@ -202,8 +235,9 @@ def validate():
           for d in D1_DNS for s in 'LR'}
     # V1: the M3.0 protocol E, unchanged, in M3.0's file format; D1 counts DNp02/DNp11 spikes.
     v1, d1 = OUT / 'v1' / 'escape', OUT / 'd1'
-    M.check_provenance(v1, '*.json')
-    M.check_provenance(d1, '*.json')
+    for out in (v1, d1):
+        M.check_provenance(out, '*.json')
+        check_fields(out)
     for lv_ms in M.LV_MS:
         lv = lv_ms / 1000.0
         for name, azimuth in M.AZIMUTHS.items():
@@ -238,6 +272,7 @@ def validate():
                                                        len(trials)), flush=True)
     other = OUT / 'v2_v4'
     M.check_provenance(other, '*.json')
+    check_fields(other)
     # V2: start-size invariance, right azimuth on the horizon, to collision as in M3.0.
     path = other / 'v2_start_size.json'
     if not path.exists():
@@ -299,6 +334,7 @@ def d2():
     encoder_feature_model(config)
     saved = TM.OUT, TM.arm_config, TM.Session
     TM.OUT = OUT / 'd2_threat_matrix'
+    check_fields(TM.OUT / 'candidate')
     TM.arm_config = lambda arm: config
     TM.Session = lambda cfg, **kwargs: Session(cfg, policy=candidate_policy(cfg), **kwargs)
     try:
@@ -310,6 +346,8 @@ def d2():
 def validation_report():
     saved = (R.OUT, R.START_LV_MS, R.START_DEG)
     R.OUT, R.START_LV_MS, R.START_DEG = OUT, START_LV_MS, START_DEG
+    for path in (OUT / 'v1' / 'escape', OUT / 'd1', OUT / 'v2_v4'):
+        recorded_fields(path)
     try:
         out = R.validation_report()
     finally:
