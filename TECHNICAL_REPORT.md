@@ -807,6 +807,27 @@ The user chose the escape decision first, starting with read-only research. M3.1
     against a decision size of about 55°. Strikes were not measured.
   - Under the decision rule, v27 stays. The v30 candidate is commit `10e12f6`. The mode stays
     unused in the code, and the other modes ignore `elevation`.
+- **M3.5, read-only research on strike escapes**
+  ([game/M3_5_STRIKE_ESCAPE_RESEARCH.md](game/M3_5_STRIKE_ESCAPE_RESEARCH.md)). No runtime
+  change.
+  - **Strikes.** By arm:
+    - v27 decides every strike well before contact, at 36-40°;
+    - v30 decides 0-12 % of strikes before contact, at 92-122°.
+  - **Latency.** The frozen network forms a DNp01 doublet 2-3 ticks after about half of one
+    side's encoder cells are strongly driven. An overhead disk is split between the eyes, and few
+    fields view the zenith.
+  - **Functional receptive fields: refuted as the cause.** The measured spread of the T4/T5
+    inputs adds only about 3° to the field radius and barely changes recruitment.
+  - **Bilateral input: a recorded gap, left open by the user's choice on 2026-10-24.**
+    - **The real fly.** Each giant fiber responds to the contralateral eye like the ipsilateral
+      one, through an unidentified commissural pathway (Jang et al. 2023).
+    - **The model.** The frozen network has no direct crossing weight and only weak two-hop
+      carriers (PVLP151, AMMC-A1/GCI, DNp11). The contralateral DNp01 receives 1-5 % of the
+      ipsilateral input and does not fire.
+    - **Why it stays open.** Closing the gap would change the frozen connectome's effective
+      weights, and the literature gives no magnitude for it.
+    - **Its effect on strikes.** Even full pooling would move the overhead strike decision only
+      to about contact.
 
 ### 9.7 Other open items
 
