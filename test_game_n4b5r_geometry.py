@@ -18,7 +18,11 @@ from game.session import (build_policy, calibration_provenance, escape_decoder_s
 from game.world import TILT_BEARING_ONLY, TILT_ELEVATION_AWARE, World
 
 ROOT = Path(__file__).parent
-ROOM = load_config(ROOT/'game_room_config.json')
+# The ROOM configuration with the accepted geometry and the N4B1C decoder: v27, read from main
+# after M3.3. The M3.4 candidate keeps the geometry but replaces the decoder.
+V27_COMMIT = '7483e512d83ed07a74f5b5ca8b4e89f9ded9122b'
+ROOM = json.loads(subprocess.check_output(['git', 'show', V27_COMMIT + ':game_room_config.json'],
+                                          cwd=ROOT, text=True))
 GAME = load_config(ROOT/'game_play_config.json')
 LAB = load_config(ROOT/'game_config.json')
 ACCEPTED_COMMIT = 'e3c55b36084cd1d05e5f38d0b178aed0b9a59ddf'

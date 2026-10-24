@@ -772,6 +772,41 @@ The user chose the escape decision first, starting with read-only research. M3.1
     - a strong left-right asymmetry appears near the doublet threshold.
   - Under the decision rule, v27 stays. The v29 candidate is commit `9830757`. The doublet
     decoder kind stays unused in the code.
+- **M3.4, read-only research on retinotopic drive**
+  ([game/M3_4_RETINOTOPIC_DRIVE_RESEARCH.md](game/M3_4_RETINOTOPIC_DRIVE_RESEARCH.md)).
+  - **Receptive fields.** MaleCNS assigns every optic-lobe synapse to a column. Mapped to the eye
+    through the Zhao et al. 2025 micro-CT eye map, the input synapses give each LPLC2 and LC4
+    cell's receptive field.
+    - The fields are about 44° (LPLC2 dendrites) and 38° (LC4) across, and they tile each eye.
+  - **Gradients.** The MaleCNS weights carry the positional gradients of Dombrovski et al. 2023:
+    - LPLC2 → DNp01 is stronger for dorsal fields;
+    - LC4 → DNp02 is stronger for frontal fields, and LC4 → DNp11 for posterior ones.
+  - **Network test.** Coverage-weighted drive grows smoothly with disk size, and it gives a
+    front/back code at DNp02/DNp11.
+  - **M3.3 asymmetry re-diagnosed.** The cause is the paddle's settling creep, which switches on
+    the size-only LPLC2 term, together with a lower doublet threshold of the left DNp01 under
+    identical drive. The M3.3 report's weight explanation is corrected by an erratum.
+  - **Preregistration and test.**
+    - The preregistration is [game/M3_4_RETINOTOPIC_DRIVE_DESIGN.md](game/M3_4_RETINOTOPIC_DRIVE_DESIGN.md).
+    - It added `Retina.elevation` and a gated `retinotopic_v1` encoder mode. Each cell is driven
+      by its receptive-field coverage times the Ache et al. 2019 terms; LPLC2 only while the edge
+      speed is ≥ 10°/s.
+    - The receptive-field table is built locally and verified by digest.
+    - The encoder ran with the M3.3 doublet decoder and one calibrated scale, 71.3 V/mV.
+    - The results are in [results/game/M3_4_RETINOTOPIC_DRIVE.md](results/game/M3_4_RETINOTOPIC_DRIVE.md).
+  - **Improvements:**
+    - E2 matches the real fly for the first time: a threshold of 56.5° against 54°, alpha 1.86
+      against 2.0;
+    - V3 passes;
+    - there are no inappropriate escapes, and 0 in no-player flight against 9 for v27;
+    - frontal looms drive DNp02 three to four times more than rear looms.
+  - **Failure.** Two checks failed, both at the fast end:
+    - V2: the start-size spread at l/v 40 ms is 64.8°;
+    - V8a: at l/v 10 ms the right side escapes in 42 of 48 trials and the left in 31.
+  - **Threat matrix.** The fly escapes no hover-height approach: the image stays below 31°,
+    against a decision size of about 55°. Strikes were not measured.
+  - Under the decision rule, v27 stays. The v30 candidate is commit `10e12f6`. The mode stays
+    unused in the code, and the other modes ignore `elevation`.
 
 ### 9.7 Other open items
 

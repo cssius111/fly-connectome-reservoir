@@ -209,3 +209,30 @@ NUMBA_NUM_THREADS=1 python tools/paired_free_flight_check.py run --arm baseline 
     --baseline-commit b5e6021 --first-seed 9801 --last-seed 9880 --out artifacts/m3_3_run/free_flight
     (lanes 0 and 1; then --arm candidate; then classify and summary with the same options)
 ```
+
+## 8. Erratum (2026-10-23, M3.4 research)
+
+Sections 1-7 are kept as first recorded. The M3.4 research
+(`game/M3_4_RETINOTOPIC_DRIVE_RESEARCH.md`, section 6) found that the explanation of the
+left-right asymmetry in section 5, repeated in section 6, is wrong. No measured result and no
+decision changes.
+
+1. **The cited weights are not the driven ones.**
+   - Section 5 attributes C2 (left, 0.90) against C1 (right, 0.04) to LC4 → DNp01 weights of
+     0.183 (left) and 0.161 (right). Those are the weights of all LC4 cells.
+   - The encoder drives balanced subsets: 55 of the 71 left LC4 cells, whose weight is 0.144.
+   - The driven LPLC2 subsets also favour the right: 0.125 left against 0.138 right.
+2. **LC4 carries no drive when these escapes occur.**
+   - The C1 and C2 Retina streams are exact mirror images.
+   - The C2 escapes (6.08-6.46 s after onset) fall in the paddle controller's settling, where θ̇
+     creeps at +0.0005 to +0.003 rad/s for about 0.4 s.
+   - The LC4 term is proportional to θ̇ and stays near 0. The LPLC2 term needs only θ̇ > 0, so it
+     is fully on: 0.54 V at 27.8°.
+3. **The side difference lies in the network's dynamics.**
+   - Under identical LPLC2-only drive of 0.55 V for 0.5 s (seeds 920101-920124), the left DNp01
+     forms a doublet in 24 of 24 seeds and the right in 0 of 24. At 0.80 V both do; at 0.40 V
+     neither does.
+   - The direct and two-hop weights do not explain this, and its path is not traced.
+
+Section 5's conclusion stands: the asymmetry is a defect of operating the chain at its threshold.
+The threshold is reached by the settling creep, through the size-only LPLC2 term.

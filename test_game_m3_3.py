@@ -4,7 +4,9 @@ Unit tests inject MotorState directly. The decoder escapes only when one DNp01 s
 two inferred spikes at most 2 samples (40 ms) apart; no summed path exists.
 """
 import copy
+import json
 import os
+import subprocess
 import unittest
 
 os.environ.setdefault('NUMBA_NUM_THREADS', '4')
@@ -14,9 +16,13 @@ from game.action import FixedEscapePolicy
 from game.session import DOUBLET_DECODER, doublet_window_samples, escape_decoder_spec, load_config
 from test_game_n4b1c_decoder import DECAY, DT, ROOT, feed, fired, lateral_policy, traces
 
-ROOM = load_config(ROOT/'game_room_config.json')
-# The tested M3.3 candidate (ROOM v29). M3.3 failed check V3, so the working ROOM configuration
-# is v27 again (results/game/M3_3_ESCAPE_DECISION.md); the candidate stays in git history.
+# The ROOM configuration M3.3 returned to, v27, read from main after M3.3 (the working file may
+# hold a later candidate, such as M3.4's v30).
+V27_COMMIT = '7483e512d83ed07a74f5b5ca8b4e89f9ded9122b'
+ROOM = json.loads(subprocess.check_output(['git', 'show', V27_COMMIT + ':game_room_config.json'],
+                                          cwd=ROOT, text=True))
+# The tested M3.3 candidate (ROOM v29). M3.3 failed check V3, so the ROOM configuration returned
+# to v27 (results/game/M3_3_ESCAPE_DECISION.md); the candidate stays in git history.
 CANDIDATE_COMMIT = '9830757837a181114b15923df8929f231b710ce9'
 DOUBLET = {'kind': DOUBLET_DECODER, 'alert_reference_threshold': 1.45, 'doublet_window_ms': 40,
            'required_spikes': 2}
