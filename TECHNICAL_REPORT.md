@@ -851,6 +851,17 @@ The user chose the escape decision first, starting with read-only research. M3.1
       decides at the real fly's time and size (77 ms before collision, 55°). V2's spread there
       is 7.0°, within tolerance.
     - **So:** the failure is position-dependent decision timing.
+  - **Decision-time map** (32 positions, l/v 40 and 80 ms).
+    - **The weight map sets the timing.** Decision time follows the DNp01 weight a disk reaches
+      (r = 0.93-0.94).
+    - **Where it matches.** The real-fly law is approached only around azimuth 30-90° and
+      elevation 0-25°.
+    - **The front.** Frontal looms are decided 40-100 ms later than looms at 30-50°. The real
+      GF's latency is the same at 0° and ±45° (Jang et al. 2023): this is the bilateral gap,
+      measured against a direct comparator.
+    - **High and rear positions.** They decide late everywhere.
+    - **The delay.** Even at the best position the decision delay is about 40-55 ms longer than
+      the real fly's.
 
 ### 9.7 Other open items
 

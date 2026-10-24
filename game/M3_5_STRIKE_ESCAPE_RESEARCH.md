@@ -629,3 +629,77 @@ preregistration.
   electrophysiology position. That would move decisions at V2's position earlier, and those at
   the Ache position earlier than the GF-model targets (V3 at risk). It moves the error rather
   than removing it.
+
+## 15. The decision-time map: real-fly timing only where the weight map peaks
+
+The user chose on 2026-10-24 to map the decision time across the visual field. The tool is
+`tools/m3_5_timing_map.py`, with raw data in `artifacts/m3_5/timing_map/`.
+- **Stimulus.** V2's loom from 10° at l/v 40 and 80 ms, under the v30 candidate.
+- **Grid.** Right azimuth 0-150° by elevation 0-70°.
+- **Seeds.** 970401-970424, 24 per position.
+- **Comparator.** The real-fly law X16, takeoff 2.0 × l/v - 6 ms before collision: 74 ms at
+  l/v 40 ms and 154 ms at l/v 80 ms.
+
+**Median decision time before collision, ms** (negative: after collision). Every position
+escaped in 21-24 of 24 trials.
+
+| l/v 40 ms | az 0° | 30° | 50° | 70° | 90° | 110° | 130° | 150° |
+|---|---|---|---|---|---|---|---|---|
+| el 0° | -3 | 47 | 37 | 37 | 37 | 37 | -3 | -23 |
+| el 25° | -3 | 57 | 57 | 57 | 37 | 37 | 17 | -3 |
+| el 50° | 17 | 17 | 37 | 37 | 37 | 17 | 7 | -3 |
+| el 70° | -3 | 17 | 17 | 17 | 17 | 7 | -3 | -13 |
+
+| l/v 80 ms | az 0° | 30° | 50° | 70° | 90° | 110° | 130° | 150° |
+|---|---|---|---|---|---|---|---|---|
+| el 0° | 54 | 114 | 154 | 154 | 124 | 94 | 34 | -6 |
+| el 25° | 74 | 134 | 174 | 164 | 154 | 114 | 74 | 14 |
+| el 50° | 54 | 94 | 114 | 144 | 114 | 94 | 54 | 14 |
+| el 70° | 44 | 54 | 54 | 54 | 54 | 54 | 14 | 14 |
+
+**Reach** (`reach`): the DNp01 weight a 55° disk reaches on the side with more.
+
+| Region | Reach |
+|---|---|
+| peak (az 50°, el 25°) | 0.075 |
+| lateral band (az 30-90°, el 0-50°) | 0.051-0.071 |
+| front (az 0°) | 0.024-0.034, split about equally between the eyes |
+| el 70° | 0.024-0.044 |
+| rear (az 150°) | 0.016-0.029 |
+
+What the map shows:
+- **The weight map sets the timing.**
+  - **The correlation.** Decision time follows the reach of the stronger side: r = 0.93 at
+    l/v 40 ms and 0.94 at l/v 80 ms, over 32 positions.
+  - **Where it matches.** Only around azimuth 30-90° and elevation 0-25° does the model come
+    near the real law.
+  - **A rough band.** Take the law within two of its parameter SDs: 74 ± 27 ms and
+    154 ± 39 ms. That holds at 4 of 32 positions at l/v 40 ms and 8 of 32 at l/v 80 ms.
+- **The front contradicts the real fly directly.**
+  - **The real fly.** Jang et al. 2023 found no difference in the GF's peak latency between 0°
+    and ±45° azimuth on the horizon. With one eye painted, frontal responses fell (at the larger
+    r/v), so the real GF pools both eyes for frontal looms.
+  - **The model.** On the horizon it decides frontal looms 40-50 ms later than looms at 30-50°
+    at l/v 40 ms (-3 against 37-47 ms), and 60-100 ms later at l/v 80 ms (54 against
+    114-154 ms).
+  - **Why.** A frontal disk is split between the eyes, and each DNp01 receives only its own
+    half. This is the bilateral gap of section 8, now measured against a direct real-fly
+    comparator.
+- **High and rear positions decide late everywhere.**
+  - **Where.** At 70° elevation, where the game's paddle often hovers, the model decides at
+    -13 to 17 ms (l/v 40) and 14-54 ms (l/v 80). Behind 130° it decides at or after collision.
+  - **Why.** Few fields look there, and a disk near the midline is split between the eyes.
+- **Even the best region has the wrong delay.**
+  - **The fit.** At azimuth 50°, elevation 25°, the two l/v give a slope of about 2.9 and an
+    intercept of about -60 ms. The real fly gives 2.0 and -6 ms.
+  - **What it means.** The model reacts to a smaller image (an effective threshold of about 38°)
+    but needs about 60 ms to decide. At V2's position the same estimate gives 2.2 and -50 ms.
+    The roughly two ticks between reaching the doublet level and the decision (section 14)
+    appear here as a delay of about 40-55 ms beyond the real fly's.
+
+**What it leaves.**
+- **Structural latency.** The extra decision delay is common to every position. It is the
+  common factor of V2, E2's delay, E3 and the late strikes.
+- **Position dependence.** The decision time depends on position through the receptive-field
+  weight map and the split between the eyes. The frontal part is a measured gap against Jang
+  et al. 2023.
