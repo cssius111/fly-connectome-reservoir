@@ -180,3 +180,67 @@ Each needs the user's decision and, for any runtime change, a preregistration fi
    - left-right balance by DNp01 weight;
    - E4;
    - the rear blind spot.
+
+## 7. Functional receptive fields: measured, and not the cause
+
+`tools/m3_5_functional_fields.py` measures how far the columnar inputs of LPLC2 and LC4 spread
+across the eye in MaleCNS itself. Spread here means the angular spread of each input cell's own
+input synapses; sigma is the per-axis width of an equivalent isotropic Gaussian.
+- **Sample.** 30 right-side cells per type, numpy seed 950900.
+- **Kernel.** Weighted by each type's input share.
+
+| Input type | T4a-d | T5a-d | Tm5f | Tm20 | T2 | TmY3 | Tm4 | Tm3 | Tm2 |
+|---|---|---|---|---|---|---|---|---|---|
+| sigma, median | 3.4-3.6° | 3.4-3.8° | 4.3° | 2.2° | 2.9° | 3.7° | 2.8° | 2.5° | 1.3° |
+| Columns per cell | 12-14 | 13-15 | 20 | 8 | 14 | 17 | 11 | 8 | 6 |
+
+| | Kernel sigma | r95, dendritic | + optics (7.7° FWHM) | + input spread (functional) |
+|---|---|---|---|---|
+| LPLC2 | 3.57° | 21.7° | 23.2° | 24.6° (about 49° across) |
+| LC4 | 2.85° | 19.1° | 21.1° | 22.1° (about 44° across) |
+
+- **The fields grow little.** Blurred by their inputs' measured spread, the fields grow by only
+  about 3° in radius. LPLC2 stays below Klapoetke's 60° upper bound.
+- **Recruitment barely changes.** At the calibrated scale 71.3, these are the encoder cells per
+  side driven to the cap, LPLC2 + LC4, with the M3.4 blur and the functional blur:
+
+| Disk | 55° | 85° |
+|---|---|---|
+| overhead (el 85°) | 25 / 27 per side | 43 / 47 per side |
+| right, elevation 74° | 35 / 37 (right) | 58 / 59 (right) |
+| right, on the horizon | 73 / 76 (right) | 103 / 106 (right) |
+
+  A doublet needs about half of a side's 146 encoder cells (section 5).
+- **Lateral looms.** On the horizon a lateral disk reaches that at about 55°. This is why V1's
+  lateral E2 matches the real fly.
+- **Overhead disks.** They cannot reach it at any size. Few LPLC2/LC4 fields view the zenith
+  (15 LPLC2 per side have centres above 40° elevation), and the disk is split between the eyes.
+- **The hypothesis of section 5 is refuted.** Functional fields are not the missing factor.
+
+## 8. The two giant fibers are coupled in the real fly, but not in the model
+
+- **Evidence.** The giant fibers are dye-coupled through the giant commissural interneuron (GCI).
+  "NB dye injection into GFI in a UAS-hid/+ control animal shows both GFIs labeled in the
+  brain", with "the GFI (arrows) interconnected by the GCI (arrowheads)" (eNeuro 2018,
+  "Newly Identified Electrically Coupled Neurons Support Development of the Drosophila Giant
+  Fiber Model Circuit").
+- **What it implies.** Dye coupling indicates gap junctions, so a disk split between the eyes
+  would depolarize both giant fibers together.
+- **What is not known.** The source gives no coupling strength, and states nothing on
+  bilateral synchrony.
+- **The model.** MaleCNS contains chemical synapses only. In the frozen network each DNp01 sees
+  only its own side's LPLC2 and LC4, so an overhead strike recruits two half-populations that
+  never sum.
+
+## 9. What this leaves
+
+- **Lateral and frontal looms on the horizon.** The retinotopic drive gives a real-fly size
+  rule.
+- **Overhead strikes.** The model cannot decide them in time, for two reasons:
+  - the eye's sparse zenith coverage, which is real anatomy;
+  - the missing electrical coupling between the giant fibers, which the chemical connectome
+    leaves out.
+- **What a fix would change.** Any fix would add something outside the chemical MaleCNS
+  connectome, either a GF-GF coupling in the network or a bilateral rule in the readout. That
+  touches the frozen connectome or the frozen decoder, so it needs the user's explicit decision,
+  sourced coupling data and a preregistration.
