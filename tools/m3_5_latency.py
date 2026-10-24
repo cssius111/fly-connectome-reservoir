@@ -232,8 +232,9 @@ def summary():
                 k = next((i for i, r in enumerate(tr) if r['LPLC2_R_capped'] + r['LC4_R_capped'] > 0), None)
                 first_cap.append(k)
             n = int(math.ceil(d['t0'] / 0.02))
+            capped = [k for k in first_cap if k is not None]
             print(' loom l/v %d ms: onset at row %d, collision at row %d; first capped cell row %s; doublet rows %s'
-                  % (lv, d['onset_offset'], d['onset_offset'] + n, statistics.median([k for k in first_cap if k is not None]), dec))
+                  % (lv, d['onset_offset'], d['onset_offset'] + n, statistics.median(capped) if capped else '-', dec))
     if (OUT / 'step' / 'step.json').exists():
         print('== step (right encoder cells, constant drive):')
         for k, v in json.loads((OUT / 'step' / 'step.json').read_text(encoding='utf-8')).items():

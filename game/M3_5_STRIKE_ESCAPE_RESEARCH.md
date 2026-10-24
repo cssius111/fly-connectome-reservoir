@@ -105,3 +105,78 @@ The M3.4 report listed four next steps. These results change their order:
 3. **E4**, reading DNp02 against DNp11 for the escape direction.
 4. **Rear blind spot.** Whether the posterior blind spot matches the real eye's (about 50°;
    Zhao et al. 2025) for strikes from behind. This is descriptive.
+
+## 5. Where the latency comes from
+
+`tools/m3_5_latency.py` records, tick by tick, the encoder drive, the LPLC2/LC4 spikes and the
+DNp01 spikes. It runs on strikes (overhead and right 80, seeds 950001-950012) and on protocol-E
+looms (right, l/v 20 and 40 ms, seeds 960001-960012). It also measures a network latency floor:
+a constant drive to a fraction of the right side's encoder cells, seeds 960101-960124.
+
+**The network floor.** First right DNp01 doublet under a constant drive to the right encoder
+cells (91 LPLC2 and 55 LC4):
+
+| Share of the cells driven | 0.4 V | 0.8 V |
+|---|---|---|
+| 25 % | none | none |
+| 50 % | 1 of 24, tick 11 | 24 of 24, tick 3 |
+| 100 % | 24 of 24, tick 3 | 24 of 24, tick 2 |
+
+- **The delay is short.** Once enough cells are driven, the network forms a doublet within 2-3
+  ticks (40-60 ms).
+- **But only with enough cells.** About half of one side's encoder cells must fire strongly. A
+  quarter never suffices, whatever the voltage.
+
+**v30 on an overhead strike** (median of 12 seeds; cells driven and cells at the 0.8 V cap,
+both eyes together):
+
+| Tick | 4 | 6 | 7 | 8 | 9 | 10 (contact) | 12 |
+|---|---|---|---|---|---|---|---|
+| θ | 40° | 44° | 52° | 67° | 85° | 103° | 114° |
+| LPLC2 driven / capped | 46 / 22 | 48 / 24 | 52 / 30 | 69 / 37 | 83 / 54 | 96 / 63 | 105 / 67 |
+| LC4 driven / capped | 26 / 4 | 28 / 9 | 31 / 13 | 40 / 23 | 48 / 30 | 55 / 38 | 56 / 37 |
+
+- **The disk is split between the eyes.** An overhead disk falls on both eyes, and each DNp01
+  receives only its own side's LPLC2 and LC4 (research note section 4). At the real fly's
+  decision size (52-67°, ticks 7-8) each side therefore has well under a quarter of its 146
+  encoder cells at the cap.
+- **When the decision comes.** The doublet comes only once recruitment approaches half a side:
+  ticks 10-14, at or after contact.
+- **The lateral strike.** The right 80 strike falls mostly on one eye and decides a little
+  earlier (ticks 9-13).
+- **Looms.** On the right-azimuth looms v30 decides at rows 14-16 for l/v 20 ms (collision at
+  row 17) and at rows 24-27 for l/v 40 ms (collision at row 28).
+
+**v29 for comparison.** The M3.3 encoder drives all 91 LPLC2 and 55 LC4 cells of the side given
+by the azimuth's sign, at up to 0.74 V.
+- Every LPLC2 cell fires from the first tick of the strike, so the doublet comes earlier: ticks
+  6-8 overhead and 2-8 at right 80.
+- The cost is that it decides on recruitment it does not see.
+
+**The likely cause in v30: receptive fields of dendritic size.**
+- **What M3.4 used.** Each cell is driven through its dendritic columns only, seen through the
+  7.7° photoreceptor acceptance. The LPLC2 r95 of 21.9° gives a field about 44° across.
+- **What was measured.** Klapoetke et al. 2017 give 60° as the upper bound of an individual
+  LPLC2's functional receptive field. The research note (section 1) attributes the difference to
+  the spatial spread of the T4/T5 inputs, which M3.4 does not model.
+- **Why it matters.** A disk of a given size recruits fewer cells through dendritic fields than
+  through functional ones, and DNp01 needs about half a side.
+
+## 6. Candidate next steps
+
+Each needs the user's decision and, for any runtime change, a preregistration first.
+
+1. **Functional receptive fields.**
+   - Extend the LPLC2 field by the spatial spread of its T4/T5 inputs, so that the field matches
+     the measured functional size (sourced from T4/T5 receptive-field measurements, with
+     Klapoetke's 60° as the bound).
+   - Recalibrate the one scale, and check strikes, V1-V8 and the threat matrix.
+   - First, an exploration to see whether functional fields bring strike decisions before
+     contact.
+2. **Bilateral recruitment.** Whether an overhead disk, split between the eyes, should still
+   drive each giant fiber as strongly as a lateral one. This needs literature on GF responses
+   to overhead looms, and gap-junction coupling between the two GFs, before any design.
+3. The remaining earlier steps:
+   - left-right balance by DNp01 weight;
+   - E4;
+   - the rear blind spot.
