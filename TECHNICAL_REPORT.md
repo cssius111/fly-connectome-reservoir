@@ -860,8 +860,20 @@ The user chose the escape decision first, starting with read-only research. M3.1
       GF's latency is the same at 0° and ±45° (Jang et al. 2023): this is the bilateral gap,
       measured against a direct comparator.
     - **High and rear positions.** They decide late everywhere.
-    - **The delay.** Even at the best position the decision delay is about 40-55 ms longer than
-      the real fly's.
+    - **The delay.** Even at the best position the decision delay is longer than the real
+      fly's: by 35-55 ms against Fotowat et al. 2009, and by 10-30 ms against the GF-driven short
+      mode of von Reyn et al. 2014.
+  - **The delay decomposed.**
+    - **The floor.** It is about 2 ticks (40 ms) after the image that first makes the drive
+      sufficient:
+      - 1 tick of synaptic transmission;
+      - at least 1 tick for the second DNp01 spike, because DNp01 resets to 0 and needs about
+        0.86 V per tick to fire on consecutive ticks.
+    - **Not the cap.** Raising the encoder cap to 0.86-1.0 V changes the fitted delay by at most
+      10 ms.
+    - **No better rule.** Coincidence rules with DNp02/DNp04/DNp11 raise false alarms at rest,
+      0.04-0.10 per s.
+    - **So:** the floor belongs to the frozen simulator's 20 ms step.
 
 ### 9.7 Other open items
 

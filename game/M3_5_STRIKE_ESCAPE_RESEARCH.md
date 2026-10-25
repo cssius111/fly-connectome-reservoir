@@ -695,7 +695,9 @@ What the map shows:
   - **What it means.** The model reacts to a smaller image (an effective threshold of about 38°)
     but needs about 60 ms to decide. At V2's position the same estimate gives 2.2 and -50 ms.
     The roughly two ticks between reaching the doublet level and the decision (section 14)
-    appear here as a delay of about 40-55 ms beyond the real fly's.
+    appear here as a long delay.
+  - **How much longer than the real fly's.** Section 16 places it at 35-55 ms against Fotowat et
+    al. 2009 (X16) and 10-30 ms against the GF-driven short mode of von Reyn et al. 2014 (X24).
 
 **What it leaves.**
 - **Structural latency.** The extra decision delay is common to every position. It is the
@@ -703,3 +705,85 @@ What the map shows:
 - **Position dependence.** The decision time depends on position through the receptive-field
   weight map and the split between the eyes. The frontal part is a measured gap against Jang
   et al. 2023.
+
+## 16. The decision delay is the frozen simulator's floor
+
+The user chose on 2026-10-25 to decompose the delay. The tool is `tools/m3_5_latency_parts.py`,
+with raw data in `artifacts/m3_5/latency_parts/`.
+- **Stimulus.** V2's loom from 10° at azimuth 90°, elevation 0°, l/v 20, 40 and 80 ms.
+- **Seeds.** 970501-970524 for the looms; a 10 s rest run with seeds 970601-970624.
+- **The fit.** The delay is read as the intercept of a fit of decision time against l/v.
+
+**Two real-fly comparators disagree by 24 ms.**
+- **X15/X16, Fotowat et al. 2009.** Takeoff 6 ms after 54°: slope 2.0, intercept -6 ms. This is
+  M3.0's E2 comparator.
+- **X24, von Reyn et al. 2014.** Recorded at 6,000 fps, which separates the two escape modes. It
+  gives a neural delay to takeoff of 30.1 ms for GF-driven short-mode escapes and 45.7 ms for
+  long-mode ones.
+- **Which applies.** The model decides from DNp01 (the GF), so the short mode is its nearer
+  counterpart.
+
+**The parts of the model's delay** (section 14 and offline from these traces):
+1. **The Retina to the encoder: 0 ticks.** The encoder drives LPLC2/LC4 in the same tick. No
+   photoreceptor or medulla delay is modelled.
+2. **LPLC2/LC4 spikes to DNp01: 1 tick (20 ms).** The network's synaptic input acts at the next
+   step.
+3. **DNp01's first driven spike to the decision: 1-2 ticks.**
+   - **The reset.** DNp01 resets to 0 after a spike.
+   - **The next tick needs a lot.** To fire again on the next tick it needs about 0.86 V per tick
+     of input. The whole right encoder population, all driven at the cap, delivers 0.87-0.94 V
+     (section 8.2).
+   - **Below that.** From 0.41 to 0.86 V it fires every second tick, so the doublet decision
+     comes two ticks after the first driven spike.
+   - **Measured.** From the input reaching 0.41 V to the decision: a median of 1-2 ticks.
+
+**Encoder cap.** At the same scale, a cap of 0.86 or 1.0 V raises DNp01's input by 10-20 %
+(l/v 40 ms, τ 77 ms: 0.39 → 0.46 V). It barely moves the decision:
+
+| Cap | l/v 20 | l/v 40 | l/v 80 | Fit: slope, intercept |
+|---|---|---|---|---|
+| 0.80 V (v30) | 9 ms | 37 ms | 134 ms | 2.14, -40 ms |
+| 0.86 V | 9 ms | 37 ms | 154 ms | 2.50, -50 ms |
+| 1.00 V | 9 ms | 37 ms | 144 ms | 2.32, -45 ms |
+
+The table gives median decision times before collision, 24 trials each. The cap is not the
+bottleneck: DNp01's own reset is.
+
+**Decoder rules** (offline, on the same spike trains). Spontaneous rates at rest:
+
+| Cell | Left | Right |
+|---|---|---|
+| DNp01 | 0.31 Hz | 0.40 Hz |
+| DNp02 | 0.72 Hz | 0.80 Hz |
+| DNp04 | 0.77 Hz | 0.80 Hz |
+| DNp11 | 0.41 Hz | 0.46 Hz |
+
+| Rule | False alarms at rest | Fit at cap 0.80 V |
+|---|---|---|
+| doublet, at most 2 ticks (runtime) | 0 in 240 s | slope 2.14, intercept -40 ms |
+| DNp01 + DNp02/DNp04/DNp11, same tick | 9 in 240 s (0.04 per s) | slope 4.64, intercept -50 ms |
+| the same within one tick | 24 in 240 s (0.10 per s) | slope 6.72, intercept -20 ms |
+
+- **The coincidence rules fail on two counts.** They fire at rest every 10-30 s, and they decide
+  on sparse early spikes (effective thresholds 17-24°).
+- **The single-spike rule.** It was already ruled out by spontaneous DNp01 spikes (M3.3
+  research, section 1).
+- **Wider doublet windows.** Section 14's offline test shifts every position earlier without
+  closing the gap between positions.
+
+What it means:
+- **The floor.** The model's minimum decision delay is about 2 ticks (40 ms) after the image that
+  first makes the drive sufficient: 1 tick of synaptic transmission and at least 1 tick for the
+  second DNp01 spike. A typical delay is 2.5 ticks.
+  - **What sets it.** The frozen simulator's 20 ms step and reset-to-zero neurons.
+  - **What cannot shorten it.** The encoder cannot. The decoder cannot without false alarms.
+- **Against the comparators.** The fitted intercepts are -40 to -60 ms (sections 15-16).
+  - **The GF short mode (30.1 ms).** The excess is 10-30 ms, about one simulation step.
+  - **Fotowat et al. (6 ms after 54°).** The excess is 35-55 ms.
+- **What is left that the rules allow.** Anticipation in the drive: for example, the balance of
+  the LC4 velocity term against the LPLC2 size term, which sets how early the drive becomes
+  sufficient for fast looms. That would be a new calibration against the behavioural law, with
+  the Ache et al. 2019 GF-model targets as a competing constraint.
+- **The larger remaining gap is positional (section 15).**
+  - **Its cause.** The split between the eyes and the receptive-field weight map.
+  - **What closing it takes.** The bilateral part can only be closed in the frozen network.
