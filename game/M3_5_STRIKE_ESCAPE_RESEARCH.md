@@ -909,3 +909,6 @@ data in `artifacts/m3_5/m36_feasibility/`.
     constants.
 - **So, by the criterion the user set:** this M3.6 design is not worth a change to the frozen
   connectome.
+
+**Paused.** On 2026-10-25 the user paused the escape-timing line and turned to the spontaneous
+saccade gap (game/M3_7_SACCADE_RESEARCH.md). The runtime stays v27.

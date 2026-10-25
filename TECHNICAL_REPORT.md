@@ -893,6 +893,21 @@ The user chose the escape decision first, starting with read-only research. M3.1
       against 2.0).
     - **The decision.** By the user's criterion, the design is not worth a change to the frozen
       connectome.
+  - **Paused on 2026-10-25.** The user paused the escape-timing line here. The runtime stays v27.
+- **M3.7, read-only research on spontaneous saccades**
+  ([game/M3_7_SACCADE_RESEARCH.md](game/M3_7_SACCADE_RESEARCH.md)).
+  - **Where the events come from.** Of the model's 0.34 events per s, 0.19 are clock-driven
+    saccades and 0.15 wall-driven turns (AVOID, DEPART). 42 % of open-space clock events are
+    small corrections below the detector.
+  - **What the real rate contains.** The real 1.37 per s comes from a 2 m arena crossed at about
+    107 BL/s and is about 90 % stimulus-driven (Censi et al. 2013). Their baseline bound is
+    0.4 per s.
+  - **Why it does not transfer.** Under the frozen 14-times slower speed scale, matching the
+    pooled rate per second would make ROOM paths about 14 times more tortuous per distance.
+  - **Candidates, not authorized.**
+    - straight flight between saccades: open-space corrections become saccades, about 0.33 per s;
+    - saccades of about 90° within the existing actuator cap;
+    - a comparator for the clock part against the 0.4 per s baseline.
 
 ### 9.7 Other open items
 
