@@ -787,3 +787,83 @@ What it means:
 - **The larger remaining gap is positional (section 15).**
   - **Its cause.** The split between the eyes and the receptive-field weight map.
   - **What closing it takes.** The bilateral part can only be closed in the frozen network.
+
+## 17. How strong a commissural pathway would need to be
+
+The user chose on 2026-10-25 to explore, read-only, the strength the bilateral pathway would
+need. The tool is `tools/m3_5_bilateral_gain.py`, with raw data in
+`artifacts/m3_5/bilateral_gain/`.
+- **The change explored.** It multiplies, in one research process's memory only, the weights from
+  the three carrier types of section 8.2 (PVLP151, AMMC-A1, DNp11) onto the opposite DNp01 by a
+  gain g. That is 11 synapse entries. Nothing in data/, the configuration or the runtime
+  changes.
+- **Stimulus.** V2's loom from 10° at l/v 40 and 80 ms.
+- **Seeds.** 970701-970724 for the looms, and 970801-970824 for 10 s at rest.
+
+**Against Jang et al. 2023's physiology.** The right DNp01 under looms at +45° (ipsilateral) and
+-45° (contralateral) on the horizon. The peak synaptic input above rest is taken while the disk is
+at most 63°, Jang et al.'s largest size:
+
+| Gain | Contra / ipsi peak, l/v 40 | Contra / ipsi peak, l/v 80 | Contra peak later by |
+|---|---|---|---|
+| 1 (v30) | 0.07 | 0.05 | - |
+| 5 | 0.23 | 0.25 | 1 tick |
+| 10 | 0.48 | 0.44 | 2-5 ticks |
+| 20 | 0.95 | 0.92 | 1 tick |
+| 40 | 2.14 | 2.11 | 1-2 ticks |
+
+**Against Jang et al.'s latency invariance, behaviourally.** Median decision time before
+collision, ms. "±45°" gives the +45° and -45° values.
+
+| Gain | front, l/v 40 | ±45°, l/v 40 | front, l/v 80 | ±45°, l/v 80 |
+|---|---|---|---|---|
+| 1 | -3 | 57, 57 | 54 | 114, 154 |
+| 5 | 17 | 57, 57 | 94 | 154, 144 |
+| 10 | 37 | 67, 37 | 164 | 154, 154 |
+| 20 | 127 | 77, 57 | 334 | 194, 164 |
+| 40 | 297 | 277, 307 | 574 | 574, 574 |
+
+**Elsewhere and at rest:**
+
+| Gain | lateral 90°/0° | calibration 50°/11° | high 90°/70° | rear 180°/50° | DNp01 at rest, L / R | Decisions at rest |
+|---|---|---|---|---|---|---|
+| 1 | 37 / 114 | 77 / 214 | -3 / 74 | -23 / -6 | 0.33 / 0.42 Hz | 0 in 240 s |
+| 5 | 37 / 114 | 77 / 194 | 17 / 74 | -23 / 14 | 0.53 / 0.68 Hz | 0 |
+| 10 | 37 / 134 | 77 / 194 | 27 / 114 | -3 / 34 | 1.23 / 1.31 Hz | 0 |
+| 20 | 57 / 154 | 97 / 254 | 77 / 254 | 17 / 114 | 2.09 / 1.99 Hz | 0 |
+| 40 | 247 / 554 | 247 / 574 | 197 / 544 | 67 / 244 | 2.60 / 2.28 Hz | 42 |
+
+The position columns give the median decision time before collision at l/v 40 / 80 ms.
+
+What it shows:
+- **The required strength.**
+  - **The comparators disagree.** The two readings of Jang et al. point to different gains:
+    - the physiological one (equal magnitude up to 63°) to g ≈ 20;
+    - the behavioural one (frontal decisions as at ±45°) to g ≈ 10.
+  - **What that weight means.** At g = 10-20 the carriers' summed weight onto the opposite DNp01
+    is 0.19-0.5, against 0.30 for the direct ipsilateral LPLC2 + LC4 input.
+  - **So:** the pathway would have to be roughly as strong as the ipsilateral one, 10-20 times
+    what the EM synapse counts give these carriers.
+- **What g ≈ 10 would change.**
+  - **Front.** Frontal looms are decided like those at ±45°.
+  - **High and rear.** High and rear looms are decided 20-40 ms earlier. They still come later
+    than lateral ones.
+  - **Lateral and calibration positions.** They move by at most one tick.
+- **The side effects grow with g.**
+  - **Rest.** The spontaneous DNp01 rate rises three- to six-fold at g = 10-20. AMMC-A1 also
+    carries auditory input. The doublet rule stays silent at rest up to g = 20; at g = 40 it
+    fires 42 times in 240 s.
+  - **Overshoot.** At g = 20 the front is decided 50-170 ms before ±45°, and every position moves
+    earlier, so the scale would need recalibration.
+  - **The cause.** Concentrating the pathway in six cells per side makes it spiky: a single
+    PVLP151 spike at g = 20 gives the opposite DNp01 about 0.5 V.
+- **Limits of the exploration.**
+  - **The pathway is a stand-in.** The real pathway is unidentified (Jang et al. 2023).
+  - **The timing.** The contralateral peak comes one tick or more after the ipsilateral one,
+    through the two-hop route. Jang et al. report no significant latency difference.
+  - **So:** these gains describe this stand-in only, not the real circuit.
+- **What a runtime version would need.**
+  - **Authorization.** It would change the frozen connectome's effective weights, so it needs
+    the user's explicit authorization.
+  - **A preregistration.** It would also need one that fixes beforehand which Jang et al.
+    criterion sets g.

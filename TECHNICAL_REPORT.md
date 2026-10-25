@@ -874,6 +874,17 @@ The user chose the escape decision first, starting with read-only research. M3.1
     - **No better rule.** Coincidence rules with DNp02/DNp04/DNp11 raise false alarms at rest,
       0.04-0.10 per s.
     - **So:** the floor belongs to the frozen simulator's 20 ms step.
+  - **Commissural strength explored in memory only.** This scales the weights from PVLP151,
+    AMMC-A1 and DNp11 onto the opposite DNp01 by a gain g.
+    - **The required gain.** Jang et al. 2023's equal contralateral magnitude needs g ≈ 20, and
+      their frontal latency invariance g ≈ 10. That is a pathway about as strong as the
+      ipsilateral input, 10-20 times the EM synapse counts.
+    - **What g ≈ 10 changes.** Frontal decisions match ±45°, and high and rear looms are decided
+      20-40 ms earlier.
+    - **Its cost.** The spontaneous DNp01 rate rises three-fold, with no false alarms at rest.
+    - **At g = 20.** The front overshoots and every position moves earlier.
+    - **What a runtime version would need.** The user's authorization to change the frozen
+      connectome's effective weights.
 
 ### 9.7 Other open items
 
