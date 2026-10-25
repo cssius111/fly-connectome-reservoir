@@ -885,6 +885,14 @@ The user chose the escape decision first, starting with read-only research. M3.1
     - **At g = 20.** The front overshoots and every position moves earlier.
     - **What a runtime version would need.** The user's authorization to change the frozen
       connectome's effective weights.
+  - **M3.6 feasibility, in memory only.** The candidate was every cell plus g = 10, with one
+    scale from 40 to 1120 V/mV, calibrated at the lateral horizon.
+    - **No scale passes V2 and V3 together.** V2 (lateral) needs about 560 V/mV, and V3 (Ache
+      position) allows at most about 140-280.
+    - **The cause.** One scale cannot change the model's too-steep timing law (slope about 3.4
+      against 2.0).
+    - **The decision.** By the user's criterion, the design is not worth a change to the frozen
+      connectome.
 
 ### 9.7 Other open items
 

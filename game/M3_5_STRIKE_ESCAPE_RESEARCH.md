@@ -867,3 +867,45 @@ What it shows:
     the user's explicit authorization.
   - **A preregistration.** It would also need one that fixes beforehand which Jang et al.
     criterion sets g.
+
+## 18. M3.6 feasibility: no single scale passes V2 and V3 together
+
+The user chose on 2026-10-25 to check, read-only, whether an M3.6 candidate could pass V2 and V3
+together before any change to frozen parts. The tool is `tools/m3_5_m36_feasibility.py`, with raw
+data in `artifacts/m3_5/m36_feasibility/`.
+- **The candidate.** All in one research process's memory:
+  - every LPLC2 and LC4 cell (section 10);
+  - commissural gain g = 10 (section 17);
+  - one scale per run: 40, 71.3, 140, 280, 560 or 1120 V/mV.
+- **Lateral calibration.** M3.4's calibration stimulus at the lateral horizon (azimuth 90°,
+  elevation 0°), scored against two target sets: the Ache et al. GF-model peaks and the real-fly
+  law X16. Seeds 971001-971024.
+- **V2 and V3.** As preregistered for M3.4, on seeds 971101-971124. The v30 candidate on the
+  same seeds is the reference.
+
+| Run | V2: spread at l/v 40 / 80 / 160 ms (pass ≤ 10°) | V3: median escape at l/v 15 / 30 / 60 ms (targets -16.4 / -55.7 / -132.6 ms; pass within 30 ms) |
+|---|---|---|
+| v30, 71.3 | 64.8° / 5.1° / 3.9°: fail | +8.5 / -42.9 / -125.8: pass |
+| candidate, 40 | 66.4° / 18.8° / 3.8°: fail | +8.5 / -42.9 / -105.8: pass |
+| candidate, 71.3 | 66.4° / 5.1° / 6.8°: fail | +8.5 / -42.9 / -125.8: pass |
+| candidate, 140 | 41.3° / 5.2° / 3.7°: fail | -11.5 / -62.9 / -145.8: pass |
+| candidate, 280 | 17.8° / 8.0° / 1.9°: fail | -11.5 / -42.9 / -165.8: fail (33 ms) |
+| candidate, 560 | 9.1° / 4.7° / 1.9°: pass | -11.5 / -42.9 / -185.8: fail (53 ms) |
+| candidate, 1120 | 13.7° / 4.3° / 3.5°: fail | -11.5 / -62.9 / -225.8: fail (93 ms) |
+
+- **Lateral calibration choice.** On either target set it chooses 280 V/mV (losses 2,422 and
+  3,148 ms²), where both V2 and V3 fail.
+- **No scale passes both.** V2 at the lateral position needs about 560 V/mV, which brings the
+  l/v 40 ms decisions before about 70°. V3 at the Ache position allows at most about 140-280 V/mV,
+  because higher scales decide the slow l/v 60 ms loom too early.
+- **The new components do not touch V2 or V3.** At 71.3 V/mV the candidate gives the v30 results,
+  because both positions fall on one eye.
+- **Why one scale cannot do it.**
+  - **The cause.** Scale moves every position and every l/v together, and the model's timing law
+    is too steep: at 280 V/mV the Ache-position slope is about 3.4, against 2.58 for the GF model
+    and 2.0 for the real fly.
+  - **The remaining lever.** Changing the slope would need the balance between the LC4 velocity
+    term and the LPLC2 size term, which comes from the published Ache et al. 2019 GF-model
+    constants.
+- **So, by the criterion the user set:** this M3.6 design is not worth a change to the frozen
+  connectome.
