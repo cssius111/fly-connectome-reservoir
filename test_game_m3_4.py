@@ -288,9 +288,10 @@ class TestRoomCandidate(unittest.TestCase):
         self.room = json.loads(subprocess.check_output(
             ["git", "show", CANDIDATE_COMMIT + ":game_room_config.json"], cwd=ROOT, text=True))
 
-    def test_the_working_room_configuration_is_v27(self):
+    def test_the_working_room_configuration_keeps_the_legacy_encoder(self):
+        # M3.4 failed and restored v27; the M3.7 candidate (v31) changes only flight keys.
         room = load_config(ROOT / "game_room_config.json")
-        self.assertEqual(room["config_version"], 27)
+        self.assertIn(room["config_version"], (27, 31))
         self.assertNotIn("feature_model", room["encoder"])
 
     def test_candidate_configuration(self):
