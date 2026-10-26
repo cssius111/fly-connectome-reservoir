@@ -2,6 +2,8 @@
 
 Status: **preregistered 2026-10-26, before any M3.8 candidate data.**
 
+Result: P1-P6 all passed (`results/game/M3_8_SACCADE_ODOR.md`). The v32 candidate, commit `ce0c745`, stays the working ROOM configuration as a candidate for the user's playtest; acceptance is the user's.
+
 **Authorization.** Under the user's standing instruction of 2026-10-26 to follow the recommended
 steps (game/M3_7_SACCADE_DESIGN.md). This milestone touches no frozen system.
 

@@ -595,6 +595,9 @@ complete and frozen. On 2026-10-22 the M2.4-B blind test was closed at 13 of 30 
 stop-rotation audit was recorded. At the user's request, M1.7.2 then fixed the defect the audit had
 found. It is ROOM `config_version` 27 and was human-accepted the same day (section 9.7).
 The fidelity scorecard is in section 9.6, and the remaining open items are in section 9.7.
+On 2026-10-26 the working ROOM file became the M3.8 candidate, `config_version` 32, which passed
+its preregistered checks and awaits the user's playtest (section 9.6). Until it is accepted, v27
+is the accepted runtime.
 
 ### 9.1 A measurement made for this report: where flight time goes
 
@@ -924,6 +927,26 @@ The user chose the escape decision first, starting with read-only research. M3.1
     to the hovering paddle.
   - **A noted cost.** During odor tracking the share of time heading upwind fell from 0.66 to 0.41.
   - **Under the decision rule, v27 stays.** The v31 candidate is commit `c10477d`.
+  - **Follow-up, read-only** ([game/M3_7_SACCADE_RESEARCH.md](game/M3_7_SACCADE_RESEARCH.md),
+    section 5). Whether the change raises escapes at all is not established. The upwind loss
+    comes from saccades during odor tracking.
+- **M3.8, saccades of about 90° and no spontaneous turns while tracking an odor upwind; all
+  checks passed.**
+  - **The design.** [game/M3_8_SACCADE_ODOR_DESIGN.md](game/M3_8_SACCADE_ODOR_DESIGN.md), under
+    the same standing instruction.
+  - **The change.** M3.7's three flight parameters plus a stopped ODOR_TRACK clock
+    (`ecology.spontaneous_clock_rate.ODOR_TRACK` = 0; Budick and Dickinson 2006), all class B
+    (v32). The decoder record is carried over.
+  - **The results.** In [results/game/M3_8_SACCADE_ODOR.md](results/game/M3_8_SACCADE_ODOR.md).
+    - clock-driven saccades 0.307 per s, and S3 77.0° in 80 ms;
+    - no pathologies;
+    - paired no-player escapes 9 against 9 in 240 minutes;
+    - fixed-fly escapes identical in all 384 trials;
+    - the upwind share during odor tracking 0.591 against 0.529 on 40 runs.
+  - **A descriptive disagreement.** On the six kinematics seeds the upwind share fell (0.661 →
+    0.471), on about a quarter of P6's tracking time.
+  - **Under the decision rule, v32 stays as a candidate.** It is the working ROOM file (commit
+    `ce0c745`) and awaits the user's playtest; v27 remains the last accepted configuration.
 
 ### 9.7 Other open items
 
@@ -1012,7 +1035,7 @@ with the completion stages passed 491 of 491 on Linux and on the local Windows c
 ```text
 python first_run.py                                   # data integrity and replay smoke test
 python experiment.py --config other.json --output results-new   # never overwrite results/
-python -m game.app --arena room                       # play the accepted runtime
+python -m game.app --arena room                       # play the working ROOM configuration
 python tools/calibrate_escape.py --config game_room_config.json --trials 28
 python -m unittest discover
 ```
