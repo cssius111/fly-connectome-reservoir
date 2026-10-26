@@ -154,3 +154,48 @@ are unchanged.
   checks and a playtest.
 - **Difficulty.** A fly that turns more often and further is likely harder to hit. That is a
   consequence to report, not a target.
+
+## 5. After the M3.7 test (2026-10-26)
+
+M3.7 (results/game/M3_7_SACCADES.md) passed P1, P2, P3 and P5, and failed P4. Paired no-player
+escapes rose from 9 to 15 in 240 minutes. The upwind share during odor tracking also fell.
+`tools/m3_7_encounters.py` reran 40 × 180 s no-player flights (seeds 972401-972440) under three
+arms:
+- baseline v27;
+- candidate v31;
+- a read-only variant: v31 with `ecology.spontaneous_clock_rate.ODOR_TRACK` = 0, a class-B,
+  unfrozen parameter, applied in memory only.
+
+| | v27 | v31 | variant |
+|---|---|---|---|
+| Clock saccade starts per airborne s | 0.178 | 0.323 | 0.311 |
+| Escapes (per airborne min) | 4 (0.042) | 7 (0.072) | 3 (0.031) |
+| Encounters within 650 units of the paddle, per min | 1.12 | 1.04 | 1.03 |
+| Share of encounters ending in an escape | 0.028 | 0.069 | 0.030 |
+| Ecology state 0.1 s before each escape | ALERT 2, RECOVER 1, EXPLORE 1 | EXPLORE 4, TRANSIT 3 | TRANSIT 1, EXPLORE 1, ALERT 1 |
+| ODOR_TRACK: upwind share | 0.535 | 0.465 | 0.536 |
+| ODOR_TRACK: saccade starts per min | 4.2 | 7.8 | 0 |
+| Upwind share 0-2 s after a saccade start / later | 0.31-0.38 / 0.57 | 0.23-0.34 / 0.54 | 0.27-0.39 / 0.57 |
+
+- **Encounters do not become more frequent.**
+  - **In the candidate.** Its extra escapes came from encounters ending in an escape more often.
+  - **The counts are small.**
+    - **v27 against v31.** Pooled with P4, v27 has 13 escapes in 334 min and v31 22 in 337 min:
+      a ratio of 1.7, one-sided p ≈ 0.09.
+    - **The variant.** It differs from v31 only in the ODOR_TRACK clock, yet has 3. All of the
+      candidate's escapes came outside ODOR_TRACK, so the variant's lower count is chance, not a
+      mechanism.
+  - **So:** whether the M3.7 flight change raises no-player escapes at all is not established.
+- **The upwind loss is mechanical.**
+  - **The cost of a saccade.** Each one costs about 2 s of upwind heading.
+  - **More of them.** M3.7 nearly doubled the saccades during odor tracking.
+  - **The variant.** Setting the ODOR_TRACK clock rate to 0 restores the v27 upwind share
+    exactly (0.536 against 0.535), while the overall clock saccade rate stays at 0.31 per s.
+- **The real fly.** Budick and Dickinson 2006 (J Exp Biol 209:3001-3017), from the abstract:
+  - after contacting an odor plume, flies reduce their crosswind velocity and surge upwind;
+  - in a homogeneous odor cloud they fly fast while maintaining an upwind heading.
+  No spontaneous saccades while tracking is a simplification consistent with this.
+- **Next.** A new preregistered milestone (M3.8): the M3.7 change plus the ODOR_TRACK clock
+  rate of 0.
+  - **Checks.** It keeps P1-P5 unchanged on fresh seeds and adds an odor-tracking check.
+  - **A risk.** The variant's 0.31 per s lies near P1's lower bound of 0.30.
