@@ -945,6 +945,12 @@ The user chose the escape decision first, starting with read-only research. M3.1
     - the upwind share during odor tracking 0.591 against 0.529 on 40 runs.
   - **A descriptive disagreement.** On the six kinematics seeds the upwind share fell (0.661 →
     0.471), on about a quarter of P6's tracking time.
+  - **A read-only follow-up on 40 seeds** (`tools/m3_8_odor_contact.py`). It does not reproduce
+    that drop.
+    - odor contact is unchanged within noise;
+    - the upwind share is 0.562 against 0.535;
+    - food touchdowns rise from 78 to 101, and the median first one comes at 19.7 s against
+      39.6 s.
   - **Under the decision rule, v32 stays as a candidate.** It is the working ROOM file (commit
     `ce0c745`) and awaits the user's playtest; v27 remains the last accepted configuration.
 

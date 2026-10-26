@@ -171,8 +171,8 @@ failure.
   - **What it does not show.** P4 does not show that the M3.7 change was harmless.
 - **Remaining gaps.**
   - **S1 and S2** stay below the M3.0 comparator, for the reasons in game/M3_7_SACCADE_RESEARCH.md.
-  - **Odor contact** on the six kinematics seeds is lower; whether that is a real effect is not
-    established by six seeds.
+  - **Odor contact** on the six kinematics seeds is lower. The follow-up in section 8 does not
+    reproduce this on 40 seeds.
 - **Decision under the rule.** v32 stays the working ROOM configuration as a candidate. It goes
   to the user for a ROOM playtest, and acceptance is the user's. Until then v27 (`7483e51`)
   remains the last accepted configuration.
@@ -194,4 +194,49 @@ NUMBA_NUM_THREADS=1 python tools/paired_free_flight_check.py classify --lane K -
     --first-seed 973201 --last-seed 973280 --out artifacts/m3_8/free_flight          (K = 0-3)
 python tools/paired_free_flight_check.py summary --baseline-commit 7483e51 --first-seed 973201 --last-seed 973280 \
     --out artifacts/m3_8/free_flight
+NUMBA_NUM_THREADS=1 python tools/m3_8_odor_contact.py run --arm baseline --lane K --lanes 2    (also --arm candidate)
+python tools/m3_8_odor_contact.py summary
 ```
+
+## 8. Follow-up: odor contact on 40 seeds (read-only, after the decision)
+
+**Why.** Section 5's six seeds showed less odor contact and a lower upwind share, and they
+disagreed in sign seed by seed. This follow-up was run after the decision and does not change
+it. Nothing was tuned.
+
+**The tool.** `tools/m3_8_odor_contact.py` runs `kinematics_sanity.measure`, unchanged, on 40
+fresh paired seeds, 973501-973540. Its questions were fixed in its docstring before the runs.
+
+| | Baseline v27 | Candidate v32 |
+|---|---|---|
+| Alive minutes | 120 | 120 |
+| Odor detected share of alive time | 0.366 | 0.405 |
+| Odor encounters per alive minute | 1.73 | 1.60 |
+| ODOR_TRACK airborne minutes | 11.5 | 10.6 |
+| ODOR_TRACK upwind share | 0.535 | 0.562 |
+| Food touchdowns (runs with one) | 78 (39 of 40) | 101 (39 of 40) |
+| Median time to the first food touchdown | 39.6 s | 19.7 s |
+
+Per-seed paired differences, candidate minus baseline, with bootstrap 95 % intervals of the mean:
+
+| Metric | Mean difference (95 %) | Seeds lower / higher / equal |
+|---|---|---|
+| Odor detected share | +0.039 (−0.007 to +0.084) | 16 / 24 / 0 |
+| Odor encounters per minute | −0.125 (−0.292 to +0.042) | 21 / 12 / 7 |
+| ODOR_TRACK occupancy | +0.025 (−0.011 to +0.061) | 16 / 24 / 0 |
+| Food touchdowns | +0.575 (+0.075 to +1.050) | 9 / 20 / 11 |
+
+- **Odor contact.** The six-seed drop does not reproduce.
+  - **Time in odor.** The candidate spends no less time in odor; the difference points the other
+    way.
+  - **New contacts.** It makes slightly fewer of them, within noise. Each contact lasts longer.
+- **Upwind heading.** On a third seed set the candidate's ODOR_TRACK upwind share is again at
+  least the baseline's (0.562 against 0.535).
+- **Food.**
+  - **The effect.** The candidate lands on food more often, and the interval excludes zero. It
+    reaches the first food in about half the time.
+  - **The likely mechanism.** Straight upwind flight during tracking brings it to the source
+    sooner, consistent with the upwind surge Budick and Dickinson 2006 describe.
+  - **Its status.** A consequence of the change, not a target.
+- **Section 5's six seeds.** Read together with P6 and this follow-up, their odor values are
+  seed variation.
