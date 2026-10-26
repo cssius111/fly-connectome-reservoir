@@ -908,6 +908,22 @@ The user chose the escape decision first, starting with read-only research. M3.1
     - straight flight between saccades: open-space corrections become saccades, about 0.33 per s;
     - saccades of about 90° within the existing actuator cap;
     - a comparator for the clock part against the 0.4 per s baseline.
+- **M3.7, straight flight between saccades of about 90°; failed one check.**
+  - **The design.** [game/M3_7_SACCADE_DESIGN.md](game/M3_7_SACCADE_DESIGN.md), carried out under
+    the user's standing instruction of 2026-10-26 to follow the recommended steps.
+  - **The change.** Three class-B flight parameters (v31): no open-space corrections, and
+    saccades of 60-120° at 1,200-1,500°/s. The decoder record is carried over.
+  - **The results.** In [results/game/M3_7_SACCADES.md](results/game/M3_7_SACCADES.md).
+  - **Improvements:**
+    - the clock-driven saccade rate is 0.32 per s, against the real baseline of about 0.4;
+    - S3 matches for the first time (77.6° in 80 ms);
+    - fixed-fly escapes are identical in all 384 trials;
+    - there are no pathologies.
+  - **Failure.** Paired no-player escapes rose from 9 to 15 in 240 minutes, against a criterion of
+    "not larger". The difference lies within Poisson noise, and the extra escapes are slow approaches
+    to the hovering paddle.
+  - **A noted cost.** During odor tracking the share of time heading upwind fell from 0.66 to 0.41.
+  - **Under the decision rule, v27 stays.** The v31 candidate is commit `c10477d`.
 
 ### 9.7 Other open items
 

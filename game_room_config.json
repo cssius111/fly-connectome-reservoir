@@ -1,5 +1,5 @@
 {
-  "config_version": 31,
+  "config_version": 27,
   "_comment": "M1.6 horizontal ROOM slice. Logical units and state speeds are gameplay mappings, not universal biological constants.",
   "sim": {
     "tick_seconds": 0.02,
@@ -142,11 +142,11 @@
     "virtual_distance": 100.0
   },
   "policy": {
-    "_comment": "Exact provenance required. The M1.8-N4B1C lateral dual-path decoder (unchanged) under the M1.8-N4B5R elevation-aware geometry, the M1.8-B2b-iii to B4b kinematics and ecology the M1.7.2 paddle line axis and the M3.7 free-flight saccades (game/M3_7_SACCADE_DESIGN.md) loads the M3.7 transfer record, which carries the identical decoder block for this configuration: rebuild it with python tools/m3_7_record.py. Earlier records are preserved unchanged. tools/calibrate_escape.py measures the scalar single-sample criterion only and does not calibrate this decoder.",
+    "_comment": "Exact provenance required. The M1.8-N4B1C lateral dual-path decoder (unchanged) under the M1.8-N4B5R elevation-aware geometry, the M1.8-B2b-iii to B4b kinematics and ecology and the M1.7.2 paddle line axis loads the M1.7.2 transfer record, which carries the identical decoder block for this configuration: rebuild it with python tools/m1_7_2_axis_record.py. Earlier records are preserved unchanged. tools/calibrate_escape.py measures the scalar single-sample criterion only and does not calibrate this decoder.",
     "escape_threshold": null,
     "calibration_paths": [
-      "artifacts/game/calibration_room_m3_7.json",
-      "results/game/calibration_room_m3_7.json"
+      "artifacts/game/calibration_room_m1_7_2.json",
+      "results/game/calibration_room_m1_7_2.json"
     ],
     "escape_decoder": {
       "_comment": "M1.8-N4B1C combined DNp01 criterion. Escape when EITHER path qualifies outside the shared refractory period. LATERAL: the same DNp01 side produces lateral_required_spikes inferred spikes within lateral_same_side_window_ms (per-side spikes inferred from that side's own trace; a left spike followed by a right spike never qualifies). Summed N2b path: FAST when left + right >= summed_fast_threshold; SUSTAINED when the current summed sample is >= sustained_threshold AND at least sustained_required_samples of the most recent sustained_window_samples summed samples are >= sustained_threshold. All values are Class C engineering decoder parameters derived from simulator evidence, not biological constants. sustained_threshold must equal the record's escape_threshold.",
@@ -207,16 +207,16 @@
         250.0,
         600.0
       ],
-      "probability": 0.0
+      "probability": 0.42
     },
     "saccade": {
       "degrees": [
-        60.0,
-        120.0
+        25.0,
+        105.0
       ],
       "peak_rate_deg_per_second": [
-        1200.0,
-        1500.0
+        700.0,
+        1400.0
       ]
     },
     "boundary": {

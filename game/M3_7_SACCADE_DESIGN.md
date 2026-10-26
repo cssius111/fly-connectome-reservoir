@@ -2,6 +2,8 @@
 
 Status: **preregistered 2026-10-26, before any candidate data.**
 
+Result: P4 failed (15 no-player escapes against 9), so the decision rule failed and v27 was restored (`results/game/M3_7_SACCADES.md`). P1, P2, P3 and P5 passed. The v31 candidate is commit `c10477d`.
+
 **Authorization.** On 2026-10-26 the user gave a standing instruction to "follow the recommended
 steps one by one" ("继续一步一步按照推荐的来"). The recommended step after the M3.7 research was
 this preregistration, followed by its implementation. The instruction does not extend to the
