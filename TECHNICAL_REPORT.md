@@ -596,8 +596,8 @@ stop-rotation audit was recorded. At the user's request, M1.7.2 then fixed the d
 found. It is ROOM `config_version` 27 and was human-accepted the same day (section 9.7).
 The fidelity scorecard is in section 9.6, and the remaining open items are in section 9.7.
 On 2026-10-26 the working ROOM file became the M3.8 candidate, `config_version` 32, which passed
-its preregistered checks and awaits the user's playtest (section 9.6). Until it is accepted, v27
-is the accepted runtime.
+its preregistered checks. After one recorded ROOM playtest the user accepted it on 2026-10-28
+(section 9.6), so the accepted runtime is now ROOM `config_version` 32.
 
 ### 9.1 A measurement made for this report: where flight time goes
 
@@ -951,8 +951,11 @@ The user chose the escape decision first, starting with read-only research. M3.1
     - the upwind share is 0.562 against 0.535;
     - food touchdowns rise from 78 to 101, and the median first one comes at 19.7 s against
       39.6 s.
-  - **Under the decision rule, v32 stays as a candidate.** It is the working ROOM file (commit
-    `ce0c745`) and awaits the user's playtest; v27 remains the last accepted configuration.
+  - **Under the decision rule, v32 stayed as a candidate.** It was the working ROOM file (commit
+    `ce0c745`) for the user's playtest.
+  - **Human-accepted on 2026-10-28** after one recorded ROOM playtest (session
+    `20261029T005245.328554Z-6300258d`). v32 is the accepted ROOM configuration, and `AGENTS.md` freezes its four
+    parameters.
 
 ### 9.7 Other open items
 
@@ -1015,7 +1018,7 @@ The user chose the escape decision first, starting with read-only research. M3.1
 
 | Branch | Content |
 |---|---|
-| `main` | **The current accepted runtime** (ROOM `config_version` 27 with M1.7.2), the original reservoir experiment (Part I, up to `309abd9`) and the research records N0 to N4B8 (since 2026-10-22) |
+| `main` | **The accepted runtime** (ROOM `config_version` 27 with M1.7.2 until the M3.8 work is merged; v32 since 2026-10-28), the original reservoir experiment (Part I, up to `309abd9`) and the research records N0 to N4B8 (since 2026-10-22) |
 | `feature/flyswatter-game` @ `85f987b` | The first game prototype, M1.0 to M1.3 (2026-09-18), whose commits Part II cites |
 | `feature/m1-8-n4b1c-runtime` @ `e3c55b3` | An earlier accepted runtime (the N4B1C decoder layer) |
 | `wip/m1-4-enclosure` @ `c953094` | The decoder research N4B2 to N4B8 and the 2026-10-08 handoff state, merged into `main` |
@@ -1041,7 +1044,7 @@ with the completion stages passed 491 of 491 on Linux and on the local Windows c
 ```text
 python first_run.py                                   # data integrity and replay smoke test
 python experiment.py --config other.json --output results-new   # never overwrite results/
-python -m game.app --arena room                       # play the working ROOM configuration
+python -m game.app --arena room                       # play the accepted runtime
 python tools/calibrate_escape.py --config game_room_config.json --trials 28
 python -m unittest discover
 ```

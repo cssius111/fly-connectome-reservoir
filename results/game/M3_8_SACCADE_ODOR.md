@@ -1,9 +1,8 @@
 # M3.8 result: saccades of about 90°, and no spontaneous turns while tracking an odor upwind
 
-Status: **all checks P1-P6 passed, 2026-10-26.** The v32 candidate (commit `ce0c745`) stays the
-working ROOM configuration as a candidate, with its record
-`results/game/calibration_room_m3_8.json`. Acceptance is the user's, after a playtest. Nothing was
-tuned or rerun.
+Status: **human-accepted on 2026-10-28.** All checks P1-P6 passed on 2026-10-26. After one
+recorded ROOM playtest (section 9) the user accepted v32 (commit `ce0c745`) with its record
+`results/game/calibration_room_m3_8.json`. Nothing was tuned or rerun.
 
 **Preregistration.** `game/M3_8_SACCADE_ODOR_DESIGN.md` (commit `e87fa26`).
 - **The change.** A configuration-only change of four class-B parameters, from v27 (`7483e51`):
@@ -173,9 +172,8 @@ failure.
   - **S1 and S2** stay below the M3.0 comparator, for the reasons in game/M3_7_SACCADE_RESEARCH.md.
   - **Odor contact** on the six kinematics seeds is lower. The follow-up in section 8 does not
     reproduce this on 40 seeds.
-- **Decision under the rule.** v32 stays the working ROOM configuration as a candidate. It goes
-  to the user for a ROOM playtest, and acceptance is the user's. Until then v27 (`7483e51`)
-  remains the last accepted configuration.
+- **Decision under the rule.** v32 stayed the working ROOM configuration as a candidate and went
+  to the user for a ROOM playtest. The user accepted it (section 9).
 
 ## 7. Reproduction
 
@@ -240,3 +238,20 @@ Per-seed paired differences, candidate minus baseline, with bootstrap 95 % inter
   - **Its status.** A consequence of the change, not a target.
 - **Section 5's six seeds.** Read together with P6 and this follow-up, their odor values are
   seed variation.
+
+## 9. Human acceptance
+
+- **The playtest.** The user played one recorded ROOM session under v32 on the session branch:
+  session `20261029T005245.328554Z-6300258d`, seed 147268330, mode `play`, learning disabled. The recording is local and
+  git-ignored. Its report was not shared, so this note gives no measurements from it.
+- **What the user was asked to look at.**
+  - straight flight broken by fast turns of about 90°;
+  - straight upwind flight to the food during ODOR_TRACK;
+  - no unprompted escapes near a hovering paddle;
+  - strike escapes as before;
+  - no jitter, spinning or wall trapping.
+- **The criterion.** Whether the flight looks like a real fly's, not difficulty.
+- **The decision.** On 2026-10-28 the user accepted v32. It is the accepted ROOM configuration, and
+  `AGENTS.md` freezes its four parameters.
+- **The record's text.** `calibration_room_m3_8.json` is not edited, so the record itself does not
+  state the acceptance. This note records it.
