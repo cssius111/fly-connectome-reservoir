@@ -122,9 +122,76 @@ frozen system unchanged.
   "local perimeter-following"), and it is the real fly's behaviour in flight. The choice is the
   user's.
 
-## 5. Reproduction
+## 5. Follow-up after M3.9: why the upwind share fell (read-only)
+
+M3.9 failed check P6 (results/game/M3_9_WALL_SACCADES.md): the ODOR_TRACK upwind share fell from
+0.564 to 0.481. `tools/m3_9_odor_diagnosis.py` repeated the P6 runs (seeds 974401-974440, v32 at
+`925427c` against v33 at `7727397`) with more per-tick fields, and it reproduces P6 exactly.
+
+**The steering that matters** (game/ecology.py). In ODOR_TRACK the heading turns toward upwind
+through the ecology's smoothed steering command, capped at `ecology.steering_cap_rad_s` = 0.9 rad/s
+(about 52°/s; class C in the M1.8-R0 lock). A 90° turn therefore takes at least 1.7 s and a 180°
+turn 3.5 s.
+
+**The hypothesis that fails.** The drop is not a composition effect of a candidate that reaches
+the food more often.
+- **The test.** Re-weighting the candidate's upwind share to the baseline's distribution of
+  distance to the food gives 0.488 (raw 0.481).
+- **What that shows.** The share is lower at every distance, for example 0.63 against 0.48 at
+  400-800 units.
+
+**What the data show.**
+
+| | v32 | v33 |
+|---|---|---|
+| Airborne bout entries | 348 | 340 |
+| Heading within 45° of upwind at entry | 0.30 | 0.23 |
+| Heading of EXPLORE and TRANSIT flight, shares 0-45° / 45-90° / 90-135° / 135-180° from upwind | 0.22 / 0.20 / 0.26 / 0.32 | 0.22 / 0.20 / 0.27 / 0.31 |
+| Upwind share 0-0.5 s / 0.5-1 s / 1-2 s / 2-4 s / > 4 s after the bout starts | 0.31 / 0.35 / 0.46 / 0.74 / 0.80 | 0.24 / 0.29 / 0.43 / 0.69 / 0.73 |
+| Share of tracking ticks more than 4 s into a bout | 0.206 | 0.129 |
+| Bouts ending in ALERT | 45 | 57 |
+| Entries more than 45° off upwind that reach 45° before the bout ends | 108 of 244 | 97 of 262 |
+| Time to reach 45°, median (p25-p75) | 1.57 s (0.80-2.20) | 1.56 s (0.84-2.26) |
+
+- **The model turns upwind slowly.** After an off-wind entry, the median fly needs about 1.6 s to
+  come within 45° of upwind, and most bouts end before it does.
+  - **The real fly** (E16, van Breugel and Dickinson 2014, abstract): "190 ± 75 ms after
+    encountering a plume, flies increase their flight speed and turn upwind".
+  - **Not checked.** The full text was not accessible, so the duration of the real turn is not
+    sourced here.
+- **So the upwind share mostly measures the entry heading.** With a slow turn, the share depends on
+  where the fly points when it meets the plume and on how long the bout lasts.
+  - **In v33.** Fewer entries already point upwind (0.23 against 0.30), and fewer bouts last
+    beyond 4 s. The cruise heading distribution is the same in both arms.
+  - **What it reflects.** How the wall turns change the paths that cross the plume, not worse
+    tracking once a heading is upwind.
+- **Why P6 failed.** M3.9 changed the encounter geometry. The model's slow upwind turn turned that
+  change into a lower upwind share.
+
+**A gap the scorecard did not list.**
+
+| Feature | Model | Real fly | Class |
+|---|---|---|---|
+| O1 Upwind turn after odor entry | steering-rate-limited (52°/s cap); median 1.6 s to 45° from upwind | response 190 ± 75 ms after entry (E16) | **gap** |
+
+**Candidate next step, not authorized here.** The candidate is an upwind turn on odor entry at the
+real fly's timescale. Two forms are possible:
+- a saccade-like upwind turn about 190 ms after entry;
+- a higher steering cap during ODOR_TRACK.
+
+**What it would need.**
+- **The user's explicit request.** The ODOR_TRACK steering belongs to the M1.8 ecology, and
+  `AGENTS.md` asks for an explicit user request for any further M1.8-B change.
+- **A preregistration** with the checks used for M3.8 and M3.9.
+
+**What it would make possible.** It would make the upwind share far less sensitive to the entry
+heading, so the M3.9 wall-turn rule could be tested again in a later, separate milestone.
+
+## 6. Reproduction
 
 ```
 NUMBA_NUM_THREADS=1 python tools/m3_9_wall_saccades.py run --lane K --lanes 4    (K = 0-3)
 python tools/m3_9_wall_saccades.py summary
+NUMBA_NUM_THREADS=1 python tools/m3_9_odor_diagnosis.py run --arm baseline --lane K --lanes 2   (K = 0, 1; also --arm candidate)
+python tools/m3_9_odor_diagnosis.py summary
 ```

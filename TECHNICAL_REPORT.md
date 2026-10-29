@@ -987,6 +987,16 @@ The user chose the escape decision first, starting with read-only research. M3.1
     - **What is left.** It is unexplained.
   - **Under the decision rule, v32 stays.** The v33 candidate is commit `7727397`. The gated rule
     stays in the code, unused.
+  - **Follow-up, read-only** ([game/M3_9_WALL_SACCADE_RESEARCH.md](game/M3_9_WALL_SACCADE_RESEARCH.md),
+    section 5).
+    - **The model's upwind turn is slow.** ODOR_TRACK steering is capped at 0.9 rad/s, so after an
+      off-wind entry the median fly needs 1.6 s to come within 45° of upwind, and most bouts end
+      first.
+    - **The real fly.** It turns upwind 190 ± 75 ms after entry (E16).
+    - **What P6 therefore measured.** Mostly the entry heading. M3.9 lowered it (0.23 against 0.30
+      of entries within 45°) by changing the paths that cross the plume.
+    - **The next candidate.** A faster upwind turn would change the M1.8 ecology, so it needs the
+      user's explicit request.
 
 ### 9.7 Other open items
 
