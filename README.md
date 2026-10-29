@@ -1,15 +1,198 @@
-# fly-connectome-reservoir
+# Fly Connectome Simulator & RL Training
 
-A reproducible Windows CPU computational neuroscience experiment and an untrained interactive fly-swatter baseline, using FlyBrain 0.1.0 and MaleCNS-derived connectivity.
+A closed-loop fly-swatter simulation in which a frozen fruit-fly connectome drives the fly's
+escape behaviour, together with a preregistered study of learned controllers (behaviour cloning
+and constrained PPO) trained on the connectome's descending-neuron output.
 
-**Training a classifier on frozen neural activity does not mean that a fly brain learned the task.** The original experiment directly injects LC4/LPLC2 feature neurons; it does not process images through a complete eye. LIF dynamics, connection signs and normalization contain modeling assumptions and have not been validated against recordings of real flies.
+Pinle (Cassius) Chen · independent project, September 2026 to present · AI-assisted development
+(see below)
 
-The frozen experiment is specified in [PROTOCOL.md](PROTOCOL.md), with historical results in [results/REPORT.md](results/REPORT.md). These protected artifacts retain their original language and bytes for reproducibility. Editable project content is English.
+## Overview
 
-For an overview of all work to date (the reservoir experiment, the game runtime, the escape-decoder research, the learned-controller study and the current M1.8-B state), see [TECHNICAL_REPORT.md](TECHNICAL_REPORT.md). Where the milestone sections below disagree with it about the current state, the report is newer.
+The simulation uses the published MaleCNS v1.0 connectome of the adult male *Drosophila*
+(Janelia FlyEM; 166,700 neurons) and the leaky integrate-and-fire simulator FlyBrain 0.1.0.
+Each 20 ms tick runs one closed loop:
 
+1. **World.** The fly flies, lands and perches in a room. A player moves a physically simulated
+   swatter with the mouse.
+2. **Projection and encoding.** The swatter is reduced to what the fly could see: its angular
+   size, the growth rate of that size, and its bearing. These values drive 55 LC4 and 91 LPLC2
+   looming-sensitive neurons per side. Mouse and swatter coordinates never reach the brain or
+   the controller.
+3. **Frozen connectome.** One step of the spiking network: 166,700 neurons and 25,088,107
+   runtime connections (incoming sensory-neuron edges are removed from the 25,582,938 in the
+   source graph). The weights never change.
+4. **Readout.** Descending neurons, chiefly DNp01 (the giant fiber, escape) and DNa02
+   (steering), left and right.
+5. **Controller.** Either a hand-written decoder (the accepted baseline) or a learned policy: a
+   2,315-parameter MLP that sees only those readouts and the fly's own motion and state, and picks
+   one of 11 maneuvers.
+6. **Physics.** The world executes the maneuver, and the next tick starts.
 
-## M1.8-A: accepted landing, perching and takeoff lifecycle
+The simulation step is 20 ms, so the design target is 50 Hz. That target is not guaranteed
+under every load.
+
+The project started as a reservoir-computing experiment: a linear readout trained on the frozen
+network's activity. That experiment is specified in [PROTOCOL.md](PROTOCOL.md), with its
+results in [results/REPORT.md](results/REPORT.md); both are kept byte-for-byte.
+
+## How it was built: AI-assisted development
+
+- **My part.** I set the architecture, the experiment protocols, the constraints and the
+  acceptance criteria, and I reviewed the results.
+- **The AI's part.** AI coding assistants wrote most of the code and ran the training, the
+  analyses and the timing measurement.
+- **Third-party components.** The spiking simulator FlyBrain 0.1.0
+  ([fly.ai](https://github.com/alextitonis/fly.ai)), its Numba kernels and the MaleCNS
+  connectome data (Janelia FlyEM) were not written in this project.
+
+## Scope and limits
+
+- **The connectome is frozen.** No gradient passes through it. The learned policy is a small
+  network on top of the descending-neuron readout; the 166,700 neurons are not trained end to
+  end.
+- **This is not human BCI work.** It involves no real EEG recordings and no hardware.
+- **A simulation with modelling assumptions.**
+  - The LIF dynamics, connection signs and normalisation have not been validated against
+    recordings from real flies.
+  - The visual input is a reduced, hand-designed encoding, not an image processed by a complete
+    eye.
+  - The world is 2-D.
+- **Activity is not learning.** Training a classifier on frozen neural activity does not mean
+  that a fly brain learned the task.
+
+## Results: learned controllers (M2)
+
+The main study trained a learned controller in five independent random seeds and compared it
+with the hand-written baseline on a frozen test set.
+
+**Training (M2.3).**
+- **Behaviour cloning.** 720 teacher episodes from the hand-written controller gave 522,651
+  samples. After subsampling the idle (NONE) action to 5 %, 40,511 samples were used for
+  training.
+- **Constrained PPO.** BC initialisation, a KL anchor to the cloned policy, delayed dual
+  (Lagrange-multiplier) updates, adaptive entropy and critic warm-up, in PyTorch on CUDA.
+- **Scale.** Five seeds of 60 iterations each: 10,234,749 simulated decisions in total (about
+  10.2 M).
+
+**Evaluation.** The selected policy was evaluated once, on a frozen test set of 320 episodes:
+240 threat trials and 80 background episodes.
+
+| Measure | Learned policy | Hand-written baseline | Difference |
+|---|---|---|---|
+| Unnecessary escapes per minute (background) | 3.025 | 5.15 | 41.3 % fewer |
+| Hit rate, lower is better (threat trials) | 59.2 % (142 / 240) | 61.7 % (148 / 240) | −2.5 points, 95 % CI [−9.0, +4.0] |
+
+- **Unnecessary escapes.** The reduction concerns escapes in the absence of a threat. It does not
+  mean the fly evades strikes 41 % better.
+- **Hit rate.** The difference is not statistically significant (paired McNemar exact test,
+  p = 0.53). The test was chosen after the evaluation run. No equivalence or non-inferiority
+  margin was preregistered, so the result does not show that the two are equivalent.
+- **Conclusion: NO-GO.** The preregistered success criterion was not met, and it was not changed
+  afterwards.
+
+**The earlier attempt (M2.2).** In a first PPO run without BC initialisation, all five seeds
+lost threat-conditioned escaping within 10-20 iterations and collapsed to never escaping. Early
+constraint pressure combined with sparse credit assignment is the inferred cause; no ablation
+was run.
+
+**All milestones of the learning line.**
+
+| Milestone | What was done | Result |
+|---|---|---|
+| M2.0 | Observation and action contracts, runners, probe policies | Reward v1 could be gamed by probe policies, so no training |
+| M2.1 | Exposure-controlled benchmark with a frozen test set of 320 episodes per policy; reward and constraints derived from probe policies | GO for constrained training |
+| M2.2 | Constrained PPO (NumPy), 5 seeds | NO-GO: every seed collapsed to never escaping |
+| M2.3 | BC, then KL-anchored constrained PPO (PyTorch), 5 seeds | NO-GO (above) |
+| M2.4-R0 | Decision-rate study | Keep 50 Hz |
+| M2.4-A | Strike-balanced loss weighting and threat-dense sampling; a fresh test set frozen before training | Hit rate 0.552 against 0.640, lower is better (paired McNemar p = 0.00026); GO for human testing, with a disclosed procedural deviation |
+| M2.4-B | Blind human A/B test, 30 sessions preregistered | Stopped by the participant at 13 of 30 sessions; not unblinded, no conclusion |
+
+**Evaluation discipline and disclosed deviations.**
+- **Before the runs.** Protocols, seeds and success criteria were committed with SHA-256
+  hashes. Training, validation and test seeds are disjoint, and each frozen candidate was
+  evaluated once on its test set.
+- **M2.3.** The paired McNemar test was chosen after the test run.
+- **M2.4-A.** The test runner was repaired after it was frozen (a multiprocessing pickling bug).
+  The formal amendment and the equivalence audit were completed after the test run; training-only
+  audits showed identical outputs.
+- **M2.4-B.** It was stopped before the preregistered 30 sessions
+  ([closure record](game/M2_4_B_CLOSURE.md)).
+- **Status.** The learning line is closed. The runtime still uses the hand-written controller,
+  and no learned policy is integrated.
+
+The learning code and the M2 reports are on the `feature/m2-0-learning-infra` branch:
+[M2.0](https://github.com/cssius111/fly-connectome-reservoir/blob/feature/m2-0-learning-infra/game/M2_0_LEARNING_INFRASTRUCTURE.md),
+[M2.1](https://github.com/cssius111/fly-connectome-reservoir/blob/feature/m2-0-learning-infra/game/M2_1_EXPOSURE_CONTROLLED_BENCHMARK.md),
+[M2.2](https://github.com/cssius111/fly-connectome-reservoir/blob/feature/m2-0-learning-infra/game/M2_2_CONSTRAINED_LEARNED_POLICY.md),
+[M2.3](https://github.com/cssius111/fly-connectome-reservoir/blob/feature/m2-0-learning-infra/game/M2_3_PYTORCH_BC_CONSTRAINED_PPO.md),
+[M2.4-R0](https://github.com/cssius111/fly-connectome-reservoir/blob/feature/m2-0-learning-infra/game/M2_4_R0_TEMPORAL_ACTION_FEASIBILITY.md),
+[M2.4-A](https://github.com/cssius111/fly-connectome-reservoir/blob/feature/m2-0-learning-infra/game/M2_4_A_STRIKE_CENTRIC_PPO.md),
+[M2.4-B protocol](https://github.com/cssius111/fly-connectome-reservoir/blob/feature/m2-0-learning-infra/game/M2_4_B_HUMAN_TEST_PROTOCOL.md).
+The evidence files for M2.3 are in
+[`game/learning/m2_3/`](https://github.com/cssius111/fly-connectome-reservoir/tree/feature/m2-0-learning-infra/game/learning/m2_3)
+on that branch.
+
+## In progress: comparison with real fly data (M3)
+
+Since 2026-10-22 the goal has been for the model fly to behave more like a real fly.
+
+- **The scorecard (M3.0).** It compares the model with published *Drosophila* measurements
+  ([design](game/M3_0_FIDELITY_SCORECARD_DESIGN.md),
+  [results](results/game/M3_0_FIDELITY_SCORECARD.md)). The model escapes too early and in every
+  trial. It cannot tell a frontal from a rear threat. Its spontaneous turns are too rare and too
+  small.
+- **Changes tested so far.** After read-only research (M3.1), changes to the visual encoding and
+  to the escape decoder (M3.2-M3.4), each checked against preregistered criteria. Each improved some measures and failed at least one
+  check, so none has been adopted.
+- **Later steps.** Work on spontaneous turns and odor-guided flight is on a development branch
+  and not yet merged.
+- **No conclusion yet.** The record of each step is in [TECHNICAL_REPORT.md](TECHNICAL_REPORT.md),
+  section 9.6.
+
+## Timing
+
+A single idle/headless timing run measured about 4.1 ms of compute per 20 ms tick.
+- **Conditions.** 8 Numba threads on an Intel i9-13900HX laptop CPU; 1,500 ticks measured after
+  a 100-tick warm-up, mean 4.101 ms.
+- **What it excludes.** Rendering, learned-policy inference and threat stimulation.
+- **What it is not.** Each setting was timed once, so it is not a formal benchmark.
+
+## Repository
+
+| Where | What |
+|---|---|
+| `main` (this branch) | The current accepted game runtime, the original reservoir experiment and the research records |
+| [`feature/m2-0-learning-infra`](https://github.com/cssius111/fly-connectome-reservoir/tree/feature/m2-0-learning-infra) | The learned-controller study (M2): code, protocols, checkpoints and reports |
+| [TECHNICAL_REPORT.md](TECHNICAL_REPORT.md) | An overview of all work to date. Where the milestone sections below disagree with it about the current state, the report is newer |
+| [PROTOCOL.md](PROTOCOL.md), [results/REPORT.md](results/REPORT.md) | The frozen original experiment; these files keep their original language and bytes for reproducibility |
+
+## Quick start
+
+From the repository root, with Python 3.11 (the validated environment is Python 3.11.16 on the
+CPU path):
+
+```text
+uv venv --python 3.11.16 .venv
+# activate .venv, then:
+uv pip install -r requirements-lock.txt
+# set FLY_DATA to a data directory (for example ./data), then:
+flybrain download                       # downloads the connectivity data
+python first_run.py                     # data integrity checks and a replay smoke test
+python -m game.app --arena room         # play against the hand-written controller
+python -m unittest discover             # run the test suite
+```
+
+The original instructions are under "Environment and original experiment" below.
+
+## Earlier milestones (history)
+
+The sections below describe the game runtime as each M1 milestone was signed off. Statements
+such as "no reinforcement learning" or "no learned policy" refer to that runtime; the learned
+controllers above are separate research. Command examples use Windows PowerShell and are run
+from the repository root.
+
+### M1.8-A: accepted landing, perching and takeoff lifecycle
 
 ROOM now supports local visual approach, physical touchdown, stationary perching,
 a minimal food-contact feeding overlay, motivated voluntary departure and neural
@@ -27,7 +210,6 @@ lifecycle/policy isolation are frozen unless recorded evidence exposes a defect.
 A reproducible ordinary spawn for observing a quiet landing is:
 
 ```powershell
-Set-Location D:\Projects\flybrain-lab
 & .\.venv\Scripts\python.exe -m game.app --arena room --seed 255 --record --windowed
 ```
 
@@ -39,7 +221,7 @@ ecological intent. LAB/GAME and the accepted
 physical swatter remain unchanged. ROOM schema 4 adds lifecycle events and
 alive-only simulator metrics; existing observation whitelists remain unchanged.
 
-## M1.7.1: accepted physical swatter baseline
+### M1.7.1: accepted physical swatter baseline
 
 M1.6 is preserved locally as `58ffd60fb60239a911c1ca0baea458ec743774b7`.
 M1.7 and the edge repair are committed at `e0f08ebe55ecefcab69cc7927668c0f2cef7f69c`.
@@ -48,7 +230,6 @@ pointer velocity with bounded catch-up; fast strikes and edge reachability remai
 personalization or M1.5.1 universal-speed calibration is implemented.
 
 ```powershell
-Set-Location D:\Projects\flybrain-lab
 & .\.venv\Scripts\python.exe -m game.app --arena room --record
 & .\.venv\Scripts\python.exe -m game.app --arena room --record --windowed --seed 101
 & .\.venv\Scripts\python.exe -m game.app --replay 'results/game/sessions/SESSION_ID'
@@ -98,12 +279,11 @@ python tools/session_sanity.py
 Historical sections below describe earlier milestones. Use `--arena game` for
 the preserved GAME preset and `--mode lab` for LAB.
 
-## Environment and original experiment
+### Environment and original experiment
 
-The actual virtual environment is `D:\Projects\flybrain-lab\.venv`, inside the repository. Python 3.11.16 and the CPU implementation are the validated path; CUDA/CuPy is not installed.
+The virtual environment is `.venv`, inside the repository. Python 3.11.16 and the CPU implementation are the validated path; CUDA/CuPy is not installed.
 
 ```powershell
-Set-Location D:\Projects\flybrain-lab
 $env:FLY_DATA = "$PWD\data"
 $env:NUMBA_NUM_THREADS = '4'
 & .\.venv\Scripts\python.exe .\first_run.py
@@ -136,7 +316,7 @@ $env:FLY_DATA = "$PWD\data"
 | `tools/flight_sanity.py`, `tools/chase_sanity.py` | Isolated locomotion and neural pursuit checks |
 | `test_game*.py` | Game regressions and strict perception/action interfaces |
 
-## M1.5: fullscreen GAME and controlled LAB
+### M1.5: fullscreen GAME and controlled LAB
 
 At M1.5, the default became GAME; current M1.7 defaults to ROOM instead.
 H reveals the optional neural HUD. M1.4 was committed separately as
@@ -171,10 +351,9 @@ under `results/game/sessions/`; `--record-dir PATH` selects another profile and
 `--no-record` disables recording. World/debug data and policy
 observations are stored separately. No checkpoint is trained or loaded.
 
-## Interactive fly-swatter
+### Interactive fly-swatter
 
 ```powershell
-Set-Location D:\Projects\flybrain-lab
 & .\.venv\Scripts\python.exe tools\calibrate_escape.py --config game_room_config.json --trials 28
 & .\.venv\Scripts\python.exe -m game.app
 & .\.venv\Scripts\python.exe -m unittest discover -v
@@ -187,7 +366,7 @@ The threat pipeline is world geometry → frozen `Retina(theta, theta_dot, azimu
 
 LPLC2 populations are balanced to 91 cells per side (available L94/R91); LC4 to 55 per side (L71/R55), by a fixed encoder seed. The runtime sets `sensory_input=false`, removing incoming sensory-neuron edges: **25,088,107 runtime connections**, compared with **25,582,938 in the original dataset**. The source data are not rewritten. This is not the untouched full MaleCNS graph.
 
-## Policy and calibration contracts
+### Policy and calibration contracts
 
 `Policy` requires only `reset()` and `decide(MotorState)`. Diagnostics are optional and exposed generically by Session; a bare valid policy can render. `FixedEscapePolicy` remains the untrained baseline.
 
@@ -205,7 +384,7 @@ The threshold is the smallest predefined grid value with zero crossings across a
 
 The LAB fixed-fly threshold is 1.45 and GAME is 1.35; both detect 28/28 with median latency 0.06 s. The current M1.7.1 ROOM threshold is freshly measured at 1.45, detecting 28/28 with median latency 0.08 s after click. Each has zero crossings in its 2,520 no-loom ticks. ROOM uses a 6-second paddle settling interval and verifies that the head is stationary before measurement. These are calibration-sample results, not a guarantee of zero false triggers in arbitrary free flight.
 
-## M1.4 flight and enclosure baseline
+### M1.4 flight and enclosure baseline
 
 M1.4 continues Claude WIP `182c5a9` from stable M1.3 `85f987b279dbd2b1f725fa79aa299281259258ab`. The body polygon is 24 px; cruise is 160 px/s (6.67 body lengths/s), with a 1,000 px/s safety cap. There is no conversion to real-world millimeters or physiological speed.
 
