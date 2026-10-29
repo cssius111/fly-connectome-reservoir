@@ -8,6 +8,8 @@ unrelated places:
   and boundary behaviour (CORRECTION / SACCADE / AVOID / DEPART).
 * `world.World`, forwarding an `Action` from the neural policy -- category C,
   the MaleCNS threat pathway (ALERT / ESCAPE).
+* `world.World`, forwarding the ecology's upwind surge on odor entry --
+  category B (SURGE, M3.10; only when `ecology.upwind_surge` is configured).
 
 A pulse is a half-sine angular-velocity profile: zero yaw rate at both
 endpoints, finite duration, and an integral that is exactly the requested
@@ -28,7 +30,7 @@ import math
 # Higher wins. A request is accepted when the actuator is idle or when it
 # strictly outranks the pulse in flight, so an emergency can cut through a
 # spontaneous turn while ordinary turns cannot interrupt each other.
-PRIORITY = {"NONE": 0, "CORRECTION": 1, "SACCADE": 2, "DEPART": 2,
+PRIORITY = {"NONE": 0, "CORRECTION": 1, "SACCADE": 2, "DEPART": 2, "SURGE": 2,
             "AVOID": 3, "ALERT": 3, "ESCAPE": 4}
 
 

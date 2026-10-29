@@ -221,6 +221,9 @@ class World:
     def reset(self, seed: int) -> None:
         self.room = RoomEnvironment(self.config["room"], seed) if "room" in self.config else None
         self.ecological_command = None
+        # M3.10: this tick's upwind surge request from the ecology, and diagnostic counts.
+        self.ecological_surge = None
+        self.surge_requests = self.surges_executed = 0
         self.lifecycle = (LifecycleController(self.config['lifecycle'], seed)
                           if self.room is not None and self.config.get('lifecycle', {}).get('enabled') else None)
         self.lifecycle_active = self.lifecycle is not None
@@ -597,6 +600,14 @@ class World:
         self.flight.update(dt, self.wall_cue, self.saccades,
                            neural_active=self._neural_active(action),
                            spontaneous_clock_rate=profile.spontaneous_clock_rate)
+        # (B) The ecology's upwind surge on odor entry (M3.10): a SURGE pulse with a
+        # spontaneous saccade's priority, so AVOID, ALERT and ESCAPE outrank it. A surge
+        # that cannot start now is not retried; the ecology's steering continues.
+        surge, self.ecological_surge = self.ecological_surge, None
+        if surge is not None:
+            self.surge_requests += 1
+            if not self._neural_active(action) and self.saccades.request("SURGE", surge[0], surge[1]):
+                self.surges_executed += 1
 
         # Do not overwrite heading from velocity: that used to erase steering
         # at cruise speed and abruptly swivel the body after a lateral impulse.

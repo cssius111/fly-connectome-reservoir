@@ -44,7 +44,7 @@ class EcologicalController:
         'upwind_gain','search_period_seconds','search_amplitude_radians','visual_gain_floor',
         'landing_affordance_threshold','landing_dwell_seconds','landing_attempt_seconds','landing_cooldown_seconds',
         'spontaneous_clock_rate','odor_history','intent_hazards','search_half_period_seconds',
-        'odor_cues','wind_reliability'}
+        'odor_cues','wind_reliability','upwind_surge'}
     # M1.8-B3b: encounter history replacing the odor timers (game/M1_8_B_COMPLETION_DESIGN.md).
     ODOR_HISTORY_KEYS = {'_comment','build_seconds','recovery_seconds','upwind_attenuation','abandon_seconds',
                          'refractory_seconds','search_min_seconds','search_give_up_seconds'}
@@ -59,6 +59,9 @@ class EcologicalController:
     ODOR_CUE_KEYS = {'_comment','bilateral_gain','bilateral_scale','rate_gain','rate_scale'}
     # M1.8-B4b: reliability of the sensed wind and a still-air search strategy.
     WIND_KEYS = {'_comment','unreliable_below','reliable_above'}
+    # M3.10: one upwind surge turn per ODOR_TRACK bout (game/M3_10_UPWIND_SURGE_DESIGN.md).
+    UPWIND_SURGE_KEYS = {'_comment','delay_seconds','peak_rate_deg_per_second'}
+    UPWIND_SURGE_SEED_OFFSET = 71287
 
     def __init__(self, config, seed, landing_enabled=True):
         if set(config)-self.CONFIG_KEYS: raise ValueError('only ecological controller parameters are allowed')
@@ -106,6 +109,15 @@ class EcologicalController:
             if set(w) != self.WIND_KEYS: raise ValueError('wind_reliability requires exactly its documented keys')
             if not 0 <= w['unreliable_below'] < w['reliable_above']:
                 raise ValueError('wind_reliability thresholds must be ordered and nonnegative')
+        self.upwind_surge = config.get('upwind_surge')
+        if self.upwind_surge is not None:
+            u = self.upwind_surge
+            if set(u) != self.UPWIND_SURGE_KEYS: raise ValueError('upwind_surge requires exactly its documented keys')
+            if not math.isfinite(u['delay_seconds']) or u['delay_seconds'] < 0:
+                raise ValueError('upwind_surge.delay_seconds must be finite and nonnegative')
+            low, high = (float(v) for v in u['peak_rate_deg_per_second'])
+            if not 0 < low <= high or not math.isfinite(high):
+                raise ValueError('upwind_surge.peak_rate_deg_per_second must be an ordered positive pair')
         self.reset(seed)
 
     def reset(self, seed):
@@ -129,6 +141,10 @@ class EcologicalController:
         self.cast_rng=np.random.default_rng(seed+self.CASTING_SEED_OFFSET)
         self.cast_phase=0.0;self.cast_boundary=math.pi;self.cast_half=None
         self.reliability=1.0
+        # Upwind surge: its peak-rate stream, whether this bout's surge is spent, and this tick's
+        # request (body-frame turn in radians, peak rate in rad/s). Inert without upwind_surge.
+        self.surge_rng=np.random.default_rng(seed+self.UPWIND_SURGE_SEED_OFFSET)
+        self.surge_spent=True;self.pending_surge=None
         self.steering=0.0;self.last_threat=ThreatState.CALM
         self.last_command=EcologicalCommand(self.state,self.speed,0.0,1.0)
 
@@ -145,6 +161,7 @@ class EcologicalController:
         if type(threat) is not ThreatState: raise TypeError('threat must be the separate ThreatState enum')
         if not math.isfinite(dt) or dt<=0:raise ValueError('dt must be finite and positive')
         c=self.config;self.time+=dt;self.elapsed+=dt
+        previous_state=self.state;self.pending_surge=None
         self.ignore_odor=max(0.0,self.ignore_odor-dt)
         self.landing_cooldown=max(0.0,self.landing_cooldown-dt)
         self.on_time=self.on_time+dt if sense.odor>=c['odor_on'] else 0.0
@@ -199,6 +216,7 @@ class EcologicalController:
             # its call order; its value is not used under intent_hazards.
             self._enter('TRANSIT' if self.state=='EXPLORE' else 'EXPLORE')
 
+        if self.state=='ODOR_TRACK' and previous_state!='ODOR_TRACK':self.surge_spent=False
         lo,hi=c['speed_bl_s'][self.state]
         target=lo+(hi-lo)*(.5+.5*math.sin(2*math.pi*self.time/8+self.phase))
         self.speed+=(target-self.speed)*(1-math.exp(-dt/c['speed_tau_seconds']))
@@ -235,6 +253,15 @@ class EcologicalController:
                 # E16: a stronger upwind response while the concentration rises, weaker while it falls.
                 o=self.odor_cues
                 steer*=1+o['rate_gain']*math.tanh(sense.odor_rate/max(sense.odor,c['odor_on'])/o['rate_scale'])
+        u=self.upwind_surge
+        if (u is not None and self.state=='ODOR_TRACK' and not self.surge_spent
+                and self.elapsed>=u['delay_seconds']-1e-9 and threat is ThreatState.CALM):
+            # M3.10 (E16): about 190 ms after plume entry, one saccade-like turn of the sensed upwind
+            # bearing; the world executes it as a SURGE pulse. Without reliable wind there is no surge.
+            self.surge_spent=True
+            if wind_speed>1e-6 and not still_air:
+                low,high=u['peak_rate_deg_per_second']
+                self.pending_surge=(upwind,math.radians(float(self.surge_rng.uniform(low,high))))
         if self.odor_cues is not None and self.state=='ODOR_TRACK':
             # E18: turn toward the antenna sensing the stronger concentration (positive is right).
             o=self.odor_cues

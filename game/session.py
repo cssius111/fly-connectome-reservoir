@@ -431,6 +431,7 @@ class Session:
         before_state = self.policy_diagnostics.get("behavior_state", "UNSPECIFIED")
         action = self.fly_loop.step(retina, self.world.motion_state()) if self.world.fly.alive else Action()
         self.world.ecological_command = None
+        self.world.ecological_surge = None
         if self.ecology is not None and self.world.fly_motion_enabled and self.world.fly.alive:
             self.last_ecological_sense = self.ecological_projector.project(self.world.room,self.world.fly,self.world.time_seconds,self.tick_seconds)
             neural_state = self.policy_diagnostics.get("behavior_state", "CALM")
@@ -442,6 +443,8 @@ class Session:
             ecological = ecological_threat(threat, self.ecology_threat_mode, action.saccade != 0,
                                            self.world.saccades.kind)
             self.world.ecological_command = self.ecology.step(self.last_ecological_sense,ecological,self.tick_seconds)
+            # M3.10: the upwind surge travels outside the recorded EcologicalCommand.
+            self.world.ecological_surge = self.ecology.pending_surge
             if self.world.lifecycle is not None:
                 sense = self.world.room.landing_sense(self.world.fly, self.world.time_seconds, self.world.contact_surface_id)
                 motion = self.world.motion_state()

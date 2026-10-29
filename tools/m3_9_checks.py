@@ -135,7 +135,8 @@ def walls(args):
                                                                counts['contact_onsets']), flush=True)
 
 
-def wall_summary():
+def wall_summary(labels=('P1', 'P2')):
+    """Wall-run summary; `labels` names the two checks in the printout (M3.10 reuses the second)."""
     result = {}
     for arm in S.ARMS:
         out = OUT / 'walls' / arm
@@ -190,8 +191,8 @@ def wall_summary():
     result['P1'] = {'pass': bool(p1)}
     result['P2'] = {'contact_limit_per_min': contact_limit, 'near_wall_limit': P2_NEAR_FACTOR * b['near_wall_share'],
                     'pass': bool(p2)}
-    print('P1: %s' % ('pass' if p1 else 'FAIL'))
-    print('P2: contact onsets %.3f per min (limit %.3f), near-wall share %.3f (limit %.3f): %s' % (
+    print('%s: %s' % (labels[0], 'pass' if p1 else 'FAIL'))
+    print('%s: contact onsets %.3f per min (limit %.3f), near-wall share %.3f (limit %.3f): %s' % (labels[1],
         c['contact_onsets_per_min'], contact_limit, c['near_wall_share'], P2_NEAR_FACTOR * b['near_wall_share'],
         'pass' if p2 else 'FAIL'))
     return result
