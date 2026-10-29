@@ -289,10 +289,10 @@ class TestRoomCandidate(unittest.TestCase):
             ["git", "show", CANDIDATE_COMMIT + ":game_room_config.json"], cwd=ROOT, text=True))
 
     def test_the_working_room_configuration_keeps_the_legacy_encoder(self):
-        # M3.4 failed and restored v27; the M3.7 (v31) and M3.8 (v32) candidates change only
-        # class-B flight and ecology-clock keys.
+        # M3.4 failed and restored v27; the M3.7 (v31), M3.8 (v32) and M3.9 (v33) candidates
+        # change only class-B flight and ecology-clock keys.
         room = load_config(ROOT / "game_room_config.json")
-        self.assertIn(room["config_version"], (27, 31, 32))
+        self.assertIn(room["config_version"], (27, 31, 32, 33))
         self.assertNotIn("feature_model", room["encoder"])
 
     def test_candidate_configuration(self):

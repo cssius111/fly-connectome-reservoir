@@ -11,8 +11,11 @@ What it produces:
 
 * **CORRECTION** -- a small course adjustment.
 * **SACCADE** -- an ordinary spontaneous rapid turn.
-* **AVOID** -- a pre-contact turn onto a heading tangent to a surface the fly
-  is closing on, triggered by the optic-flow proxy, not by wall coordinates.
+* **AVOID** -- a pre-contact turn away from a surface the fly is closing on,
+  triggered by the optic-flow proxy, not by wall coordinates. By default it
+  turns onto a heading tangent to the surface; with `boundary.avoid_degrees`
+  (M3.9) it is a saccade of sampled amplitude, independent of the approach
+  angle, as in Tammero and Dickinson 2002.
 * **DEPART** -- a turn back into open space after the fly has spent a while
   near the perimeter.
 
@@ -55,6 +58,11 @@ class FreeFlightController:
         self.avoid_inward = math.radians(float(b["avoid_inward_degrees"]))
         self.avoid_refractory_seconds = float(b["avoid_refractory_seconds"])
         self.avoid_peak = tuple(b["avoid_peak_rate_deg_per_second"])
+        # M3.9: a fixed-amplitude wall saccade. Absent, the tangent rule applies unchanged.
+        self.avoid_degrees = tuple(float(v) for v in b["avoid_degrees"]) if "avoid_degrees" in b else None
+        if self.avoid_degrees is not None and not (len(self.avoid_degrees) == 2
+                                                   and 0.0 < self.avoid_degrees[0] <= self.avoid_degrees[1]):
+            raise ValueError("avoid_degrees must be an ordered pair of positive angles")
         self.perimeter_enter = float(b["perimeter_enter_proximity"])
         self.perimeter_leave = float(b["perimeter_leave_proximity"])
         if self.perimeter_leave >= self.perimeter_enter:
@@ -101,14 +109,24 @@ class FreeFlightController:
 
     # ---- boundary responses ----------------------------------------------
     def _avoid_angle(self, cue: WallCue) -> float:
-        """Turn onto a heading tangent to the surface, tilted slightly inward.
+        """The signed AVOID turn.
 
-        Turning by `delta` moves the surface bearing from `b` to `b - delta`,
-        so the two tangent solutions are `b -+ (pi/2 + inward)`. Taking the
-        smaller one is the directional-persistence rule: the fly keeps as much
-        of its current course as it can and ends up travelling along the wall
-        instead of rebounding off it.
+        With `avoid_degrees` (M3.9), a saccade of amplitude drawn from that
+        interval, away from the surface: the sign opposite to its bearing, and
+        the seeded side for a head-on tie. The amplitude does not depend on
+        the approach angle, as in the real fly (Tammero and Dickinson 2002).
+
+        Otherwise, a turn onto a heading tangent to the surface, tilted
+        slightly inward. Turning by `delta` moves the surface bearing from `b`
+        to `b - delta`, so the two tangent solutions are `b -+ (pi/2 + inward)`.
+        Taking the smaller one is the directional-persistence rule: the fly
+        keeps as much of its current course as it can and ends up travelling
+        along the wall instead of rebounding off it.
         """
+        if self.avoid_degrees is not None:
+            delta = math.radians(self._uniform(self.avoid_degrees)) * self._away_sign(cue.contact_bearing)
+            self.wall_side = 1.0 if delta > 0.0 else -1.0
+            return delta
         target = 0.5 * math.pi + self.avoid_inward
         left, right = cue.contact_bearing - target, cue.contact_bearing + target
         if abs(abs(left) - abs(right)) < 1e-9:
