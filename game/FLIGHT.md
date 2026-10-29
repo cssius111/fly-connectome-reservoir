@@ -55,7 +55,7 @@ impulse, followed by damping and speed limiting.
 |---|---|---|---|
 | CORRECTION | uniform 5–18° | uniform 250–600°/s | seeded flight controller |
 | SACCADE | uniform 25–105° | uniform 700–1,400°/s | same controller |
-| AVOID | local bearing to tangent + 14° inward; with `boundary.avoid_degrees` (M3.9), a sampled amplitude away from the surface, independent of the approach angle | uniform 700–1,300°/s (1,200–1,500°/s in ROOM v33) | local time-to-contact proxy |
+| AVOID | local bearing to tangent + 14° inward; with `boundary.avoid_degrees` (M3.9), a sampled amplitude away from the surface, independent of the approach angle | uniform 700–1,300°/s (1,200–1,500°/s in the M3.9 candidate v33, not adopted) | local time-to-contact proxy |
 | DEPART | uniform 40–85° away from surface | uniform 600–1,100°/s | perimeter residence |
 | ALERT | up to 55° × signed policy request | 900°/s | sustained descending activity |
 | ESCAPE | up to 110° × signed policy request | 1,350°/s | calibrated DNp01 emergency gate |

@@ -2,6 +2,8 @@
 
 Status: **preregistered 2026-10-29, before any M3.9 candidate data.**
 
+Result: P6 failed (ODOR_TRACK upwind share 0.481 against 0.564), so the decision rule failed and v32 was restored (`results/game/M3_9_WALL_SACCADES.md`). P1-P5 and P7 passed. The v33 candidate is commit `7727397`.
+
 **Authorization.** The user chose option A on 2026-10-29: preregister M3.9. This milestone touches
 no frozen system: the AVOID parameters are class B or C in the M1.8-R0 evidence lock, and none is
 named in `AGENTS.md`.

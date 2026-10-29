@@ -154,6 +154,9 @@ Since 2026-10-22 the goal has been for the model fly to behave more like a real 
   - M3.8 passed all six preregistered checks, including unchanged escapes. It was accepted after
     a human playtest on 2026-10-28
     ([design](game/M3_8_SACCADE_ODOR_DESIGN.md), [results](results/game/M3_8_SACCADE_ODOR.md)).
+- **Wall-evoked turns (M3.9).** Wall turns of fixed amplitude, as in the real fly, passed their
+  primary check but lowered the upwind heading during odor tracking. They were not adopted
+  ([results](results/game/M3_9_WALL_SACCADES.md)).
 - **Still open.** Escape timing and the front/back distinction remain gaps. The record of each
   step is in [TECHNICAL_REPORT.md](TECHNICAL_REPORT.md), section 9.6.
 

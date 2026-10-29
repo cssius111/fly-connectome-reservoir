@@ -969,6 +969,24 @@ The user chose the escape decision first, starting with read-only research. M3.1
   - **The candidate, not authorized.** A fixed-amplitude AVOID drawn from the accepted saccade
     distribution. It would reverse M1.4's presentation choice of wall following, so the choice is
     the user's.
+- **M3.9, wall-evoked saccades of fixed amplitude; failed one check.**
+  - **The design.** [game/M3_9_WALL_SACCADE_DESIGN.md](game/M3_9_WALL_SACCADE_DESIGN.md); the user
+    chose to preregister it on 2026-10-29.
+  - **The change.** A gated rule in `game/flight.py`: with `flight.boundary.avoid_degrees`, AVOID
+    is a 60-120° saccade away from the wall at 1,200-1,500°/s (v33).
+  - **The results.** In [results/game/M3_9_WALL_SACCADES.md](results/game/M3_9_WALL_SACCADES.md).
+  - **Improvements:**
+    - the wall-turn amplitude no longer depends on the approach angle (slopes 0.09 and 0.01,
+      r² ≤ 0.015, against 1.00), as in Tammero and Dickinson 2002;
+    - wall contacts fell from 0.129 to 0.072 per minute, and near-wall time from 0.145 to 0.114;
+    - paired no-player escapes were 12 against 16;
+    - fixed-fly escapes are identical, and the accepted saccade statistics hold.
+  - **Failure.** The upwind share during odor tracking fell from 0.564 to 0.481 (P6; seed-bootstrap
+    interval of the difference [−0.135, −0.034]).
+    - **What is excluded.** The cause is not wall turns during tracking, which are rare in both arms.
+    - **What is left.** It is unexplained.
+  - **Under the decision rule, v32 stays.** The v33 candidate is commit `7727397`. The gated rule
+    stays in the code, unused.
 
 ### 9.7 Other open items
 

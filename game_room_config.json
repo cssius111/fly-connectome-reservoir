@@ -1,5 +1,5 @@
 {
-  "config_version": 33,
+  "config_version": 32,
   "_comment": "M1.6 horizontal ROOM slice. Logical units and state speeds are gameplay mappings, not universal biological constants.",
   "sim": {
     "tick_seconds": 0.02,
@@ -142,11 +142,11 @@
     "virtual_distance": 100.0
   },
   "policy": {
-    "_comment": "Exact provenance required. The M1.8-N4B1C lateral dual-path decoder (unchanged) under the M1.8-N4B5R elevation-aware geometry, the M1.8-B2b-iii to B4b kinematics and ecology, the M1.7.2 paddle line axis, the M3.8 saccades and odor-tracking clock (game/M3_8_SACCADE_ODOR_DESIGN.md) and the M3.9 fixed-amplitude wall saccades (game/M3_9_WALL_SACCADE_DESIGN.md) loads the M3.9 transfer record, which carries the identical decoder block for this configuration: rebuild it with python tools/m3_9_record.py. Earlier records are preserved unchanged. tools/calibrate_escape.py measures the scalar single-sample criterion only and does not calibrate this decoder.",
+    "_comment": "Exact provenance required. The M1.8-N4B1C lateral dual-path decoder (unchanged) under the M1.8-N4B5R elevation-aware geometry, the M1.8-B2b-iii to B4b kinematics and ecology the M1.7.2 paddle line axis and the M3.8 saccades and odor-tracking clock (game/M3_8_SACCADE_ODOR_DESIGN.md) loads the M3.8 transfer record, which carries the identical decoder block for this configuration: rebuild it with python tools/m3_8_record.py. Earlier records are preserved unchanged. tools/calibrate_escape.py measures the scalar single-sample criterion only and does not calibrate this decoder.",
     "escape_threshold": null,
     "calibration_paths": [
-      "artifacts/game/calibration_room_m3_9.json",
-      "results/game/calibration_room_m3_9.json"
+      "artifacts/game/calibration_room_m3_8.json",
+      "results/game/calibration_room_m3_8.json"
     ],
     "escape_decoder": {
       "_comment": "M1.8-N4B1C combined DNp01 criterion. Escape when EITHER path qualifies outside the shared refractory period. LATERAL: the same DNp01 side produces lateral_required_spikes inferred spikes within lateral_same_side_window_ms (per-side spikes inferred from that side's own trace; a left spike followed by a right spike never qualifies). Summed N2b path: FAST when left + right >= summed_fast_threshold; SUSTAINED when the current summed sample is >= sustained_threshold AND at least sustained_required_samples of the most recent sustained_window_samples summed samples are >= sustained_threshold. All values are Class C engineering decoder parameters derived from simulator evidence, not biological constants. sustained_threshold must equal the record's escape_threshold.",
@@ -225,12 +225,8 @@
       "avoid_inward_degrees": 14.0,
       "avoid_refractory_seconds": 0.2,
       "avoid_peak_rate_deg_per_second": [
-        1200.0,
-        1500.0
-      ],
-      "avoid_degrees": [
-        60.0,
-        120.0
+        700.0,
+        1300.0
       ],
       "perimeter_enter_proximity": 0.45,
       "perimeter_leave_proximity": 0.2,
