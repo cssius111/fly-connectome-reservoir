@@ -956,6 +956,19 @@ The user chose the escape decision first, starting with read-only research. M3.1
   - **Human-accepted on 2026-10-28** after one recorded ROOM playtest (session
     `20261029T005245.328554Z-6300258d`). v32 is the accepted ROOM configuration, and `AGENTS.md` freezes its four
     parameters.
+- **M3.9, read-only research on wall-evoked saccades**
+  ([game/M3_9_WALL_SACCADE_RESEARCH.md](game/M3_9_WALL_SACCADE_RESEARCH.md)).
+  - **The comparator.** Tammero and Dickinson 2002: wall-evoked saccades are about ±90°,
+    independent of the approach angle (r² < 0.01). Their direction depends on the approach angle,
+    and the trigger is a large-field expansion threshold, not time to collision.
+  - **The model** (`tools/m3_9_wall_saccades.py`, v32).
+    - **Amplitude.** AVOID turns onto the wall tangent plus 14°, so its amplitude is exactly
+      104° − |approach angle| (r² 1.00).
+    - **Trigger.** It fires at a time to contact of 0.54 s, so its clearance grows with speed.
+    - **Direction.** It always turns away from the wall.
+  - **The candidate, not authorized.** A fixed-amplitude AVOID drawn from the accepted saccade
+    distribution. It would reverse M1.4's presentation choice of wall following, so the choice is
+    the user's.
 
 ### 9.7 Other open items
 
