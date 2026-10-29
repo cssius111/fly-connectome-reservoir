@@ -595,6 +595,9 @@ complete and frozen. On 2026-10-22 the M2.4-B blind test was closed at 13 of 30 
 stop-rotation audit was recorded. At the user's request, M1.7.2 then fixed the defect the audit had
 found. It is ROOM `config_version` 27 and was human-accepted the same day (section 9.7).
 The fidelity scorecard is in section 9.6, and the remaining open items are in section 9.7.
+On 2026-10-26 the working ROOM file became the M3.8 candidate, `config_version` 32, which passed
+its preregistered checks. After one recorded ROOM playtest the user accepted it on 2026-10-28
+(section 9.6), so the accepted runtime is now ROOM `config_version` 32.
 
 ### 9.1 A measurement made for this report: where flight time goes
 
@@ -807,6 +810,152 @@ The user chose the escape decision first, starting with read-only research. M3.1
     against a decision size of about 55°. Strikes were not measured.
   - Under the decision rule, v27 stays. The v30 candidate is commit `10e12f6`. The mode stays
     unused in the code, and the other modes ignore `elevation`.
+- **M3.5, read-only research on strike escapes**
+  ([game/M3_5_STRIKE_ESCAPE_RESEARCH.md](game/M3_5_STRIKE_ESCAPE_RESEARCH.md)). No runtime
+  change.
+  - **Strikes.** By arm:
+    - v27 decides every strike well before contact, at 36-40°;
+    - v30 decides 0-12 % of strikes before contact, at 92-122°.
+  - **Latency.** The frozen network forms a DNp01 doublet 2-3 ticks after about half of one
+    side's encoder cells are strongly driven. An overhead disk is split between the eyes, and few
+    fields view the zenith.
+  - **Functional receptive fields: refuted as the cause.** The measured spread of the T4/T5
+    inputs adds only about 3° to the field radius and barely changes recruitment.
+  - **Bilateral input: a recorded gap, left open by the user's choice on 2026-10-24.**
+    - **The real fly.** Each giant fiber responds to the contralateral eye like the ipsilateral
+      one, through an unidentified commissural pathway (Jang et al. 2023).
+    - **The model.** The frozen network has no direct crossing weight and only weak two-hop
+      carriers (PVLP151, AMMC-A1/GCI, DNp11). The contralateral DNp01 receives 1-5 % of the
+      ipsilateral input and does not fire.
+    - **Why it stays open.** Closing the gap would change the frozen connectome's effective
+      weights, and the literature gives no magnitude for it.
+    - **Its effect on strikes.** Even full pooling would move the overhead strike decision only
+      to about contact.
+  - **The remaining list, researched on 2026-10-24.**
+    - **Left-right balance.**
+      - **The cause.** The count-balanced subsets drop 16 left LC4 cells, mostly with lateral
+        fields near the horizon.
+      - **The fix.** Driving every cell removed the V8a-type asymmetry on fresh seeds and leaves
+        the calibration side unchanged.
+      - **Total-weight balancing** does not help.
+    - **Rear blind spot.**
+      - **It is real anatomy.** The posterior blind region is the real eye's (same eye map).
+      - **The comparators.** The real-fly rear data come from threats at about 50° elevation.
+        There the model escapes 21-24 of 24 rear looms, but mostly after collision.
+    - **E4.**
+      - **The signal.** The DNp02/DNp11 contrast orders front, side and rear correctly.
+      - **Its limit.** It is too weak above the horizon for a robust direction readout.
+  - **V2 re-examined** (erratum in the M3.4 report, section 8).
+    - **One distribution.** At l/v 40 ms the decisions form a single timing distribution over
+      4-5 ticks, not two clusters.
+    - **V2's position.** There the stochastic doublet decides about two ticks after DNp01's
+      input reaches the doublet level at about 55°.
+    - **The calibration position.** A disk there reaches 27 % more DNp01 weight, and v30
+      decides at the real fly's time and size (77 ms before collision, 55°). V2's spread there
+      is 7.0°, within tolerance.
+    - **So:** the failure is position-dependent decision timing.
+  - **Decision-time map** (32 positions, l/v 40 and 80 ms).
+    - **The weight map sets the timing.** Decision time follows the DNp01 weight a disk reaches
+      (r = 0.93-0.94).
+    - **Where it matches.** The real-fly law is approached only around azimuth 30-90° and
+      elevation 0-25°.
+    - **The front.** Frontal looms are decided 40-100 ms later than looms at 30-50°. The real
+      GF's latency is the same at 0° and ±45° (Jang et al. 2023): this is the bilateral gap,
+      measured against a direct comparator.
+    - **High and rear positions.** They decide late everywhere.
+    - **The delay.** Even at the best position the decision delay is longer than the real
+      fly's: by 35-55 ms against Fotowat et al. 2009, and by 10-30 ms against the GF-driven short
+      mode of von Reyn et al. 2014.
+  - **The delay decomposed.**
+    - **The floor.** It is about 2 ticks (40 ms) after the image that first makes the drive
+      sufficient:
+      - 1 tick of synaptic transmission;
+      - at least 1 tick for the second DNp01 spike, because DNp01 resets to 0 and needs about
+        0.86 V per tick to fire on consecutive ticks.
+    - **Not the cap.** Raising the encoder cap to 0.86-1.0 V changes the fitted delay by at most
+      10 ms.
+    - **No better rule.** Coincidence rules with DNp02/DNp04/DNp11 raise false alarms at rest,
+      0.04-0.10 per s.
+    - **So:** the floor belongs to the frozen simulator's 20 ms step.
+  - **Commissural strength explored in memory only.** This scales the weights from PVLP151,
+    AMMC-A1 and DNp11 onto the opposite DNp01 by a gain g.
+    - **The required gain.** Jang et al. 2023's equal contralateral magnitude needs g ≈ 20, and
+      their frontal latency invariance g ≈ 10. That is a pathway about as strong as the
+      ipsilateral input, 10-20 times the EM synapse counts.
+    - **What g ≈ 10 changes.** Frontal decisions match ±45°, and high and rear looms are decided
+      20-40 ms earlier.
+    - **Its cost.** The spontaneous DNp01 rate rises three-fold, with no false alarms at rest.
+    - **At g = 20.** The front overshoots and every position moves earlier.
+    - **What a runtime version would need.** The user's authorization to change the frozen
+      connectome's effective weights.
+  - **M3.6 feasibility, in memory only.** The candidate was every cell plus g = 10, with one
+    scale from 40 to 1120 V/mV, calibrated at the lateral horizon.
+    - **No scale passes V2 and V3 together.** V2 (lateral) needs about 560 V/mV, and V3 (Ache
+      position) allows at most about 140-280.
+    - **The cause.** One scale cannot change the model's too-steep timing law (slope about 3.4
+      against 2.0).
+    - **The decision.** By the user's criterion, the design is not worth a change to the frozen
+      connectome.
+  - **Paused on 2026-10-25.** The user paused the escape-timing line here. The runtime stays v27.
+- **M3.7, read-only research on spontaneous saccades**
+  ([game/M3_7_SACCADE_RESEARCH.md](game/M3_7_SACCADE_RESEARCH.md)).
+  - **Where the events come from.** Of the model's 0.34 events per s, 0.19 are clock-driven
+    saccades and 0.15 wall-driven turns (AVOID, DEPART). 42 % of open-space clock events are
+    small corrections below the detector.
+  - **What the real rate contains.** The real 1.37 per s comes from a 2 m arena crossed at about
+    107 BL/s and is about 90 % stimulus-driven (Censi et al. 2013). Their baseline bound is
+    0.4 per s.
+  - **Why it does not transfer.** Under the frozen 14-times slower speed scale, matching the
+    pooled rate per second would make ROOM paths about 14 times more tortuous per distance.
+  - **Candidates, not authorized.**
+    - straight flight between saccades: open-space corrections become saccades, about 0.33 per s;
+    - saccades of about 90° within the existing actuator cap;
+    - a comparator for the clock part against the 0.4 per s baseline.
+- **M3.7, straight flight between saccades of about 90°; failed one check.**
+  - **The design.** [game/M3_7_SACCADE_DESIGN.md](game/M3_7_SACCADE_DESIGN.md), carried out under
+    the user's standing instruction of 2026-10-26 to follow the recommended steps.
+  - **The change.** Three class-B flight parameters (v31): no open-space corrections, and
+    saccades of 60-120° at 1,200-1,500°/s. The decoder record is carried over.
+  - **The results.** In [results/game/M3_7_SACCADES.md](results/game/M3_7_SACCADES.md).
+  - **Improvements:**
+    - the clock-driven saccade rate is 0.32 per s, against the real baseline of about 0.4;
+    - S3 matches for the first time (77.6° in 80 ms);
+    - fixed-fly escapes are identical in all 384 trials;
+    - there are no pathologies.
+  - **Failure.** Paired no-player escapes rose from 9 to 15 in 240 minutes, against a criterion of
+    "not larger". The difference lies within Poisson noise, and the extra escapes are slow approaches
+    to the hovering paddle.
+  - **A noted cost.** During odor tracking the share of time heading upwind fell from 0.66 to 0.41.
+  - **Under the decision rule, v27 stays.** The v31 candidate is commit `c10477d`.
+  - **Follow-up, read-only** ([game/M3_7_SACCADE_RESEARCH.md](game/M3_7_SACCADE_RESEARCH.md),
+    section 5). Whether the change raises escapes at all is not established. The upwind loss
+    comes from saccades during odor tracking.
+- **M3.8, saccades of about 90° and no spontaneous turns while tracking an odor upwind; all
+  checks passed.**
+  - **The design.** [game/M3_8_SACCADE_ODOR_DESIGN.md](game/M3_8_SACCADE_ODOR_DESIGN.md), under
+    the same standing instruction.
+  - **The change.** M3.7's three flight parameters plus a stopped ODOR_TRACK clock
+    (`ecology.spontaneous_clock_rate.ODOR_TRACK` = 0; Budick and Dickinson 2006), all class B
+    (v32). The decoder record is carried over.
+  - **The results.** In [results/game/M3_8_SACCADE_ODOR.md](results/game/M3_8_SACCADE_ODOR.md).
+    - clock-driven saccades 0.307 per s, and S3 77.0° in 80 ms;
+    - no pathologies;
+    - paired no-player escapes 9 against 9 in 240 minutes;
+    - fixed-fly escapes identical in all 384 trials;
+    - the upwind share during odor tracking 0.591 against 0.529 on 40 runs.
+  - **A descriptive disagreement.** On the six kinematics seeds the upwind share fell (0.661 →
+    0.471), on about a quarter of P6's tracking time.
+  - **A read-only follow-up on 40 seeds** (`tools/m3_8_odor_contact.py`). It does not reproduce
+    that drop.
+    - odor contact is unchanged within noise;
+    - the upwind share is 0.562 against 0.535;
+    - food touchdowns rise from 78 to 101, and the median first one comes at 19.7 s against
+      39.6 s.
+  - **Under the decision rule, v32 stayed as a candidate.** It was the working ROOM file (commit
+    `ce0c745`) for the user's playtest.
+  - **Human-accepted on 2026-10-28** after one recorded ROOM playtest (session
+    `20261029T005245.328554Z-6300258d`). v32 is the accepted ROOM configuration, and `AGENTS.md` freezes its four
+    parameters.
 
 ### 9.7 Other open items
 
@@ -869,7 +1018,7 @@ The user chose the escape decision first, starting with read-only research. M3.1
 
 | Branch | Content |
 |---|---|
-| `main` | **The current accepted runtime** (ROOM `config_version` 27 with M1.7.2), the original reservoir experiment (Part I, up to `309abd9`) and the research records N0 to N4B8 (since 2026-10-22) |
+| `main` | **The accepted runtime** (ROOM `config_version` 27 with M1.7.2 until the M3.8 work is merged; v32 since 2026-10-28), the original reservoir experiment (Part I, up to `309abd9`) and the research records N0 to N4B8 (since 2026-10-22) |
 | `feature/flyswatter-game` @ `85f987b` | The first game prototype, M1.0 to M1.3 (2026-09-18), whose commits Part II cites |
 | `feature/m1-8-n4b1c-runtime` @ `e3c55b3` | An earlier accepted runtime (the N4B1C decoder layer) |
 | `wip/m1-4-enclosure` @ `c953094` | The decoder research N4B2 to N4B8 and the 2026-10-08 handoff state, merged into `main` |

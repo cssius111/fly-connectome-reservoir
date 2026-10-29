@@ -142,13 +142,20 @@ Since 2026-10-22 the goal has been for the model fly to behave more like a real 
   [results](results/game/M3_0_FIDELITY_SCORECARD.md)). The model escapes too early and in every
   trial. It cannot tell a frontal from a rear threat. Its spontaneous turns are too rare and too
   small.
-- **Changes tested so far.** After read-only research (M3.1), changes to the visual encoding and
-  to the escape decoder (M3.2-M3.4), each checked against preregistered criteria. Each improved some measures and failed at least one
-  check, so none has been adopted.
-- **Later steps.** Work on spontaneous turns and odor-guided flight is on a development branch
-  and not yet merged.
-- **No conclusion yet.** The record of each step is in [TECHNICAL_REPORT.md](TECHNICAL_REPORT.md),
-  section 9.6.
+- **The escape decision.** After read-only research (M3.1), changes to the visual encoding and to
+  the escape decoder (M3.2-M3.4) were each checked against preregistered criteria. Each improved
+  some measures and failed at least one check, so none has been adopted. Further read-only
+  research (M3.5) found that closing the remaining timing gap would need a change to the frozen
+  connectome, and that no single-scale design passes both timing checks. That line is paused.
+- **Spontaneous turns and odor tracking (M3.7-M3.8).** Only flight-generator parameters changed.
+  - Spontaneous turns are now about 80° in 80 ms, at 0.31 per second, within the band around the
+    real fly's baseline of about 0.4 per second.
+  - The fly no longer turns spontaneously while it tracks an odor upwind.
+  - M3.8 passed all six preregistered checks, including unchanged escapes. It was accepted after
+    a human playtest on 2026-10-28
+    ([design](game/M3_8_SACCADE_ODOR_DESIGN.md), [results](results/game/M3_8_SACCADE_ODOR.md)).
+- **Still open.** Escape timing and the front/back distinction remain gaps. The record of each
+  step is in [TECHNICAL_REPORT.md](TECHNICAL_REPORT.md), section 9.6.
 
 ## Timing
 
@@ -253,7 +260,7 @@ See [recording, replay, physics and playtest guide](game/SESSIONS.md),
 M1.6 evidence remains unchanged in [its historical report](results/game/M1_6.md).
 The edge repair allows partially offscreen paddle heads without changing fly bounds
 or motor limits. See the [edge audit and validation](results/game/M1_7_EDGE.md).
-M1.7.1 measured ROOM threshold **1.45**. The active ROOM record is the record named by `policy.calibration_paths` in `game_room_config.json` (`results/game/calibration_room_m1_7_2.json` as of M1.7.2). It
+M1.7.1 measured ROOM threshold **1.45**. The active ROOM record is the record named by `policy.calibration_paths` in `game_room_config.json` (`results/game/calibration_room_m3_8.json` as of M3.8). It
 reuses that one unchanged fixed-fly measurement with exact current provenance, via a
 recorded transfer chain of later records. No threshold has been re-measured since M1.7.1.
 See the [pre-tuning human diagnosis](results/game/HUMAN_M1_7_DIAGNOSIS.md) and

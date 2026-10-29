@@ -303,3 +303,27 @@ NUMBA_NUM_THREADS=1 python tools/paired_free_flight_check.py run --arm baseline 
     --baseline-commit 7483e51 --first-seed 9901 --last-seed 9980 --out artifacts/m3_4_run/free_flight
     (lanes 0 and 1; then --arm candidate; then classify and summary with the same options)
 ```
+
+## 8. Erratum (2026-10-24, M3.5 research)
+
+Sections 1-7 are kept as first recorded. The M3.5 research
+(`game/M3_5_STRIKE_ESCAPE_RESEARCH.md`, section 14) re-examined V2 at l/v 40 ms with fresh seeds
+(970301-970348). No measured result and no decision changes.
+
+1. **There are no two clusters in time.**
+   - Section 4 describes the l/v 40 ms escapes as an early cluster at 55-70° and a late one at
+     130-180°, and section 6 repeats this.
+   - In time, the decisions form one broad distribution over 4-5 consecutive ticks. The clusters
+     appear only in size, because near collision one 20 ms tick changes θ by 15-45°.
+2. **The start size shifts the decision time only slightly.**
+   - **The effect.** Larger starts decide 5-10 ms later on average.
+   - **The tick grid.** The 20° start's tick grid also sits 10 ms closer to collision than the 5°
+     and 10° starts'. This changes the sizes sampled at the last tick before collision (161°
+     against 134-136°).
+3. **Position.**
+   - **The calibration position.** At azimuth 50° and elevation 11° the same model decides at
+     55-62° for all three starts, a spread of 7.0°.
+   - **V2's position.** At azimuth 90° and elevation 0° a 55° disk reaches 27 % less DNp01 weight.
+     The decisions come about 40 ms later, onto the steep part of θ(t).
+   - **So:** V2's failure reflects position-dependent decision timing, not a start-size
+     dependence of the decision rule.
