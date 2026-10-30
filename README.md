@@ -157,6 +157,10 @@ Since 2026-10-22 the goal has been for the model fly to behave more like a real 
 - **Wall-evoked turns (M3.9).** Wall turns of fixed amplitude, as in the real fly, passed their
   primary check but lowered the upwind heading during odor tracking. They were not adopted
   ([results](results/game/M3_9_WALL_SACCADES.md)).
+- **The upwind turn on odor entry (M3.10).** A surge turn at the real fly's timescale (about 0.2 s)
+  raised the upwind heading during odor tracking from 0.54 to 0.73. It lowered the spontaneous
+  saccade rate slightly below its preregistered band, so it was not adopted
+  ([results](results/game/M3_10_UPWIND_SURGE.md)).
 - **Still open.** Escape timing and the front/back distinction remain gaps. The record of each
   step is in [TECHNICAL_REPORT.md](TECHNICAL_REPORT.md), section 9.6.
 

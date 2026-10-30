@@ -997,6 +997,24 @@ The user chose the escape decision first, starting with read-only research. M3.1
       of entries within 45°) by changing the paths that cross the plume.
     - **The next candidate.** A faster upwind turn would change the M1.8 ecology, so it needs the
       user's explicit request.
+- **M3.10, an upwind surge turn on odor entry; failed one check.**
+  - **The design.** [game/M3_10_UPWIND_SURGE_DESIGN.md](game/M3_10_UPWIND_SURGE_DESIGN.md). On
+    2026-10-29 the user explicitly agreed to modify the ODOR_TRACK steering of the M1.8 ecology.
+  - **The change.** A gated `ecology.upwind_surge` block (v34): 0.07 s after an ODOR_TRACK entry,
+    one SURGE pulse of the sensed upwind bearing at 1,200-1,500°/s.
+  - **The results.** In [results/game/M3_10_UPWIND_SURGE.md](results/game/M3_10_UPWIND_SURGE.md).
+  - **Improvements:**
+    - after an off-wind entry the median fly is within 45° of upwind in 0.18 s, against E16's
+      190 ± 75 ms; in v32 most such bouts end first;
+    - the ODOR_TRACK upwind share rose from 0.543 to 0.733;
+    - paired no-player escapes were 7 against 12;
+    - fixed-fly escapes are identical, and wall contacts fell.
+  - **Failure.** Clock-driven saccades fell from 0.308 to 0.282 per s, below the 0.30 bound of P7.
+    The bound lies within 0.01 of v32's own value on three seed sets.
+    - **What is excluded.** A post hoc look rules out more time in ODOR_TRACK.
+    - **What is left.** The mechanism is unexplained.
+  - **Under the decision rule, v32 stays.** The v34 candidate is commit `9c2b53d`. The gated block
+    stays in the code, unused.
 
 ### 9.7 Other open items
 

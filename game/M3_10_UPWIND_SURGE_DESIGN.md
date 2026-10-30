@@ -2,6 +2,8 @@
 
 Status: **preregistered 2026-10-29, before any M3.10 candidate data.**
 
+Result: P7 failed (clock-driven saccades 0.282 per s against a lower bound of 0.30; baseline 0.308), so the decision rule failed and v32 was restored (`results/game/M3_10_UPWIND_SURGE.md`). P1-P6 passed: the median time from an off-wind entry to within 45° of upwind fell to 0.18 s, and the upwind share rose from 0.543 to 0.733. The v34 candidate is commit `9c2b53d`.
+
 **Authorization.** On 2026-10-29 the user wrote: "A：同意修改 M1.8 生态的 ODOR_TRACK 转向" (option
 A: I agree to modify the ODOR_TRACK steering of the M1.8 ecology). This is the explicit request that
 `AGENTS.md` requires for a further M1.8-B change.
