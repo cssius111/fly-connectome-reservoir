@@ -1015,6 +1015,14 @@ The user chose the escape decision first, starting with read-only research. M3.1
     - **What is left.** The mechanism is unexplained.
   - **Under the decision rule, v32 stays.** The v34 candidate is commit `9c2b53d`. The gated block
     stays in the code, unused.
+  - **Follow-up, read-only** ([game/M3_10_FOLLOWUP_RESEARCH.md](game/M3_10_FOLLOWUP_RESEARCH.md)).
+    - **The mechanism on P7's seeds.** The P7 drop came from more time near walls, where clock
+      events become corrections.
+    - **It does not recur.** On 40 fresh seeds the difference is −0.006 per s, with an interval of
+      [−0.024, +0.012].
+    - **The criterion.** v32 itself scores 0.300-0.308, so P7's absolute band cannot tell "no
+      effect" from a small drop. A retest with a baseline-relative criterion would need the user's
+      agreement.
 
 ### 9.7 Other open items
 
