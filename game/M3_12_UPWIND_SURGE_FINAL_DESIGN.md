@@ -2,6 +2,8 @@
 
 Status: **preregistered 2026-10-30, before any M3.12 candidate data.**
 
+Result: P1-P7 all passed (`results/game/M3_12_UPWIND_SURGE_FINAL.md`), so v36 (commit `2d4a833`) is the working ROOM configuration as a candidate, pending the user's playtest. On 120 seeds the near-wall share was 0.154 against 0.155 (limit 0.194), and clock-driven saccades were 0.308 against 0.299 per s (limit 0.269); the upwind share rose from 0.565 to 0.759, with a median 0.16 s to within 45° of upwind.
+
 **Authorization.** On 2026-10-30 the user chose the option "最后一次大样本重测（推荐）" (one last
 retest on a large sample, recommended). The option read: M3.12 keeps the change and every
 criterion of M3.11, does not relax P6, and only raises the P6 and P7 samples to 120 fresh seeds.

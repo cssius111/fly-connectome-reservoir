@@ -1051,6 +1051,26 @@ The user chose the escape decision first, starting with read-only research. M3.1
       failures would weaken the preregistration. A further attempt would need a mechanism, or a
       check designed for this noise and preregistered before any data. Either is the user's
       decision.
+- **M3.12, a final test of the surge on a larger sample; passed all checks.**
+  - **The design.** [game/M3_12_UPWIND_SURGE_FINAL_DESIGN.md](game/M3_12_UPWIND_SURGE_FINAL_DESIGN.md).
+    On 2026-10-30 the user chose one last retest on a large sample.
+    - **The change.** The M3.10 surge, unchanged (v36).
+    - **The criteria.** M3.11's, unchanged.
+    - **The samples.** P6 and P7 on 120 fresh seeds, shared by one paired runner.
+    - **The stake.** A failure would have ended the line.
+  - **The results.** In
+    [results/game/M3_12_UPWIND_SURGE_FINAL.md](results/game/M3_12_UPWIND_SURGE_FINAL.md).
+    - **The primary effect replicated.** Median 0.16 s to within 45° of upwind, and an upwind share
+      of 0.759 against 0.565.
+    - **Escapes.** No-player escapes were 6 against 11, and fixed-fly escapes are identical.
+    - **The earlier failures did not recur.** On the 120 seeds:
+      - the near-wall share differs by −0.001 [−0.013, +0.010];
+      - clock-driven saccades differ by +0.009 per s [−0.003, +0.021].
+  - **How to read it.** It is the third test of the same change, decided after two failures, so
+    the report sets out that history (section 2).
+  - **Under the decision rule, v36 is the working ROOM configuration as a candidate** (commit
+    `2d4a833`). Acceptance waits for the user's playtest; until then v32 stays the accepted
+    configuration.
 
 ### 9.7 Other open items
 

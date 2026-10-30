@@ -233,6 +233,27 @@ def near_wall_difference():
             'seeds_higher': higher, 'seeds': len(v)}
 
 
+def saccade_rate_difference():
+    """D3: accepted SACCADE requests per airborne second, candidate minus baseline, seed bootstrap."""
+    v = []
+    for seed in PAIRED_SEEDS:
+        row = []
+        for arm in S.ARMS:
+            z = np.load(L.OUT / arm / ('seed%d.npz' % seed))
+            saccades = int((z['requests'][:, 1] == L.KINDS.index('SACCADE')).sum())
+            row += [float((z['rows'][:, 0] > 0).sum()) * float(z['dt']), saccades]
+        v.append(row)
+    v = np.array(v, float)
+
+    def diff(x):
+        return x[:, 3].sum() / x[:, 2].sum() - x[:, 1].sum() / x[:, 0].sum()
+
+    rng = np.random.default_rng(5)
+    boots = [diff(v[rng.integers(0, len(v), len(v))]) for _ in range(BOOTSTRAP)]
+    lo, hi = np.percentile(boots, [2.5, 97.5])
+    return {'difference': float(diff(v)), 'interval_95': [float(lo), float(hi)], 'seeds': len(v)}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument('mode', choices=('validate', 'paired', 'odor', 'protocol-e', 'summary'))
@@ -265,6 +286,10 @@ def main():
         d4 = near_wall_difference()
         print('D4: near-wall share difference %+.3f [%+.3f, %+.3f]; %d of %d seeds higher' % (
             d4['difference'], *d4['interval_95'], d4['seeds_higher'], d4['seeds']))
+        d3 = saccade_rate_difference()
+        factors['seed_bootstrap_saccade_rate'] = d3
+        print('D3: SACCADE per airborne s difference %+.3f [%+.3f, %+.3f] over %d seeds' % (
+            d3['difference'], *d3['interval_95'], d3['seeds']))
         latency = {arm: C10.turn_latency(arm) for arm in S.ARMS}
         for arm, r in latency.items():
             print('== %s: %d off-wind entries, %d reach 45 deg; median %s s; %d bout entries, %d surge requests, '

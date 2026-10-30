@@ -164,6 +164,10 @@ Since 2026-10-22 the goal has been for the model fly to behave more like a real 
   - **The retest (M3.11).** On fresh seeds, the gains replicated and the saccade rate did not fall.
   - **Why it was still not adopted.** Near-wall time rose above its limit on one seed set
     ([results](results/game/M3_11_UPWIND_SURGE_RETEST.md)).
+  - **The final test (M3.12).** With M3.11's criteria and 120 fresh seeds for the wall and saccade
+    checks, it passed every check, and neither earlier failure recurred
+    ([results](results/game/M3_12_UPWIND_SURGE_FINAL.md)).
+  - **Its status.** A candidate on the development branch, awaiting a human playtest.
 - **Still open.** Escape timing and the front/back distinction remain gaps. The record of each
   step is in [TECHNICAL_REPORT.md](TECHNICAL_REPORT.md), section 9.6.
 
