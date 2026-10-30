@@ -292,7 +292,7 @@ class TestRoomCandidate(unittest.TestCase):
         # M3.4 failed and restored v27; the M3.7 (v31), M3.8 (v32), M3.9 (v33), M3.10 (v34) and
         # M3.11 (v35) candidates change only class-B flight and ecology keys.
         room = load_config(ROOT / "game_room_config.json")
-        self.assertIn(room["config_version"], (27, 31, 32, 33, 34, 35))
+        self.assertIn(room["config_version"], (27, 31, 32, 33, 34, 35, 36))
         self.assertNotIn("feature_model", room["encoder"])
 
     def test_candidate_configuration(self):

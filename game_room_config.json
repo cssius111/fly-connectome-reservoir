@@ -1,5 +1,5 @@
 {
-  "config_version": 32,
+  "config_version": 36,
   "_comment": "M1.6 horizontal ROOM slice. Logical units and state speeds are gameplay mappings, not universal biological constants.",
   "sim": {
     "tick_seconds": 0.02,
@@ -142,11 +142,11 @@
     "virtual_distance": 100.0
   },
   "policy": {
-    "_comment": "Exact provenance required. The M1.8-N4B1C lateral dual-path decoder (unchanged) under the M1.8-N4B5R elevation-aware geometry, the M1.8-B2b-iii to B4b kinematics and ecology the M1.7.2 paddle line axis and the M3.8 saccades and odor-tracking clock (game/M3_8_SACCADE_ODOR_DESIGN.md) loads the M3.8 transfer record, which carries the identical decoder block for this configuration: rebuild it with python tools/m3_8_record.py. Earlier records are preserved unchanged. tools/calibrate_escape.py measures the scalar single-sample criterion only and does not calibrate this decoder.",
+    "_comment": "Exact provenance required. The M1.8-N4B1C lateral dual-path decoder (unchanged) under the M1.8-N4B5R elevation-aware geometry, the M1.8-B2b-iii to B4b kinematics and ecology, the M1.7.2 paddle line axis, the M3.8 saccades and odor-tracking clock (game/M3_8_SACCADE_ODOR_DESIGN.md) and the M3.10 upwind surge in its final test, M3.12 (game/M3_12_UPWIND_SURGE_FINAL_DESIGN.md), loads the M3.12 transfer record, which carries the identical decoder block for this configuration: rebuild it with python tools/m3_12_record.py. Earlier records are preserved unchanged. tools/calibrate_escape.py measures the scalar single-sample criterion only and does not calibrate this decoder.",
     "escape_threshold": null,
     "calibration_paths": [
-      "artifacts/game/calibration_room_m3_8.json",
-      "results/game/calibration_room_m3_8.json"
+      "artifacts/game/calibration_room_m3_12.json",
+      "results/game/calibration_room_m3_12.json"
     ],
     "escape_decoder": {
       "_comment": "M1.8-N4B1C combined DNp01 criterion. Escape when EITHER path qualifies outside the shared refractory period. LATERAL: the same DNp01 side produces lateral_required_spikes inferred spikes within lateral_same_side_window_ms (per-side spikes inferred from that side's own trace; a left spike followed by a right spike never qualifies). Summed N2b path: FAST when left + right >= summed_fast_threshold; SUSTAINED when the current summed sample is >= sustained_threshold AND at least sustained_required_samples of the most recent sustained_window_samples summed samples are >= sustained_threshold. All values are Class C engineering decoder parameters derived from simulator evidence, not biological constants. sustained_threshold must equal the record's escape_threshold.",
@@ -423,6 +423,14 @@
       "_comment": "M1.8-B4b. Reliability r = clip((|wind| - unreliable_below) / (reliable_above - unreliable_below), 0, 1) of the sensed wind speed scales upwind steering; below r = 0.5 ODOR_SEARCH casts around the current course (E19: wind reliability gates the strategy). Class C. ROOM wind never falls below 38.25 units/s, so r = 1 and ROOM behaviour is unchanged; the strategy applies to weak-wind configurations.",
       "unreliable_below": 5.0,
       "reliable_above": 20.0
+    },
+    "upwind_surge": {
+      "_comment": "M3.10. Once per ODOR_TRACK bout, delay_seconds after entry, the ecology requests a turn of the sensed upwind bearing; the world executes it as a SURGE actuator pulse (priority of a spontaneous saccade, limited to saccades.max_degrees) with a peak rate drawn from peak_rate_deg_per_second on a dedicated stream. delay: E16 190 ms after plume entry less the 0.12 s encounter debounce; peak: the accepted saccade rates. Class B. See game/M3_10_UPWIND_SURGE_DESIGN.md.",
+      "delay_seconds": 0.07,
+      "peak_rate_deg_per_second": [
+        1200.0,
+        1500.0
+      ]
     }
   },
   "ecology_threat_input": {
