@@ -1023,6 +1023,34 @@ The user chose the escape decision first, starting with read-only research. M3.1
     - **The criterion.** v32 itself scores 0.300-0.308, so P7's absolute band cannot tell "no
       effect" from a small drop. A retest with a baseline-relative criterion would need the user's
       agreement.
+- **M3.11, the M3.10 surge retested with a baseline-relative P7; failed one check.**
+  - **The design.** [game/M3_11_UPWIND_SURGE_RETEST_DESIGN.md](game/M3_11_UPWIND_SURGE_RETEST_DESIGN.md).
+    On 2026-10-30 the user agreed to the retest.
+    - **The change.** The M3.10 surge, unchanged (v35).
+    - **The revised check.** P7 passes when the candidate is at most 0.03 per s below the baseline.
+      The preregistration states that this criterion was chosen after the M3.10 failure.
+    - **Seeds.** All fresh.
+  - **The results.** In
+    [results/game/M3_11_UPWIND_SURGE_RETEST.md](results/game/M3_11_UPWIND_SURGE_RETEST.md).
+  - **What replicated:**
+    - after an off-wind entry the median fly is within 45° of upwind in 0.16 s;
+    - the upwind share rose from 0.537 to 0.710;
+    - clock-driven saccades were 0.305 against 0.299 per s;
+    - no-player escapes were 5 against 9, and fixed-fly escapes are identical.
+  - **Failure.** On the P6 wall runs, the near-wall share rose from 0.127 to 0.170, above the limit
+    of 0.159.
+  - **Under the decision rule, v32 stays.** The v35 candidate is commit `6153e38`. The gated block
+    stays in the code, unused.
+  - **Follow-up, read-only** (section 6 of the results, `tools/m3_11_near_wall.py`).
+    - **Pooled.** Over five paired seed sets (148 seeds), the surge changes the near-wall share by
+      +0.008 [−0.002, +0.019].
+    - **The sets disagree.** They disagree more than seed noise predicts (Cochran's Q 16.6 on 4
+      degrees of freedom). One 24-seed set does not estimate the effect reliably.
+    - **No mechanism found.** None links the surge to the walls in these data.
+    - **What a further attempt would need.** A third test under criteria adjusted after two
+      failures would weaken the preregistration. A further attempt would need a mechanism, or a
+      check designed for this noise and preregistered before any data. Either is the user's
+      decision.
 
 ### 9.7 Other open items
 

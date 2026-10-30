@@ -2,6 +2,8 @@
 
 Status: **preregistered 2026-10-30, before any M3.11 candidate data.**
 
+Result: P6 failed (near-wall share 0.170 against a limit of 0.159; baseline 0.127), so the decision rule failed and v32 was restored (`results/game/M3_11_UPWIND_SURGE_RETEST.md`). P1-P5 and P7 passed: the median time from an off-wind entry to within 45° of upwind was 0.16 s, the upwind share rose from 0.537 to 0.710, and clock-driven saccades were 0.305 against 0.299 per s. The v35 candidate is commit `6153e38`.
+
 **Authorization.** On 2026-10-30 the user chose to retest the M3.10 upwind surge with the revised
 check P7 described here. The user's earlier explicit request to modify the ODOR_TRACK steering of
 the M1.8 ecology (game/M3_10_UPWIND_SURGE_DESIGN.md) covers the change.

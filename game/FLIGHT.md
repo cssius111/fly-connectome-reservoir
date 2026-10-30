@@ -57,7 +57,7 @@ impulse, followed by damping and speed limiting.
 | SACCADE | uniform 25–105° | uniform 700–1,400°/s | same controller |
 | AVOID | local bearing to tangent + 14° inward; with `boundary.avoid_degrees` (M3.9), a sampled amplitude away from the surface, independent of the approach angle | uniform 700–1,300°/s (1,200–1,500°/s in the M3.9 candidate v33, not adopted) | local time-to-contact proxy |
 | DEPART | uniform 40–85° away from surface | uniform 600–1,100°/s | perimeter residence |
-| SURGE | the sensed upwind bearing, once per ODOR_TRACK bout (only with `ecology.upwind_surge`; the M3.10 candidate v34, not adopted) | uniform 1,200–1,500°/s | ecology odor entry |
+| SURGE | the sensed upwind bearing, once per ODOR_TRACK bout (only with `ecology.upwind_surge`; the M3.10 candidate v34 and its M3.11 retest v35, neither adopted) | uniform 1,200–1,500°/s | ecology odor entry |
 | ALERT | up to 55° × signed policy request | 900°/s | sustained descending activity |
 | ESCAPE | up to 110° × signed policy request | 1,350°/s | calibrated DNp01 emergency gate |
 

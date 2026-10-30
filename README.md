@@ -161,6 +161,9 @@ Since 2026-10-22 the goal has been for the model fly to behave more like a real 
   raised the upwind heading during odor tracking from 0.54 to 0.73. It lowered the spontaneous
   saccade rate slightly below its preregistered band, so it was not adopted
   ([results](results/game/M3_10_UPWIND_SURGE.md)).
+  - **The retest (M3.11).** On fresh seeds, the gains replicated and the saccade rate did not fall.
+  - **Why it was still not adopted.** Near-wall time rose above its limit on one seed set
+    ([results](results/game/M3_11_UPWIND_SURGE_RETEST.md)).
 - **Still open.** Escape timing and the front/back distinction remain gaps. The record of each
   step is in [TECHNICAL_REPORT.md](TECHNICAL_REPORT.md), section 9.6.
 
